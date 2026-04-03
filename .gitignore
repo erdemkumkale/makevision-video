@@ -9,6 +9,8 @@ coverage
 # Production
 dist
 build
+.next/
+out/
 
 # Environment
 .env
@@ -40,4 +42,3 @@ lerna-debug.log*
 
 # OS
 Thumbs.db
-.next/
