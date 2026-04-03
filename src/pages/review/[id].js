@@ -206,12 +206,28 @@ export default function ReviewVision() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  // Poll while any original is still pending
+  // Poll while any original is still pending — timeout after ~3 minutes
   useEffect(() => {
     const originals = generations.filter((g) => !g.is_redo)
     const hasPending = originals.some((g) => !g.media_url)
     if (!hasPending || loading || genError) return
-    const interval = setInterval(loadData, 6000)
+
+    let pollCount = 0
+    const MAX_POLLS = 30 // 30 × 6s = 3 minutes
+
+    const interval = setInterval(() => {
+      pollCount += 1
+      if (pollCount >= MAX_POLLS) {
+        clearInterval(interval)
+        setGenError(
+          'Image generation is taking too long — some visuals may have timed out. ' +
+          'Click "Retry" to regenerate only the missing ones (no credit is wasted on the ones already done).'
+        )
+        return
+      }
+      loadData()
+    }, 6000)
+
     return () => clearInterval(interval)
   }, [generations, loading, loadData, genError])
 

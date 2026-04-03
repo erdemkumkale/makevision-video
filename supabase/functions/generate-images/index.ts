@@ -86,19 +86,33 @@ serve(async (req: Request) => {
       })
     )
 
+    const successCount = results.filter((r) => r.ok).length
+    const failedResults = results.filter((r) => !r.ok)
+
+    // Mark failed slots in DB so frontend can detect them specifically
+    if (failedResults.length > 0) {
+      await Promise.all(
+        failedResults.map((r) =>
+          supabase
+            .from('media_generations')
+            .update({ error: r.error ?? 'Generation failed' })
+            .eq('id', r.id)
+        )
+      )
+    }
+
+    // Always set Images_Ready so frontend can proceed with partial results
+    // (review page polls for media_url and shows retry for empty slots)
     await supabase
       .from('vision_projects')
       .update({ status: 'Images_Ready' })
       .eq('id', project_id)
 
-    const successCount = results.filter((r) => r.ok).length
-    const failures     = results.filter((r) => !r.ok).map((r) => r.error)
-
     return json({
       success: successCount > 0,
       generated: successCount,
       total: generations.length,
-      ...(failures.length ? { failures } : {}),
+      ...(failedResults.length ? { failures: failedResults.map((r) => r.error) } : {}),
     })
 
   } catch (err) {
