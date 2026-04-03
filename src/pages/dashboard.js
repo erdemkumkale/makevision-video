@@ -11,7 +11,9 @@ const STATUS_STYLES = {
   Images_Ready:    'bg-blue-900/40 text-blue-300 border-blue-700',
   Payment_Pending: 'bg-yellow-900/40 text-yellow-300 border-yellow-700',
   Processing:      'bg-purple-900/40 text-glow-soft border-glow-dim',
+  Videos_Ready:    'bg-purple-900/40 text-glow-soft border-glow-dim',
   Completed:       'bg-emerald-900/40 text-emerald-300 border-emerald-700',
+  Failed:          'bg-red-900/40 text-red-400 border-red-700',
 }
 
 const StatusBadge = ({ status }) => (
