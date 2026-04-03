@@ -201,6 +201,18 @@ export default function ReviewVision() {
       return next
     })
 
+    // If any original slot is empty AND was created >5 min ago → stuck, show retry
+    const STALE_MS = 5 * 60 * 1000
+    const staleStuck = normalized.some(
+      (g) => !g.is_redo && !g.media_url && (Date.now() - new Date(g.created_at).getTime()) > STALE_MS
+    )
+    if (staleStuck) {
+      setGenError(
+        'One or more images timed out during generation. ' +
+        'Click "Retry Generation" — only the missing ones will be regenerated (no extra credits used).'
+      )
+    }
+
     setLoading(false)
   }, [user, projectId])
 
