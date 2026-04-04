@@ -21,16 +21,14 @@ serve(async (req: Request) => {
 
     const supabaseUrl    = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anonKey        = Deno.env.get('SUPABASE_ANON_KEY')!
-
-    const anonClient = createClient(supabaseUrl, anonKey)
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(token)
-    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     })
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
     // ── Input ─────────────────────────────────────────────────────────────────
     const body = await req.json()
