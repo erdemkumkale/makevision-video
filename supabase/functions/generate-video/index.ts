@@ -33,15 +33,19 @@ serve(async (req: Request) => {
     if (!authHeader) return json({ error: 'Unauthorized' }, 401)
 
     const supabaseUrl    = Deno.env.get('SUPABASE_URL')!
+    const anonKey        = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth:   { persistSession: false },
+    })
+    const { data: { user }, error: authError } = await userClient.auth.getUser()
+    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     })
-
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
     // ── Input ─────────────────────────────────────────────────────────────────
     const body = await req.json()
