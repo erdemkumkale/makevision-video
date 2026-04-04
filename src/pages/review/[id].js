@@ -314,21 +314,15 @@ export default function ReviewVision() {
     }
   }
 
-  // ── DEV: skip payment, trigger Phase 3+4 with existing images ─────────────
+  // ── DEV: skip payment, trigger Kling → Shotstack pipeline ───────────────────
   const handleDevBypass = async () => {
     setDevBypassing(true)
     setError(null)
     try {
       const selectedIds = Object.values(selectedVersions)
 
-      // Collect the actual media_url for each selected generation ID
-      const imageUrls = selectedIds.map((genId) => {
-        const gen = generations.find((g) => g.id === genId)
-        return gen?.media_url ?? null
-      }).filter(Boolean)
-
-      if (imageUrls.length !== 6) {
-        throw new Error(`Expected 6 images but got ${imageUrls.length}. Make sure all slots are ready.`)
+      if (selectedIds.length !== 6) {
+        throw new Error(`Expected 6 selections but got ${selectedIds.length}. Make sure all slots are ready.`)
       }
 
       // Mark selections in DB
@@ -337,15 +331,9 @@ export default function ReviewVision() {
         .update({ is_selected: true })
         .in('id', selectedIds)
 
-      // Set project to Processing
-      const { error: updateError } = await supabase
-        .from('vision_projects')
-        .update({ status: 'Processing' })
-        .eq('id', projectId)
-      if (updateError) throw updateError
-
-      // Kick off Phase 3+4 only — no Flux, no FaceSwap
-      await api.generateFinalVideo(projectId, user.id, { videoUrls: imageUrls })
+      // generate-video: Kling ile 6 video üretir → biter bitmez Shotstack'i tetikler
+      // Fire-and-forget: hemen döner, arka planda çalışır
+      await api.generateVideo(projectId, selectedIds)
 
       router.push(`/processing/${projectId}`)
     } catch (err) {
