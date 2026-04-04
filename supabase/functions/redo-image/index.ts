@@ -67,9 +67,10 @@ serve(async (req: Request) => {
     const piApiKey = Deno.env.get('PIAPI_API_KEY')
     if (!piApiKey) return json({ error: 'PIAPI_API_KEY not set' }, 500)
 
-    // ── Revise prompt via Gemini ──────────────────────────────────────────────
+    // ── Revise both prompts via Gemini ────────────────────────────────────────
     const geminiKey = Deno.env.get('GEMINI_API_KEY')!
-    const revisedPrompt = await revisePrompt(geminiKey, gen.prompt_text, feedback)
+    const { imagePrompt: revisedPrompt, videoPrompt: revisedVideoPrompt } =
+      await revisePrompts(geminiKey, gen.prompt_text, feedback)
     console.log(`Revised prompt for gen ${generation_id}: ${revisedPrompt.slice(0, 80)}...`)
 
     // ── Step 1: Flux-1-dev text-to-image ─────────────────────────────────────
@@ -88,6 +89,7 @@ serve(async (req: Request) => {
           vision_project_id: gen.vision_project_id,
           media_type:        'Image',
           prompt_text:       revisedPrompt,
+          video_prompt:      revisedVideoPrompt,
           negative_prompt:   NEGATIVE_PROMPT,
           media_url:         faceSwappedUrl,
           is_selected:       false,
@@ -116,7 +118,11 @@ serve(async (req: Request) => {
 
 // ─── Gemini prompt revision ───────────────────────────────────────────────────
 
-async function revisePrompt(apiKey: string, originalPrompt: string, feedback: string): Promise<string> {
+async function revisePrompts(
+  apiKey: string,
+  originalPrompt: string,
+  feedback: string,
+): Promise<{ imagePrompt: string; videoPrompt: string }> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
@@ -125,23 +131,38 @@ async function revisePrompt(apiKey: string, originalPrompt: string, feedback: st
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `You are an expert AI image prompt engineer.
+            text: `You are an expert AI image and video prompt engineer.
 
-Original prompt: "${originalPrompt}"
+Original image prompt: "${originalPrompt}"
 
 User feedback: "${feedback}"
 
-Revise the prompt based on the feedback. Keep it cinematic, photorealistic, single subject.
-Return ONLY the revised prompt as a plain string — no quotes, no explanation.`,
+Revise the image prompt based on the feedback. Keep it cinematic, photorealistic, single subject.
+Also write a short video prompt (1-2 sentences, ~100 chars) for animating this scene — describe camera movement and subtle motion only, not what's in the image.
+
+Return ONLY a JSON object: { "image_prompt": "...", "video_prompt": "..." }`,
           }],
         }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 256 },
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 512,
+          response_mime_type: 'application/json',
+        },
       }),
     },
   )
   if (!res.ok) throw new Error(`Gemini revision failed: ${await res.text()}`)
   const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? originalPrompt
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+  try {
+    const parsed = JSON.parse(raw)
+    return {
+      imagePrompt: parsed.image_prompt ?? originalPrompt,
+      videoPrompt: parsed.video_prompt ?? '',
+    }
+  } catch {
+    return { imagePrompt: originalPrompt, videoPrompt: '' }
+  }
 }
 
 // ─── Step 1: Flux-1-dev text-to-image ────────────────────────────────────────

@@ -53,7 +53,7 @@ serve(async (req: Request) => {
     // ── Fetch selected images ─────────────────────────────────────────────────
     let query = supabase
       .from('media_generations')
-      .select('id, media_url, prompt_text, order_num')
+      .select('id, media_url, prompt_text, video_prompt, order_num')
       .eq('vision_project_id', project_id)
       .neq('media_url', '')
       .order('order_num', { ascending: true })
@@ -155,9 +155,11 @@ serve(async (req: Request) => {
 
 async function generateKlingVideo(
   apiKey: string,
-  img: { id: string; media_url: string; prompt_text: string },
+  img: { id: string; media_url: string; prompt_text: string; video_prompt?: string },
 ): Promise<string> {
-  const motionPrompt = `Cinematic slow motion, subtle atmospheric depth, gentle camera drift. ${img.prompt_text.slice(0, 180)}`
+  // Use the dedicated video_prompt if available, otherwise fall back to a generic motion prompt
+  const motionPrompt = img.video_prompt?.trim()
+    || `Slow cinematic push-in, shallow depth of field, subtle atmospheric light, gentle camera drift`
 
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',

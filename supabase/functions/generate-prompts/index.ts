@@ -102,23 +102,24 @@ serve(async (req: Request) => {
 
     console.log('Gemini extracted text:', rawText.slice(0, 300))
 
-    const prompts = parsePrompts(rawText)
-    console.log('Parsed prompt count:', prompts.length)
+    const slots = parseSlots(rawText)
+    console.log('Parsed slot count:', slots.length)
 
-    if (prompts.length !== 6) {
-      return json({ error: 'Expected 6 prompts from Gemini', raw: rawText.slice(0, 500) }, 502)
+    if (slots.length !== 6) {
+      return json({ error: 'Expected 6 slots from Gemini', raw: rawText.slice(0, 500) }, 502)
     }
 
     // ── Save to media_generations ─────────────────────────────────────────────
-    const rows = prompts.map((promptText, idx) => ({
+    const rows = slots.map((slot, idx) => ({
       vision_project_id: project_id,
       media_type:        'Image',
-      prompt_text:       promptText,
+      prompt_text:       slot.image_prompt,
+      video_prompt:      slot.video_prompt,
       negative_prompt:   NEGATIVE_PROMPT,
       media_url:         '',
       is_selected:       false,
       revision_count:    0,
-      order_num:         idx,   // 0-5, stable slot identifier
+      order_num:         idx,
       is_redo:           false,
     }))
 
@@ -201,54 +202,78 @@ function buildStoryText(storyInputs: Record<string, unknown>): string {
 }
 
 function buildGeminiPrompt(storyText: string): string {
-  return `You are an expert prompt engineer for Magic Hour's AI image generation API. Your goal is to convert a user's vision into 6 highly-descriptive, photorealistic image prompts that blend the user's face (from their selfie) seamlessly into each new scene.
+  return `You are both a cinematographer and an AI prompt engineer. Your job is to transform a user's life vision into 6 scenes — each with two prompts:
 
-CRITICAL REQUIREMENT FOR BLENDING:
-You MUST instruct Magic Hour to DISCARD the original selfie's clothing and background entirely. Replace them with clothing and environment that are fully appropriate for the vision scene.
+1. image_prompt  — for a photorealistic AI image generator (Flux) that composites the user's face into the scene
+2. video_prompt  — for an AI video generator (Kling) that ANIMATES the already-composed image
 
-Do NOT write: "A photo of the person from the selfie in space."
-DO write: "A photorealistic medium-shot of the subject, whose face is derived from the selfie, wearing a pristine white SpaceX astronaut suit. They are floating elegantly in the silent void of space, with the cosmic dust and distant galaxies of the Milky Way forming a vibrant, deep blue and orange background. Soft, cool lighting from the stars illuminates their face. Cinematic, highly detailed, seamless face blend."
+────────────────────────────────────────
+IMAGE PROMPT RULES
+────────────────────────────────────────
+- Start with: "A photorealistic medium-shot of the subject, whose face is derived from the selfie, discarding the original selfie's clothing and background."
+- Describe clothing, environment, lighting, mood in rich detail
+- Subject's face is the focal point, naturally lit, seamlessly composited
+- Photorealistic, cinematic, medium or close-up shot
+- Each scene covers a distinct life area from the user's vision
 
-Each of the 6 prompts MUST:
-- Explicitly describe new clothing/outfit suited to the scene (never reference the selfie's original clothes)
-- Describe the environment, lighting, mood, and atmosphere in rich visual detail
-- Feature the subject's face as the clear focal point, naturally lit and seamlessly composited
-- Be photorealistic, cinematic, medium or close-up shot
-- Represent a distinct moment or life area from the user's vision, ordered to build a visual narrative
+────────────────────────────────────────
+VIDEO PROMPT RULES
+────────────────────────────────────────
+The image is already composed. The video prompt tells Kling HOW TO MOVE IT.
+Think like a cinematographer giving a camera operator instructions for a 5-second shot.
 
+GOOD video prompts:
+- "Slow push-in on the subject's face, shallow depth of field, morning light flickers softly through the window"
+- "Camera drifts gently left, subject exhales slowly, olive leaves sway in a faint breeze"
+- "Subtle handheld sway, subject's eyes trace the horizon, waves shimmer in the distance"
+- "Rack focus from the document to the subject's calm face, sunlight shifts slowly across the desk"
+
+BAD video prompts (do NOT do this):
+- Repeat the image description ("man in a boardroom with Aegean Sea view...")
+- Use vague words: "cinematic", "high quality", "beautiful"
+- Describe what's in the image rather than how it moves
+
+Each video prompt should be 1-2 sentences, ~80-150 characters, motion-focused.
+
+────────────────────────────────────────
 The user's vision:
 ---
 ${storyText}
 ---
 
-You MUST return ONLY a valid JSON array of exactly 6 strings. No markdown, no backticks, no code fences, no explanation — just the raw JSON array.
-Example: ["prompt 1", "prompt 2", "prompt 3", "prompt 4", "prompt 5", "prompt 6"]`
+Return ONLY a valid JSON array of exactly 6 objects. No markdown, no backticks, no explanation.
+Format:
+[
+  { "image_prompt": "...", "video_prompt": "..." },
+  { "image_prompt": "...", "video_prompt": "..." },
+  { "image_prompt": "...", "video_prompt": "..." },
+  { "image_prompt": "...", "video_prompt": "..." },
+  { "image_prompt": "...", "video_prompt": "..." },
+  { "image_prompt": "...", "video_prompt": "..." }
+]`
 }
 
-function parsePrompts(raw: string): string[] {
-  // Strip any markdown code fences (```json ... ``` or ``` ... ```)
+type Slot = { image_prompt: string; video_prompt: string }
+
+function parseSlots(raw: string): Slot[] {
   let cleaned = raw
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim()
 
-  // Extract just the JSON array if there's surrounding text
   const arrayMatch = cleaned.match(/\[[\s\S]*\]/)
   if (arrayMatch) cleaned = arrayMatch[0]
 
   try {
     const parsed = JSON.parse(cleaned)
     if (Array.isArray(parsed) && parsed.length >= 6) {
-      return parsed.slice(0, 6).map(String)
+      return parsed.slice(0, 6).map((s: unknown) => ({
+        image_prompt: (s as Slot).image_prompt ?? String(s),
+        video_prompt: (s as Slot).video_prompt ?? '',
+      }))
     }
   } catch (e) {
-    console.error('JSON.parse failed on cleaned text:', cleaned.slice(0, 200), e)
-  }
-
-  // Last resort: pull out quoted strings longer than 20 chars
-  const matches = raw.match(/"([^"]{20,})"/g)
-  if (matches && matches.length >= 6) {
-    return matches.slice(0, 6).map((s) => s.replace(/^"|"$/g, ''))
+    console.error('JSON.parse failed:', cleaned.slice(0, 200), e)
   }
 
   return []
