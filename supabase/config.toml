@@ -1,10 +1,3 @@
-[project]
-id = "ibcxaytaewufzluxnjbc"
-
-# verify_jwt = false: Supabase gateway JWT doğrulamasını devre dışı bırakır.
-# Auth fonksiyonun kendi kodu içinde yapılır (userClient.auth.getUser()).
-# Bu sayede her deploy'da True'ya dönmez.
-
 [functions.generate-prompts]
 verify_jwt = false
 
