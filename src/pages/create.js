@@ -447,11 +447,12 @@ export default function CreateVision() {
       setSubmitStage(2)
       await api.generatePrompts(project.id)
 
-      // 4. Generate images
+      // 4. Generate images — fire-and-forget (returns immediately, runs in background)
+      // Review page polls DB every 6s and shows images as they arrive.
       setSubmitStage(3)
       await api.generateImages(project.id)
 
-      // 5. Done
+      // 5. Redirect to review — images will load there via polling
       setSubmitStage(4)
       router.push(`/review/${project.id}`)
     } catch (err) {

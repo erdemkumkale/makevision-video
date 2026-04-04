@@ -1,7 +1,16 @@
 // supabase/functions/generate-images/index.ts
-// Pipeline: 6 slots run FULLY in parallel.
-// Each slot: Flux-1-dev (txt→img) → PiAPI Face Swap → DB update
-// Face swap starts immediately when its Flux task finishes — no waiting for other slots.
+//
+// Mimari: fire-and-forget
+//   1. Auth + input doğrulama  (senkron, ~1s)
+//   2. 200 hemen döner         → create.js review'e yönlendirir
+//   3. Arka planda devam eder  → EdgeRuntime.waitUntil
+//      Her slot: Flux (txt2img) → Face Swap → DB update (media_url)
+//      Tüm slotlar paralel çalışır, birbirini beklemez.
+//      İşlem bitince vision_projects.status = 'Images_Ready'
+//
+// Review sayfası DB'yi her 6s poll'lar, media_url dolunca gösterir.
+// Eğer 5dk+ geçmesine rağmen boş slot varsa review sayfası Retry butonu gösterir.
+// Retry güvenli: sadece media_url='' olan slotları yeniden işler.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -11,14 +20,16 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const PIAPI_BASE   = 'https://api.piapi.ai/api/v1/task'
-const PIAPI_FETCH  = (id: string) => `https://api.piapi.ai/api/v1/task/${id}`
+const PIAPI_BASE  = 'https://api.piapi.ai/api/v1/task'
+const PIAPI_FETCH = (id: string) => `https://api.piapi.ai/api/v1/task/${id}`
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
   try {
-    // ── Auth ──────────────────────────────────────────────────────────────────
+    // ── 1. Auth ───────────────────────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return json({ error: 'Unauthorized' }, 401)
 
@@ -35,7 +46,7 @@ serve(async (req: Request) => {
       auth: { persistSession: false },
     })
 
-    // ── Input ─────────────────────────────────────────────────────────────────
+    // ── 2. Input doğrulama ────────────────────────────────────────────────────
     const { project_id } = await req.json()
     if (!project_id) return json({ error: 'project_id is required' }, 400)
 
@@ -49,6 +60,7 @@ serve(async (req: Request) => {
     if (projectError || !project) return json({ error: 'Project not found' }, 404)
     if (!project.selfie_url) return json({ error: 'No selfie_url on project' }, 400)
 
+    // Sadece boş slotları al (retry güvenliği: dolu slotlara dokunmaz)
     const { data: generations, error: genError } = await supabase
       .from('media_generations')
       .select('id, prompt_text, negative_prompt, order_num')
@@ -63,63 +75,76 @@ serve(async (req: Request) => {
     const piApiKey = Deno.env.get('PIAPI_API_KEY')
     if (!piApiKey) return json({ error: 'PIAPI_API_KEY not set' }, 500)
 
-    console.log(`Processing ${generations.length} images in parallel for project ${project_id}`)
+    console.log(`Starting ${generations.length} image slots in background for project ${project_id}`)
 
-    // ── Full pipeline per slot — all 6 run concurrently ──────────────────────
-    // Each slot: Flux → face swap → DB update, independently.
-    // Face swap fires as soon as that slot's Flux is done, not after all 6.
-    const results = await Promise.all(
-      generations.map(async (gen) => {
-        try {
-          const rawUrl      = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-          const finalUrl    = await faceSwap(piApiKey, rawUrl, project.selfie_url)
-          await supabase
-            .from('media_generations')
-            .update({ media_url: finalUrl })
-            .eq('id', gen.id)
-          console.log(`Slot ${gen.order_num} done: ${finalUrl}`)
-          return { id: gen.id, url: finalUrl, ok: true }
-        } catch (err) {
-          console.error(`Slot ${gen.order_num} failed:`, err)
-          return { id: gen.id, url: null, ok: false, error: String(err) }
-        }
-      })
-    )
+    // ── 3. Arka planda çalıştır — hemen 200 dön ──────────────────────────────
+    const pipeline = runAllSlots({
+      supabase,
+      piApiKey,
+      project_id,
+      selfieUrl: project.selfie_url,
+      generations,
+    })
 
-    const successCount = results.filter((r) => r.ok).length
-    const failedResults = results.filter((r) => !r.ok)
-
-    // Mark failed slots in DB so frontend can detect them specifically
-    if (failedResults.length > 0) {
-      await Promise.all(
-        failedResults.map((r) =>
-          supabase
-            .from('media_generations')
-            .update({ error: r.error ?? 'Generation failed' })
-            .eq('id', r.id)
-        )
-      )
+    // @ts-ignore — Supabase Edge Runtime global
+    if (typeof EdgeRuntime !== 'undefined') {
+      // deno-lint-ignore no-explicit-any
+      ;(EdgeRuntime as any).waitUntil(pipeline)
+    } else {
+      pipeline.catch((e) => console.error('Pipeline error (local):', e))
     }
 
-    // Always set Images_Ready so frontend can proceed with partial results
-    // (review page polls for media_url and shows retry for empty slots)
-    await supabase
-      .from('vision_projects')
-      .update({ status: 'Images_Ready' })
-      .eq('id', project_id)
-
-    return json({
-      success: successCount > 0,
-      generated: successCount,
-      total: generations.length,
-      ...(failedResults.length ? { failures: failedResults.map((r) => r.error) } : {}),
-    })
+    return json({ success: true, started: generations.length })
 
   } catch (err) {
     console.error('Unhandled error:', err)
     return json({ error: 'Internal server error' }, 500)
   }
 })
+
+// ─── Arka plan: tüm slotları paralel çalıştır ────────────────────────────────
+
+async function runAllSlots(ctx: {
+  // deno-lint-ignore no-explicit-any
+  supabase: any
+  piApiKey: string
+  project_id: string
+  selfieUrl: string
+  generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
+}) {
+  const { supabase, piApiKey, project_id, selfieUrl, generations } = ctx
+
+  // Her slot bağımsız çalışır — biri bitince hemen DB'ye yazar
+  await Promise.all(
+    generations.map(async (gen) => {
+      try {
+        const rawUrl   = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
+        const finalUrl = await faceSwap(piApiKey, rawUrl, selfieUrl)
+
+        await supabase
+          .from('media_generations')
+          .update({ media_url: finalUrl, error: null })
+          .eq('id', gen.id)
+
+        console.log(`Slot ${gen.order_num} done: ${finalUrl}`)
+      } catch (err) {
+        console.error(`Slot ${gen.order_num} failed:`, err)
+        await supabase
+          .from('media_generations')
+          .update({ error: String(err) })
+          .eq('id', gen.id)
+      }
+    })
+  )
+
+  // Tüm slotlar tamamlandı (başarılı veya başarısız) — status güncelle
+  await supabase
+    .from('vision_projects')
+    .update({ status: 'Images_Ready' })
+    .eq('id', project_id)
+
+  console.log(`Project ${project_id}: all image slots processed → Images_Ready`)
+}
 
 // ─── Step 1: Flux-1-dev text-to-image ────────────────────────────────────────
 
@@ -152,15 +177,15 @@ async function generateFluxImage(
   if (!taskId) throw new Error(`Flux: no task_id in response: ${JSON.stringify(data)}`)
 
   console.log(`Flux task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 30, 5000)
+  return await pollTask(apiKey, taskId, 'image_url', 40, 5000)
 }
 
 // ─── Step 2: PiAPI Face Swap ──────────────────────────────────────────────────
 
 async function faceSwap(
   apiKey: string,
-  targetImageUrl: string,  // the Flux-generated image (face to replace)
-  swapImageUrl: string,    // the user's selfie (face to use)
+  targetImageUrl: string,
+  swapImageUrl: string,
 ): Promise<string> {
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',
@@ -181,7 +206,7 @@ async function faceSwap(
   if (!taskId) throw new Error(`Face swap: no task_id: ${JSON.stringify(data)}`)
 
   console.log(`Face swap task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 24, 5000)
+  return await pollTask(apiKey, taskId, 'image_url', 36, 5000)
 }
 
 // ─── Generic PiAPI task poller ────────────────────────────────────────────────
@@ -221,7 +246,7 @@ async function pollTask(
     if (status === 'failed') {
       throw new Error(`Task ${taskId} failed: ${JSON.stringify(data?.data?.error)}`)
     }
-    // pending / processing — keep polling
+    // pending / processing — devam et
   }
   throw new Error(`Task ${taskId} timed out after ${maxAttempts} attempts`)
 }
