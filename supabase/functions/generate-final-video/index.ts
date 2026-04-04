@@ -57,6 +57,18 @@ serve(async (req: Request) => {
     if (!hasVideoPaths && !hasVideoUrls)
       return json({ error: 'Provide either video_paths[6] or video_urls[6]' }, 400)
 
+    // Görsel URL'si gelirse Shotstack'e göndermeden reddet
+    if (hasVideoUrls) {
+      const imageExtensions = /\.(png|jpg|jpeg|webp|gif|bmp|svg)(\?|$)/i
+      const badUrls = video_urls.filter((u: string) => imageExtensions.test(u))
+      if (badUrls.length > 0) {
+        return json({
+          error: `Görsel URL'leri video olarak gönderilemez. Kling videoları henüz hazır değil. Lütfen birkaç dakika bekleyin.`,
+          bad_urls: badUrls,
+        }, 400)
+      }
+    }
+
     // Service role client — RLS bypass
     const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
