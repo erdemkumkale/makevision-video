@@ -10,8 +10,17 @@ async function invokeFunction(name, body) {
     body,
   })
   if (error) {
-    console.error(`[api] ${name} error:`, error)
-    throw new Error(error.message ?? `Function ${name} failed`)
+    // Try to extract the real error body from the response context
+    let detail = error.message ?? `Function ${name} failed`
+    try {
+      if (error.context?.text) {
+        const text = await error.context.text()
+        const parsed = JSON.parse(text)
+        detail = parsed.error ?? parsed.message ?? text
+      }
+    } catch (_) { /* ignore parse errors */ }
+    console.error(`[api] ${name} error (${error.context?.status ?? '?'}):`, detail)
+    throw new Error(detail)
   }
   return data
 }
