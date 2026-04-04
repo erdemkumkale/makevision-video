@@ -6,11 +6,19 @@
 import { supabase } from '../supabaseClient'
 
 async function invokeFunction(name, body) {
+  // Always get a fresh session — auto-refreshes if the JWT is expired
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError || !sessionData?.session?.access_token) {
+    throw new Error('Session expired. Please sign in again.')
+  }
+  const token = sessionData.session.access_token
+
   const { data, error } = await supabase.functions.invoke(name, {
     body,
+    headers: { Authorization: `Bearer ${token}` },
   })
   if (error) {
-    // Try to extract the real error body from the response context
+    // Extract the real error body from the response context
     let detail = error.message ?? `Function ${name} failed`
     try {
       if (error.context?.text) {
