@@ -5,6 +5,38 @@ import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
 
+// ─── Image resize utility ─────────────────────────────────────────────────────
+// PiAPI face swap maksimum 2048x2048 kabul ediyor.
+// Telefon kameraları 4000x3000+ çekebiliyor — yüklemeden önce küçült.
+
+function resizeImageFile(file, maxPx = 1536) {
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      let { width, height } = img
+      if (width <= maxPx && height <= maxPx) {
+        URL.revokeObjectURL(url)
+        // Zaten küçük — JPEG olarak yeniden encode et
+        const canvas = document.createElement('canvas')
+        canvas.width = width; canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0)
+        canvas.toBlob(blob => resolve(new File([blob], 'selfie.jpg', { type: 'image/jpeg' })), 'image/jpeg', 0.92)
+        return
+      }
+      // Oranı koru, uzun kenarı maxPx yap
+      if (width > height) { height = Math.round(height * maxPx / width); width = maxPx }
+      else                 { width  = Math.round(width  * maxPx / height); height = maxPx }
+      const canvas = document.createElement('canvas')
+      canvas.width = width; canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      URL.revokeObjectURL(url)
+      canvas.toBlob(blob => resolve(new File([blob], 'selfie.jpg', { type: 'image/jpeg' })), 'image/jpeg', 0.92)
+    }
+    img.src = url
+  })
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LIFE_AREAS = [
@@ -528,14 +560,14 @@ export default function CreateVision() {
     setError(null)
 
     try {
-      // 1. Upload selfie
+      // 1. Upload selfie (max 1536px — PiAPI face swap limiti 2048x2048)
       let selfieUrl = null
       if (file) {
-        const ext  = file.name.split('.').pop()
-        const path = `selfies/${user.id}/${Date.now()}.${ext}`
+        const resizedFile = await resizeImageFile(file, 1536)
+        const path = `selfies/${user.id}/${Date.now()}.jpg`
         const { error: uploadError } = await supabase.storage
           .from('vision-assets')
-          .upload(path, file, { upsert: false })
+          .upload(path, resizedFile, { upsert: false })
         if (uploadError) throw uploadError
         const { data: urlData } = supabase.storage.from('vision-assets').getPublicUrl(path)
         selfieUrl = urlData.publicUrl

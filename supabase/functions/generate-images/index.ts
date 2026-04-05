@@ -124,15 +124,22 @@ async function runAllSlots(ctx: {
         const faceSwapUrl = await faceSwap(piApiKey, rawUrl, selfieUrl)
 
         // PiAPI URL'leri geçici — Supabase Storage'a yükle, kalıcı URL al
+        // Upload başarısız olursa PiAPI URL'ini direkt kullan (fallback)
         const storagePath = `projects/${project_id}/images/${gen.order_num}.jpg`
-        const stableUrl   = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
+        let stableUrl = faceSwapUrl
+        try {
+          stableUrl = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
+          console.log(`Slot ${gen.order_num} done → storage: ${storagePath}`)
+        } catch (uploadErr) {
+          console.warn(`Slot ${gen.order_num} storage upload failed, using PiAPI URL:`, uploadErr)
+        }
 
         await supabase
           .from('media_generations')
           .update({ media_url: stableUrl, error: null })
           .eq('id', gen.id)
 
-        console.log(`Slot ${gen.order_num} done → storage: ${storagePath}`)
+        console.log(`Slot ${gen.order_num} done: ${stableUrl}`)
       } catch (err) {
         console.error(`Slot ${gen.order_num} failed:`, err)
         await supabase
