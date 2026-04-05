@@ -118,7 +118,7 @@ async function runPipeline(ctx: {
   // deno-lint-ignore no-explicit-any
   supabase: any
 }) {
-  const { jobId, project_id, video_paths, video_urls, shotstackKey, supabase } = ctx
+  const { jobId, project_id, user_id: userId, video_paths, video_urls, shotstackKey, supabase } = ctx
 
   const fail = async (msg: string) => {
     console.error(`Job ${jobId} failed: ${msg}`)
