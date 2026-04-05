@@ -38,10 +38,15 @@ export default function Processing() {
         .eq('vision_project_id', projectId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (error) {
-        // Job row not yet created — keep waiting
+        console.log('Poll error:', error.message)
+        return
+      }
+
+      if (!data) {
+        // Job row not yet created (Kling still running) — keep waiting
         console.log('Waiting for job row...')
         return
       }

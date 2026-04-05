@@ -149,19 +149,23 @@ async function runPipeline(ctx: {
       }
     }
 
-    // ── 2. Müzik havuzundan rastgele seç, signed URL üret ────────────────────
-    const musicPath = MUSIC_POOL[Math.floor(Math.random() * MUSIC_POOL.length)]
-    console.log(`Job ${jobId}: selected music → ${musicPath}`)
-
-    const { data: musicData, error: musicError } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(musicPath, SIGNED_URL_TTL)
-
-    if (musicError || !musicData?.signedUrl)
-      throw new Error(`Music signed URL failed for ${musicPath}: ${musicError?.message}`)
-
-    const musicSignedUrl = musicData.signedUrl
-    console.log(`Job ${jobId}: music signed URL ready`)
+    // ── 2. Müzik havuzundan rastgele seç, signed URL üret (opsiyonel) ──────────
+    let musicSignedUrl: string | null = null
+    try {
+      const musicPath = MUSIC_POOL[Math.floor(Math.random() * MUSIC_POOL.length)]
+      console.log(`Job ${jobId}: selected music → ${musicPath}`)
+      const { data: musicData, error: musicError } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(musicPath, SIGNED_URL_TTL)
+      if (musicError || !musicData?.signedUrl) {
+        console.warn(`Job ${jobId}: music signed URL failed (${musicError?.message}) — proceeding without music`)
+      } else {
+        musicSignedUrl = musicData.signedUrl
+        console.log(`Job ${jobId}: music signed URL ready`)
+      }
+    } catch (musicErr) {
+      console.warn(`Job ${jobId}: music setup error — proceeding without music:`, musicErr)
+    }
 
     // ── 3. Shotstack payload ──────────────────────────────────────────────────
     // fit / aspectRatio KULLANILMIYOR — orijinal video formatı korunur
@@ -179,10 +183,10 @@ async function runPipeline(ctx: {
 
     const shotstackPayload = {
       timeline: {
-        soundtrack: {
-          src: musicSignedUrl,
-          effect: 'fadeOut',
-        },
+        // Müzik varsa ekle, yoksa soundtrack olmadan devam et
+        ...(musicSignedUrl ? {
+          soundtrack: { src: musicSignedUrl, effect: 'fadeOut' },
+        } : {}),
         background: '#000000',
         tracks: [{ clips: videoClips }],
       },

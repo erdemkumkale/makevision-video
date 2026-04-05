@@ -141,20 +141,31 @@ async function runVideosPipeline(ctx: {
   const videoResults = await Promise.allSettled(
     slots.map(async (img) => {
       try {
-        const videoUrl = await generateKlingVideo(piApiKey, img)
+        const klingUrl = await generateKlingVideo(piApiKey, img)
 
         // Güvenlik: URL gerçekten video mu?
-        if (!isVideoUrl(videoUrl)) {
-          throw new Error(`Kling returned a non-video URL: ${videoUrl}`)
+        if (!isVideoUrl(klingUrl)) {
+          throw new Error(`Kling returned a non-video URL: ${klingUrl}`)
+        }
+
+        // Kling CDN URL'leri expire olur — Supabase Storage'a yükle, signed URL al
+        // Upload başarısız olursa Kling URL'ini direkt kullan (fallback)
+        const storagePath = `projects/${project_id}/videos/${img.order_num}.mp4`
+        let stableUrl = klingUrl
+        try {
+          stableUrl = await uploadVideoToStorage(supabase, klingUrl, storagePath)
+          console.log(`Slot ${img.order_num} uploaded to storage: ${storagePath}`)
+        } catch (uploadErr) {
+          console.warn(`Slot ${img.order_num} storage upload failed, using Kling URL directly:`, uploadErr)
         }
 
         await supabase
           .from('media_generations')
-          .update({ media_url: videoUrl })
+          .update({ media_url: stableUrl })
           .eq('id', img.id)
 
-        console.log(`Slot ${img.order_num} video done: ${videoUrl}`)
-        return { id: img.id, url: videoUrl, order_num: img.order_num }
+        console.log(`Slot ${img.order_num} video done: ${stableUrl}`)
+        return { id: img.id, url: stableUrl, order_num: img.order_num }
       } catch (err) {
         console.error(`Slot ${img.order_num} video failed:`, err)
         throw err
@@ -200,6 +211,38 @@ async function runVideosPipeline(ctx: {
       .eq('id', project_id)
     console.warn(`Only ${videoUrls.length}/${totalExpected} videos succeeded — skipping Shotstack`)
   }
+}
+
+// ─── Kling video → Supabase Storage → signed URL ─────────────────────────────
+// Kling CDN URL'leri kısa sürede expire olur.
+// Videoyu indirip Storage'a yükler, 2 saatlik signed URL döner.
+
+// deno-lint-ignore no-explicit-any
+async function uploadVideoToStorage(supabase: any, videoUrl: string, storagePath: string): Promise<string> {
+  const BUCKET = 'vision-assets'
+  const SIGNED_URL_TTL = 7200  // 2 saat
+
+  // İndir
+  const res = await fetch(videoUrl)
+  if (!res.ok) throw new Error(`Failed to download Kling video (${res.status}): ${videoUrl}`)
+  const buffer = await res.arrayBuffer()
+
+  // Yükle (varsa üzerine yaz)
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, buffer, { contentType: 'video/mp4', upsert: true })
+
+  if (uploadError) throw new Error(`Storage upload failed for ${storagePath}: ${uploadError.message}`)
+
+  // Signed URL al
+  const { data, error: signError } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(storagePath, SIGNED_URL_TTL)
+
+  if (signError || !data?.signedUrl)
+    throw new Error(`Signed URL failed for ${storagePath}: ${signError?.message}`)
+
+  return data.signedUrl
 }
 
 // ─── URL doğrulama: video mu yoksa görsel mi? ─────────────────────────────────
