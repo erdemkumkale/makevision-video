@@ -193,14 +193,22 @@ async function runVideosPipeline(ctx: {
       .eq('id', project_id)
 
     const finalVideoFn = `${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-final-video`
-    fetch(finalVideoFn, {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-      },
-      body: JSON.stringify({ project_id, user_id: userId, video_urls: videoUrls }),
-    }).catch((e) => console.error('generate-final-video trigger error:', e))
+
+    // AWAIT — fire-and-forget değil. Edge Runtime pipeline bitince in-flight
+    // istekleri iptal ediyor. await ile en azından HTTP isteği gönderilmiş olur.
+    try {
+      const triggerRes = await fetch(finalVideoFn, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({ project_id, user_id: userId, video_urls: videoUrls }),
+      })
+      console.log(`generate-final-video triggered: HTTP ${triggerRes.status}`)
+    } catch (e) {
+      console.error('generate-final-video trigger error:', e)
+    }
 
     console.log(`Shotstack started for ${videoUrls.length} videos`)
   } else {
