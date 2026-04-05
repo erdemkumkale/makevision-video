@@ -120,8 +120,9 @@ async function runAllSlots(ctx: {
   await Promise.all(
     generations.map(async (gen) => {
       try {
-        const rawUrl      = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-        const faceSwapUrl = await faceSwap(piApiKey, rawUrl, selfieUrl)
+        const rawUrl        = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
+        const safeSwapUrl   = getSafeSwapImageUrl(selfieUrl)
+        const faceSwapUrl   = await faceSwap(piApiKey, rawUrl, safeSwapUrl)
 
         // PiAPI URL'leri geçici — Supabase Storage'a yükle, kalıcı URL al
         // Upload başarısız olursa PiAPI URL'ini direkt kullan (fallback)
@@ -183,6 +184,15 @@ async function uploadImageToStorage(supabase: any, imageUrl: string, storagePath
   if (!data?.publicUrl) throw new Error(`getPublicUrl failed for ${storagePath}`)
 
   return data.publicUrl
+}
+
+// ─── Selfie resize proxy ──────────────────────────────────────────────────────
+// PiAPI face-swap max 2048x2048. Telefon fotoğrafları 4000x3000+ olabilir.
+// images.weserv.nl ücretsiz proxy ile URL seviyesinde resize yap.
+
+function getSafeSwapImageUrl(selfieUrl: string): string {
+  // Zaten küçükse değiştirme — büyükse proxy ile 1536px'e düşür
+  return `https://images.weserv.nl/?url=${encodeURIComponent(selfieUrl)}&w=1536&h=1536&fit=inside&output=jpg`
 }
 
 // ─── Step 1: Flux-1-dev text-to-image ────────────────────────────────────────
