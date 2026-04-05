@@ -263,7 +263,18 @@ async function runPipeline(ctx: {
 
     console.log(`Job ${jobId}: DONE → ${finalVideoUrl}`)
 
-    // ── 7. E-posta bildirimi ──────────────────────────────────────────────────
+    // ── 7. Geçici Kling videolarını Storage'dan sil (yer açmak için) ──────────
+    // Kling videoları sadece Shotstack render için gerekli, sonra silinebilir.
+    // Path pattern: projects/{project_id}/videos/{0-5}.mp4
+    const videoStoragePaths = [0,1,2,3,4,5].map(i => `projects/${project_id}/videos/${i}.mp4`)
+    supabase.storage.from(BUCKET).remove(videoStoragePaths)
+      .then(({ error }: { error: unknown }) => {
+        if (error) console.warn('Storage cleanup warning:', error)
+        else console.log(`Cleaned up temp Kling videos for project ${project_id}`)
+      })
+      .catch((e: unknown) => console.warn('Storage cleanup error (non-fatal):', e))
+
+    // ── 8. E-posta bildirimi ──────────────────────────────────────────────────
     await sendReadyEmail(supabase, userId, project_id, finalVideoUrl)
 
   } catch (err) {
