@@ -165,49 +165,68 @@ const SelfieUpload = ({ file, setFile }) => {
 
 // ─── Life Area Box ────────────────────────────────────────────────────────────
 
-const LifeAreaBox = ({ area, selectedTags, customText, onTagToggle, onCustomChange }) => (
-  <div className="bg-panel border border-border rounded-2xl overflow-hidden">
-    {/* Header */}
-    <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-border">
-      <span className="text-base leading-none">{area.emoji}</span>
-      <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">{area.label}</span>
-      {selectedTags.length > 0 && (
-        <span className="text-xs px-1.5 py-0.5 rounded-full bg-glow/20 text-glow-soft border border-glow-dim">
-          {selectedTags.length}
-        </span>
-      )}
-    </div>
+const LifeAreaBox = ({ area, selectedTags, customText, onTagToggle, onCustomChange }) => {
+  const [showDetails, setShowDetails] = React.useState(false)
 
-    {/* Body: tags always visible + textarea always visible below */}
-    <div className="p-3 space-y-3">
-      <div className="flex flex-wrap gap-1.5">
-        {area.tags.map((tag) => {
-          const active = selectedTags.includes(tag)
-          return (
-            <button
-              key={tag}
-              onClick={() => onTagToggle(tag)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150
-                ${active
-                  ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
-                  : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'
-                }`}
-            >
-              {tag}
-            </button>
-          )
-        })}
+  return (
+    <div className="bg-panel border border-border rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-border">
+        <span className="text-base leading-none">{area.emoji}</span>
+        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">{area.label}</span>
+        {selectedTags.length > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-glow/20 text-glow-soft border border-glow-dim ml-1">
+            {selectedTags.length}
+          </span>
+        )}
       </div>
-      <textarea
-        value={customText}
-        onChange={(e) => onCustomChange(e.target.value)}
-        rows={2}
-        placeholder={area.placeholder}
-        className="input-field resize-none text-sm w-full"
-      />
+
+      {/* Body: tags primary, details optional */}
+      <div className="p-3 space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {area.tags.map((tag) => {
+            const active = selectedTags.includes(tag)
+            return (
+              <button
+                key={tag}
+                onClick={() => onTagToggle(tag)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150
+                  ${active
+                    ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
+                    : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'
+                  }`}
+              >
+                {tag}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* "Add details" toggle — only show if user wants to add more */}
+        {!showDetails && !customText ? (
+          <button
+            onClick={() => setShowDetails(true)}
+            className="text-xs text-gray-600 hover:text-gray-400 transition-colors flex items-center gap-1 pt-0.5"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add specific details...
+          </button>
+        ) : (
+          <textarea
+            value={customText}
+            onChange={(e) => onCustomChange(e.target.value)}
+            rows={2}
+            placeholder={area.placeholder}
+            className="input-field resize-none text-sm w-full"
+            autoFocus={showDetails && !customText}
+          />
+        )}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 // ─── Step 2: Hero's Journey Form ──────────────────────────────────────────────
 
