@@ -249,21 +249,47 @@ async function runPipeline(ctx: {
 
     if (!finalVideoUrl) throw new Error('Shotstack timed out after 5 minutes')
 
-    // ── 6. DB'ye yaz ─────────────────────────────────────────────────────────
+    // ── 6. Final videoyu Supabase Storage'a yükle (kalıcı URL) ───────────────
+    // Shotstack CDN URL'leri expire olur — Storage'da sakla, kullanıcı 2 yıl
+    // sonra girse de videosunu görebilsin.
+    let permanentVideoUrl = finalVideoUrl  // fallback: Shotstack URL
+    try {
+      const videoRes = await fetch(finalVideoUrl)
+      if (videoRes.ok) {
+        const buffer = await videoRes.arrayBuffer()
+        const storagePath = `projects/${project_id}/final.mp4`
+        const { error: uploadErr } = await supabase.storage
+          .from(BUCKET)
+          .upload(storagePath, buffer, { contentType: 'video/mp4', upsert: true })
+        if (uploadErr) {
+          console.warn('Final video upload failed (using Shotstack URL):', uploadErr.message)
+        } else {
+          const { data: pubData } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
+          if (pubData?.publicUrl) {
+            permanentVideoUrl = pubData.publicUrl
+            console.log(`Job ${jobId}: final video saved to storage → ${storagePath}`)
+          }
+        }
+      }
+    } catch (uploadErr) {
+      console.warn('Final video storage upload error (non-fatal):', uploadErr)
+    }
+
+    // ── 7. DB'ye yaz ─────────────────────────────────────────────────────────
     await Promise.all([
       supabase
         .from('video_jobs')
-        .update({ status: 'completed', video_url: finalVideoUrl })
+        .update({ status: 'completed', video_url: permanentVideoUrl })
         .eq('id', jobId),
       supabase
         .from('vision_projects')
-        .update({ status: 'Completed', final_video_url: finalVideoUrl })
+        .update({ status: 'Completed', final_video_url: permanentVideoUrl })
         .eq('id', project_id),
     ])
 
-    console.log(`Job ${jobId}: DONE → ${finalVideoUrl}`)
+    console.log(`Job ${jobId}: DONE → ${permanentVideoUrl}`)
 
-    // ── 7. Geçici Kling videolarını Storage'dan sil (yer açmak için) ──────────
+    // ── 8. Geçici Kling videolarını Storage'dan sil (yer açmak için) ──────────
     // Kling videoları sadece Shotstack render için gerekli, sonra silinebilir.
     // Path pattern: projects/{project_id}/videos/{0-5}.mp4
     const videoStoragePaths = [0,1,2,3,4,5].map(i => `projects/${project_id}/videos/${i}.mp4`)
@@ -274,8 +300,8 @@ async function runPipeline(ctx: {
       })
       .catch((e: unknown) => console.warn('Storage cleanup error (non-fatal):', e))
 
-    // ── 8. E-posta bildirimi ──────────────────────────────────────────────────
-    await sendReadyEmail(supabase, userId, project_id, finalVideoUrl)
+    // ── 9. E-posta bildirimi ──────────────────────────────────────────────────
+    await sendReadyEmail(supabase, userId, project_id, permanentVideoUrl)
 
   } catch (err) {
     await fail(String(err))
