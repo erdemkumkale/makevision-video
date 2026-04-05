@@ -263,8 +263,68 @@ async function runPipeline(ctx: {
 
     console.log(`Job ${jobId}: DONE → ${finalVideoUrl}`)
 
+    // ── 7. E-posta bildirimi ──────────────────────────────────────────────────
+    await sendReadyEmail(supabase, userId, project_id, finalVideoUrl)
+
   } catch (err) {
     await fail(String(err))
+  }
+}
+
+// ─── E-posta bildirimi ────────────────────────────────────────────────────────
+
+// deno-lint-ignore no-explicit-any
+async function sendReadyEmail(supabase: any, userId: string, projectId: string, videoUrl: string) {
+  const resendKey = Deno.env.get('RESEND_API_KEY')
+  if (!resendKey) { console.warn('RESEND_API_KEY not set — skipping email'); return }
+
+  try {
+    // Kullanıcı e-postasını auth tablosundan al
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId)
+    if (userError || !userData?.user?.email) {
+      console.warn('Could not fetch user email:', userError?.message)
+      return
+    }
+    const email = userData.user.email
+    const resultUrl = `https://makevision.vercel.app/result/${projectId}`
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'MakeVision <onboarding@resend.dev>',
+        to: [email],
+        subject: '✨ Your Vision Video is Ready!',
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0a0a0f;color:#fff;padding:40px 32px;border-radius:16px">
+            <h1 style="font-size:24px;font-weight:600;margin-bottom:8px">Your Vision Is Alive ✦</h1>
+            <p style="color:#a0a0b0;font-size:15px;line-height:1.6;margin-bottom:32px">
+              Your cinematic vision video has been created. Click below to watch and download it.
+            </p>
+            <a href="${resultUrl}"
+               style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;
+                      padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">
+              Watch Your Video →
+            </a>
+            <p style="color:#555;font-size:12px;margin-top:32px">
+              MakeVision • <a href="https://makevision.vercel.app" style="color:#555">makevision.vercel.app</a>
+            </p>
+          </div>
+        `,
+      }),
+    })
+
+    if (res.ok) {
+      console.log(`Ready email sent to ${email}`)
+    } else {
+      const err = await res.text()
+      console.warn(`Email send failed (${res.status}):`, err)
+    }
+  } catch (err) {
+    console.warn('sendReadyEmail error (non-fatal):', err)
   }
 }
 
