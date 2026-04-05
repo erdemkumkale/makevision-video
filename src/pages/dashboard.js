@@ -98,33 +98,87 @@ const EmptyState = ({ onCreate }) => (
 export default function Dashboard() {
   const { user, profile } = useAuth()
   const router = useRouter()
-  const [projects, setProjects] = useState([])
-  const [loading, setLoading]   = useState(true)
+  const [projects, setProjects]     = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [justCompleted, setJustCompleted] = useState(null) // proje ID
 
   const firstName = profile?.name?.split(' ')[0] ?? 'Visionary'
 
-  useEffect(() => {
+  const loadProjects = React.useCallback(async () => {
     if (!user) return
-    const load = async () => {
-      const { data, error } = await supabase
-        .from('vision_projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (!error) setProjects(data ?? [])
+    const { data, error } = await supabase
+      .from('vision_projects')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (!error) {
+      setProjects(prev => {
+        // Yeni tamamlanan proje var mı kontrol et
+        const prevProcessing = prev
+          .filter(p => p.status === 'Processing' || p.status === 'Videos_Ready')
+          .map(p => p.id)
+        const newlyDone = (data ?? []).find(
+          p => p.status === 'Completed' && prevProcessing.includes(p.id)
+        )
+        if (newlyDone) setJustCompleted(newlyDone.id)
+        return data ?? []
+      })
       setLoading(false)
     }
-    load()
   }, [user])
+
+  // İlk yükleme
+  useEffect(() => {
+    loadProjects()
+  }, [loadProjects])
+
+  // Otomatik yenileme — Processing/Videos_Ready proje varsa her 10s poll
+  useEffect(() => {
+    const hasActive = projects.some(
+      p => p.status === 'Processing' || p.status === 'Videos_Ready'
+    )
+    if (!hasActive) return
+    const interval = setInterval(loadProjects, 10000)
+    return () => clearInterval(interval)
+  }, [projects, loadProjects])
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user && !loading) router.replace('/login')
   }, [user, loading, router])
 
+  const handleCardClick = (project) => {
+    if (project.status === 'Completed') {
+      router.push(`/result/${project.id}`)
+    } else if (project.status === 'Images_Ready') {
+      router.push(`/review/${project.id}`)
+    } else if (project.status === 'Processing' || project.status === 'Videos_Ready') {
+      router.push(`/processing/${project.id}`)
+    } else {
+      router.push(`/review/${project.id}`)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-void text-white">
+      {/* "Videon hazır" bildirimi */}
+      {justCompleted && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+          <div className="flex items-center gap-3 bg-emerald-900/90 border border-emerald-500
+                          text-emerald-200 px-5 py-3 rounded-2xl shadow-glow backdrop-blur-sm">
+            <span className="text-lg">🎬</span>
+            <span className="text-sm font-medium">Your vision video is ready!</span>
+            <button
+              onClick={() => router.push(`/result/${justCompleted}`)}
+              className="ml-2 text-xs underline text-emerald-300 hover:text-white"
+            >
+              Watch now →
+            </button>
+            <button onClick={() => setJustCompleted(null)} className="ml-2 text-emerald-500 hover:text-white">✕</button>
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -187,7 +241,7 @@ export default function Dashboard() {
                   <ProjectCard
                     key={p.id}
                     project={p}
-                    onClick={() => router.push(`/review/${p.id}`)}
+                    onClick={() => handleCardClick(p)}
                   />
                 ))
             }

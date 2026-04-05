@@ -120,15 +120,19 @@ async function runAllSlots(ctx: {
   await Promise.all(
     generations.map(async (gen) => {
       try {
-        const rawUrl   = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-        const finalUrl = await faceSwap(piApiKey, rawUrl, selfieUrl)
+        const rawUrl      = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
+        const faceSwapUrl = await faceSwap(piApiKey, rawUrl, selfieUrl)
+
+        // PiAPI URL'leri geçici — Supabase Storage'a yükle, kalıcı URL al
+        const storagePath = `projects/${project_id}/images/${gen.order_num}.jpg`
+        const stableUrl   = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
 
         await supabase
           .from('media_generations')
-          .update({ media_url: finalUrl, error: null })
+          .update({ media_url: stableUrl, error: null })
           .eq('id', gen.id)
 
-        console.log(`Slot ${gen.order_num} done: ${finalUrl}`)
+        console.log(`Slot ${gen.order_num} done → storage: ${storagePath}`)
       } catch (err) {
         console.error(`Slot ${gen.order_num} failed:`, err)
         await supabase
@@ -146,6 +150,32 @@ async function runAllSlots(ctx: {
     .eq('id', project_id)
 
   console.log(`Project ${project_id}: all image slots processed → Images_Ready`)
+}
+
+// ─── Storage: PiAPI geçici URL → Supabase Storage kalıcı public URL ──────────
+
+// deno-lint-ignore no-explicit-any
+async function uploadImageToStorage(supabase: any, imageUrl: string, storagePath: string): Promise<string> {
+  const BUCKET = 'vision-assets'
+
+  // İndir
+  const res = await fetch(imageUrl)
+  if (!res.ok) throw new Error(`Image download failed (${res.status}): ${imageUrl}`)
+  const buffer = await res.arrayBuffer()
+  const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+
+  // Yükle
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, buffer, { contentType, upsert: true })
+
+  if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
+
+  // Public URL al (görsel için signed URL'e gerek yok — public bucket)
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
+  if (!data?.publicUrl) throw new Error(`getPublicUrl failed for ${storagePath}`)
+
+  return data.publicUrl
 }
 
 // ─── Step 1: Flux-1-dev text-to-image ────────────────────────────────────────
