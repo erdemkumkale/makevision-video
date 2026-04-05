@@ -220,7 +220,6 @@ async function runVideosPipeline(ctx: {
 // deno-lint-ignore no-explicit-any
 async function uploadVideoToStorage(supabase: any, videoUrl: string, storagePath: string): Promise<string> {
   const BUCKET = 'vision-assets'
-  const SIGNED_URL_TTL = 7200  // 2 saat
 
   // İndir
   const res = await fetch(videoUrl)
@@ -234,15 +233,11 @@ async function uploadVideoToStorage(supabase: any, videoUrl: string, storagePath
 
   if (uploadError) throw new Error(`Storage upload failed for ${storagePath}: ${uploadError.message}`)
 
-  // Signed URL al
-  const { data, error: signError } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(storagePath, SIGNED_URL_TTL)
+  // Public URL — bucket zaten public, hiç expire olmaz
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
+  if (!data?.publicUrl) throw new Error(`getPublicUrl failed for ${storagePath}`)
 
-  if (signError || !data?.signedUrl)
-    throw new Error(`Signed URL failed for ${storagePath}: ${signError?.message}`)
-
-  return data.signedUrl
+  return data.publicUrl
 }
 
 // ─── URL doğrulama: video mu yoksa görsel mi? ─────────────────────────────────
