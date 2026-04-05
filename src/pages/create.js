@@ -81,6 +81,14 @@ const LIFE_AREAS = [
   },
 ]
 
+// Referans görsel kategorileri
+const REF_CATEGORIES = [
+  { key: 'home',     label: 'Dream Home',     emoji: '🏠' },
+  { key: 'car',      label: 'Dream Car',       emoji: '🚗' },
+  { key: 'travel',   label: 'Dream Location',  emoji: '🌍' },
+  { key: 'lifestyle',label: 'Lifestyle',       emoji: '✨' },
+]
+
 const TOTAL_STEPS = 3
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
@@ -158,6 +166,88 @@ const SelfieUpload = ({ file, setFile }) => {
           </>
         )}
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Reference Images Upload ──────────────────────────────────────────────────
+
+const ReferenceImages = ({ refImages, setRefImages }) => {
+  const inputRefs = useRef({})
+
+  const handleFile = (key, e) => {
+    const file = e.target.files[0]
+    if (!file?.type.startsWith('image/')) return
+    setRefImages(prev => ({
+      ...prev,
+      [key]: { file, preview: URL.createObjectURL(file) }
+    }))
+  }
+
+  const removeImage = (key) => {
+    setRefImages(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center gap-2 mb-1">
+        <p className="text-sm font-medium text-gray-300">Inspiration Images</p>
+        <span className="text-xs text-gray-600 bg-surface border border-border px-2 py-0.5 rounded-full">Optional</span>
+      </div>
+      <p className="text-xs text-gray-600 mb-4">
+        Add images of your dream home, car, or destination — the AI will place you there.
+      </p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {REF_CATEGORIES.map(({ key, label, emoji }) => {
+          const img = refImages[key]
+          return (
+            <div key={key} className="relative">
+              {img ? (
+                <div className="relative rounded-xl overflow-hidden border border-glow-dim aspect-square">
+                  <img src={img.preview} alt={label} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity
+                                  flex items-center justify-center">
+                    <button
+                      onClick={() => removeImage(key)}
+                      className="w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center"
+                    >
+                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60 text-xs text-gray-300">
+                    {emoji} {label}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => inputRefs.current[key]?.click()}
+                  className="w-full aspect-square rounded-xl border border-dashed border-border
+                             bg-panel hover:border-glow-dim hover:bg-surface transition-all
+                             flex flex-col items-center justify-center gap-1.5 text-gray-600 hover:text-gray-400"
+                >
+                  <span className="text-xl">{emoji}</span>
+                  <span className="text-xs font-medium">{label}</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              )}
+              <input
+                ref={el => inputRefs.current[key] = el}
+                type="file" accept="image/*" className="hidden"
+                onChange={(e) => handleFile(key, e)}
+              />
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -382,6 +472,7 @@ const ReviewStep = ({ file, tags, customFields, inputMode, customPrompt, submitt
 
 const SUBMIT_STAGES = [
   'Uploading your photo...',
+  'Uploading inspiration images...',
   'Saving your vision...',
   'Analyzing your story with AI...',
   'Generating your images...',
@@ -407,6 +498,7 @@ export default function CreateVision() {
 
   const [step, setStep]               = useState(0)
   const [file, setFile]               = useState(null)
+  const [refImages, setRefImages]     = useState({}) // { home: {file, preview}, car: {...}, ... }
   const [inputMode, setInputMode]     = useState('guided') // 'guided' | 'custom'
   // guided mode state
   const [tags, setTags]               = useState({})
@@ -449,7 +541,22 @@ export default function CreateVision() {
         selfieUrl = urlData.publicUrl
       }
 
-      // 2. Insert VisionProject
+      // 2. Upload reference images
+      const uploadedRefs = []
+      for (const cat of REF_CATEGORIES) {
+        const img = refImages[cat.key]
+        if (!img?.file) continue
+        const ext  = img.file.name.split('.').pop()
+        const path = `refs/${user.id}/${Date.now()}-${cat.key}.${ext}`
+        const { error: refErr } = await supabase.storage
+          .from('vision-assets')
+          .upload(path, img.file, { upsert: false })
+        if (refErr) { console.warn(`Ref upload failed (${cat.key}):`, refErr.message); continue }
+        const { data: refUrl } = supabase.storage.from('vision-assets').getPublicUrl(path)
+        uploadedRefs.push({ label: cat.label, key: cat.key, url: refUrl.publicUrl })
+      }
+
+      // 3. Insert VisionProject
       setSubmitStage(1)
       const storyPayload = inputMode === 'custom'
         ? { custom_story: customPrompt.trim() }
@@ -457,7 +564,13 @@ export default function CreateVision() {
 
       const { data: project, error: insertError } = await supabase
         .from('vision_projects')
-        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: storyPayload }])
+        .insert([{
+          user_id: user.id,
+          status: 'Draft',
+          selfie_url: selfieUrl,
+          story_inputs: storyPayload,
+          reference_images: uploadedRefs,
+        }])
         .select()
         .single()
       if (insertError) throw insertError
@@ -502,7 +615,12 @@ export default function CreateVision() {
         <div className="w-full max-w-2xl">
           <StepDots current={step} />
 
-          {step === 0 && <SelfieUpload file={file} setFile={setFile} />}
+          {step === 0 && (
+            <>
+              <SelfieUpload file={file} setFile={setFile} />
+              <ReferenceImages refImages={refImages} setRefImages={setRefImages} />
+            </>
+          )}
           {step === 1 && (
             <HeroForm
               inputMode={inputMode} setInputMode={setInputMode}

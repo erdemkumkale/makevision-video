@@ -284,7 +284,7 @@ async function generateKlingVideo(
         version:         '2.1',
         cfg_scale:       0.5,
       },
-      config: { service_mode: '' },
+      config: { service_mode: '', without_watermark: false },
     }),
   })
 

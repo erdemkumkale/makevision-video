@@ -43,7 +43,7 @@ serve(async (req: Request) => {
 
     const { data: project, error: projectError } = await supabase
       .from('vision_projects')
-      .select('id, user_id, story_inputs, selfie_url, status')
+      .select('id, user_id, story_inputs, selfie_url, reference_images, status')
       .eq('id', project_id)
       .eq('user_id', user.id)
       .single()
@@ -64,9 +64,10 @@ serve(async (req: Request) => {
     const geminiUrl =
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
 
-    // Selfie'yi Gemini'ye görsel olarak gönder (cinsiyet/yaş/saç analizi için)
+    // Selfie + referans görselleri Gemini'ye gönder
     const selfieUrl: string | null = project.selfie_url ?? null
-    const contents = await buildGeminiContents(storyText, selfieUrl)
+    const refImages: Array<{ label: string; key: string; url: string }> = project.reference_images ?? []
+    const contents = await buildGeminiContents(storyText, selfieUrl, refImages)
 
     console.log('Calling Gemini...')
     let geminiRes: Response
@@ -209,44 +210,71 @@ function buildStoryText(storyInputs: Record<string, unknown>): string {
   return lines.length ? lines.join('\n') : 'A fulfilling, abundant life.'
 }
 
-// Gemini'ye gönderilecek içerik — selfie varsa base64 inline olarak ekle
-async function buildGeminiContents(storyText: string, selfieUrl: string | null) {
+// Görsel URL'yi indir → base64 part'a çevir
+async function fetchImagePart(url: string): Promise<{ inlineData: { mimeType: string; data: string } } | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buffer = await res.arrayBuffer()
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    const mimeType = res.headers.get('content-type') ?? 'image/jpeg'
+    return { inlineData: { mimeType, data: base64 } }
+  } catch {
+    return null
+  }
+}
+
+// Gemini'ye gönderilecek içerik — selfie + referans görseller base64 inline
+async function buildGeminiContents(
+  storyText: string,
+  selfieUrl: string | null,
+  refImages: Array<{ label: string; key: string; url: string }>,
+) {
   const promptText = buildGeminiPrompt(storyText)
 
-  if (!selfieUrl) {
-    return [{ parts: [{ text: promptText }] }]
+  const parts: unknown[] = []
+
+  // Selfie analizi
+  if (selfieUrl) {
+    const selfiePart = await fetchImagePart(selfieUrl)
+    if (selfiePart) {
+      parts.push({
+        text: `IMAGE 1 — SELFIE (subject's face reference):
+Analyze this person and note: gender, approximate age range, hair color/length/style, skin tone.
+Use these observations in all 6 image prompts.`,
+      })
+      parts.push(selfiePart)
+    }
   }
 
-  // Selfie'yi indir ve base64'e çevir
-  try {
-    const imgRes = await fetch(selfieUrl)
-    if (!imgRes.ok) throw new Error(`Selfie fetch failed: ${imgRes.status}`)
-    const imgBuffer = await imgRes.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)))
-    const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg'
-
-    return [{
-      parts: [
-        {
-          text: `First, look at this selfie and note the person's:
-- Gender (male/female/non-binary)
-- Approximate age range (e.g. "late 20s", "mid 40s")
-- Hair: color, length, style
-- Skin tone
-
-Then use these exact observations in all 6 image prompts so the generated subject matches this person.
-
-${promptText}`,
-        },
-        {
-          inlineData: { mimeType, data: base64 },
-        },
-      ],
-    }]
-  } catch (err) {
-    console.warn('Selfie fetch for Gemini failed, proceeding without image:', err)
-    return [{ parts: [{ text: promptText }] }]
+  // Referans görseller
+  const loadedRefs: Array<{ label: string; part: { inlineData: { mimeType: string; data: string } } }> = []
+  for (const ref of refImages) {
+    const part = await fetchImagePart(ref.url)
+    if (part) loadedRefs.push({ label: ref.label, part })
   }
+
+  if (loadedRefs.length > 0) {
+    parts.push({
+      text: `INSPIRATION IMAGES (user's dream life references):
+The following images show what the user wants in their life.
+Incorporate these specific visuals into relevant scenes — place the subject IN these environments or alongside these objects.`,
+    })
+    loadedRefs.forEach(({ label, part }, i) => {
+      parts.push({ text: `IMAGE ${(selfieUrl ? 2 : 1) + i} — ${label}:` })
+      parts.push(part)
+    })
+  }
+
+  // Ana prompt
+  parts.push({ text: promptText })
+
+  if (parts.length === 1) {
+    // Sadece text, görsel yok
+    return [{ parts }]
+  }
+
+  return [{ parts }]
 }
 
 function buildGeminiPrompt(storyText: string): string {
