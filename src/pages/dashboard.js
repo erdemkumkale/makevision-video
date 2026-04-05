@@ -32,14 +32,22 @@ const ProjectCard = ({ project, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className="group text-left w-full bg-panel border border-border rounded-2xl p-5
+      className="group text-left w-full bg-panel border border-border rounded-2xl p-3
                  hover:border-glow-dim hover:shadow-glow-sm transition-all duration-300 animate-fade-in"
     >
-      {/* Thumbnail placeholder */}
-      <div className="w-full aspect-video rounded-xl bg-void border border-border mb-4
+      {/* Thumbnail — dikey 9:16 format */}
+      <div className="w-full aspect-[9/16] rounded-xl bg-void border border-border mb-4
                       flex items-center justify-center overflow-hidden relative">
         {project.final_video_url ? (
-          <video src={project.final_video_url} className="w-full h-full object-cover" muted />
+          <video
+            src={project.final_video_url}
+            className="w-full h-full object-cover"
+            muted
+            preload="metadata"
+            playsInline
+          />
+        ) : project.preview_image_url ? (
+          <img src={project.preview_image_url} alt="preview" className="w-full h-full object-cover" />
         ) : (
           <div className="flex flex-col items-center gap-2 opacity-30">
             <svg className="w-8 h-8 text-glow-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -49,16 +57,17 @@ const ProjectCard = ({ project, onClick }) => {
             <span className="text-xs text-gray-600">No preview yet</span>
           </div>
         )}
-        {project.status === 'Processing' && (
-          <div className="absolute inset-0 bg-glow/10 flex items-center justify-center">
+        {(project.status === 'Processing' || project.status === 'Videos_Ready') && (
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
             <div className="w-6 h-6 border-2 border-glow-soft border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-glow-soft/70">Rendering…</span>
           </div>
         )}
       </div>
 
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2 mt-1">
         <div>
-          <p className="text-sm text-gray-200 font-medium group-hover:text-white transition-colors">
+          <p className="text-xs text-gray-200 font-medium group-hover:text-white transition-colors">
             Vision #{project.id.slice(-6).toUpperCase()}
           </p>
           <p className="text-xs text-gray-600 mt-0.5">{date}</p>
@@ -224,17 +233,17 @@ export default function Dashboard() {
 
         {/* Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-panel border border-border rounded-2xl p-5 animate-pulse">
-                <div className="w-full aspect-video rounded-xl bg-void mb-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-panel border border-border rounded-2xl p-3 animate-pulse">
+                <div className="w-full aspect-[9/16] rounded-xl bg-void mb-3" />
                 <div className="h-3 bg-border rounded w-1/2 mb-2" />
                 <div className="h-3 bg-border rounded w-1/3" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {projects.length === 0
               ? <EmptyState onCreate={() => router.push('/create')} />
               : projects.map(p => (
