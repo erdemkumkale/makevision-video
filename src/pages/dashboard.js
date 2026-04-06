@@ -36,34 +36,51 @@ const ProjectCard = ({ project, onClick }) => {
                  hover:border-glow-dim hover:shadow-glow-sm transition-all duration-300 animate-fade-in"
     >
       {/* Thumbnail — dikey 9:16 format */}
-      <div className="w-full aspect-[9/16] rounded-xl bg-void border border-border mb-4
-                      flex items-center justify-center overflow-hidden relative">
-        {project.final_video_url ? (
-          <video
-            src={project.final_video_url}
-            className="w-full h-full object-cover"
-            muted
-            preload="metadata"
-            playsInline
-          />
-        ) : project.preview_image_url ? (
-          <img src={project.preview_image_url} alt="preview" className="w-full h-full object-cover" />
-        ) : (
-          <div className="flex flex-col items-center gap-2 opacity-30">
-            <svg className="w-8 h-8 text-glow-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-            </svg>
-            <span className="text-xs text-gray-600">No preview yet</span>
+      {(() => {
+        // Storage'daki ilk görsel → güvenilir statik thumbnail
+        const STORAGE = 'https://ibcxaytaewufzluxnjbc.supabase.co/storage/v1/object/public/vision-assets'
+        const thumbUrl = `${STORAGE}/projects/${project.id}/images/0.jpg`
+        const hasThumb = ['Images_Ready','Processing','Videos_Ready','Completed'].includes(project.status)
+        return (
+          <div className="w-full aspect-[9/16] rounded-xl bg-void border border-border mb-4
+                          flex items-center justify-center overflow-hidden relative">
+            {hasThumb ? (
+              <img
+                src={thumbUrl}
+                alt="preview"
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-2 opacity-30">
+                <svg className="w-8 h-8 text-glow-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
+                <span className="text-xs text-gray-600">No preview yet</span>
+              </div>
+            )}
+            {/* Completed overlay — play ikonu */}
+            {project.status === 'Completed' && (
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center
+                              opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30
+                                flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+            )}
+            {(project.status === 'Processing' || project.status === 'Videos_Ready') && (
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
+                <div className="w-6 h-6 border-2 border-glow-soft border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-glow-soft/70">Rendering…</span>
+              </div>
+            )}
           </div>
-        )}
-        {(project.status === 'Processing' || project.status === 'Videos_Ready') && (
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
-            <div className="w-6 h-6 border-2 border-glow-soft border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-glow-soft/70">Rendering…</span>
-          </div>
-        )}
-      </div>
+        )
+      })()}
 
       <div className="flex items-start justify-between gap-2 mt-1">
         <div>

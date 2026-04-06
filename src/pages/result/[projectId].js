@@ -3,6 +3,8 @@ import { useRouter } from 'next/router'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
 
+const STORAGE = 'https://ibcxaytaewufzluxnjbc.supabase.co/storage/v1/object/public/vision-assets'
+
 export default function Result() {
   const router              = useRouter()
   const { projectId, video } = router.query
@@ -10,6 +12,7 @@ export default function Result() {
 
   const [videoUrl, setVideoUrl] = useState(null)
   const [loading, setLoading]   = useState(true)
+  const [images, setImages]     = useState([])
 
   useEffect(() => {
     if (!projectId || !user) return
@@ -37,6 +40,11 @@ export default function Result() {
 
       if (data.final_video_url) {
         setVideoUrl(data.final_video_url)
+        // Storage'daki 6 görseli yükle
+        const imgs = [0,1,2,3,4,5].map(i =>
+          `${STORAGE}/projects/${projectId}/images/${i}.jpg`
+        )
+        setImages(imgs)
         setLoading(false)
       } else if (data.status === 'Processing' || data.status === 'Videos_Ready') {
         // Still processing — send them back to the waiting screen
@@ -105,6 +113,25 @@ export default function Result() {
               playsInline
               className="w-full"
             />
+          </div>
+        )}
+
+        {/* 6 Görsel grid */}
+        {images.length > 0 && (
+          <div className="w-full max-w-lg mx-auto mb-10 animate-slide-up">
+            <p className="text-xs text-gray-600 text-center mb-3 uppercase tracking-widest">Scenes</p>
+            <div className="grid grid-cols-3 gap-2">
+              {images.map((src, i) => (
+                <div key={i} className="aspect-[9/16] rounded-lg overflow-hidden bg-void border border-border">
+                  <img
+                    src={src}
+                    alt={`Scene ${i + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.parentElement.style.display = 'none' }}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
