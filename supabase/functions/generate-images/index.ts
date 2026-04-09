@@ -118,37 +118,7 @@ async function runAllSlots(ctx: {
 
   // Her slot bağımsız çalışır — biri bitince hemen DB'ye yazar
   await Promise.all(
-    generations.map(async (gen) => {
-      try {
-        const rawUrl        = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-        const safeSwapUrl   = getSafeSwapImageUrl(selfieUrl)
-        const faceSwapUrl   = await faceSwap(piApiKey, rawUrl, safeSwapUrl)
-
-        // PiAPI URL'leri geçici — Supabase Storage'a yükle, kalıcı URL al
-        // Upload başarısız olursa PiAPI URL'ini direkt kullan (fallback)
-        const storagePath = `projects/${project_id}/images/${gen.order_num}.jpg`
-        let stableUrl = faceSwapUrl
-        try {
-          stableUrl = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
-          console.log(`Slot ${gen.order_num} done → storage: ${storagePath}`)
-        } catch (uploadErr) {
-          console.warn(`Slot ${gen.order_num} storage upload failed, using PiAPI URL:`, uploadErr)
-        }
-
-        await supabase
-          .from('media_generations')
-          .update({ media_url: stableUrl, error: null })
-          .eq('id', gen.id)
-
-        console.log(`Slot ${gen.order_num} done: ${stableUrl}`)
-      } catch (err) {
-        console.error(`Slot ${gen.order_num} failed:`, err)
-        await supabase
-          .from('media_generations')
-          .update({ error: String(err) })
-          .eq('id', gen.id)
-      }
-    })
+    generations.map((gen) => processSlotWithRetry({ supabase, piApiKey, project_id, selfieUrl, gen }))
   )
 
   // Tüm slotlar tamamlandı (başarılı veya başarısız) — status güncelle
@@ -158,6 +128,61 @@ async function runAllSlots(ctx: {
     .eq('id', project_id)
 
   console.log(`Project ${project_id}: all image slots processed → Images_Ready`)
+}
+
+// ─── Slot işleyici: otomatik retry (max 3 deneme) ────────────────────────────
+
+async function processSlotWithRetry(ctx: {
+  // deno-lint-ignore no-explicit-any
+  supabase: any
+  piApiKey: string
+  project_id: string
+  selfieUrl: string
+  gen: { id: string; prompt_text: string; negative_prompt: string; order_num: number }
+}, attempt = 1): Promise<void> {
+  const MAX_ATTEMPTS = 3
+  const { supabase, piApiKey, project_id, selfieUrl, gen } = ctx
+
+  try {
+    console.log(`Slot ${gen.order_num}: attempt ${attempt}/${MAX_ATTEMPTS}`)
+
+    const rawUrl      = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
+    const safeSwapUrl = getSafeSwapImageUrl(selfieUrl)
+    const faceSwapUrl = await faceSwap(piApiKey, rawUrl, safeSwapUrl)
+
+    const storagePath = `projects/${project_id}/images/${gen.order_num}.jpg`
+    let stableUrl = faceSwapUrl
+    try {
+      stableUrl = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
+    } catch (uploadErr) {
+      console.warn(`Slot ${gen.order_num} storage upload failed, using PiAPI URL:`, uploadErr)
+    }
+
+    await supabase
+      .from('media_generations')
+      .update({ media_url: stableUrl, error: null })
+      .eq('id', gen.id)
+
+    console.log(`Slot ${gen.order_num} ✓ (attempt ${attempt})`)
+
+  } catch (err) {
+    console.error(`Slot ${gen.order_num} failed (attempt ${attempt}):`, String(err))
+
+    if (attempt < MAX_ATTEMPTS) {
+      // Kısa bekleme sonra tekrar dene — PiAPI geçici hataları genellikle düzelir
+      const waitMs = attempt * 4000   // 4s, 8s
+      console.log(`Slot ${gen.order_num}: retrying in ${waitMs}ms...`)
+      await sleep(waitMs)
+      return processSlotWithRetry(ctx, attempt + 1)
+    }
+
+    // 3 denemede de başarısız — hatayı kaydet
+    console.error(`Slot ${gen.order_num}: gave up after ${MAX_ATTEMPTS} attempts`)
+    await supabase
+      .from('media_generations')
+      .update({ error: `Failed after ${MAX_ATTEMPTS} attempts: ${String(err)}` })
+      .eq('id', gen.id)
+  }
 }
 
 // ─── Storage: PiAPI geçici URL → Supabase Storage kalıcı public URL ──────────

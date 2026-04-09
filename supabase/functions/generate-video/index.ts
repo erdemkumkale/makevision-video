@@ -253,13 +253,14 @@ async function uploadVideoToStorage(supabase: any, videoUrl: string, storagePath
 function isVideoUrl(url: string): boolean {
   if (!url) return false
   const lower = url.toLowerCase()
-  // Görsel uzantılarını reddet
+  // Görsel uzantısı varsa kesinlikle image
   if (/\.(png|jpg|jpeg|webp|gif|bmp|tiff|svg)(\?|$)/.test(lower)) return false
-  // Video uzantısı varsa kabul et
+  // Video uzantısı varsa kesinlikle video
   if (/\.(mp4|mov|webm|avi|mkv)(\?|$)/.test(lower)) return true
-  // Uzantı yoksa / belirsizse URL'e HEAD isteği atmak yerine kabul et
-  // (PiAPI video URL'leri genellikle uzantısız olabilir)
-  return true
+  // Uzantı belirsiz — Storage'daki video path pattern'ini kontrol et
+  // projects/{id}/videos/{n}.mp4 → zaten yukarıda yakalandı
+  // Diğer belirsiz URL'leri image say (güvenli taraf)
+  return false
 }
 
 // ─── Kling image-to-video ─────────────────────────────────────────────────────
