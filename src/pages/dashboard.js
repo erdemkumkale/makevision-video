@@ -42,8 +42,9 @@ const ProjectCard = ({ project, onClick }) => {
         const thumbUrl = `${STORAGE}/projects/${project.id}/images/0.jpg`
         const hasThumb = ['Images_Ready','Processing','Videos_Ready','Completed'].includes(project.status)
         return (
-          <div className="w-full aspect-[9/16] rounded-xl bg-void border border-border mb-4
-                          flex items-center justify-center overflow-hidden relative">
+          <div className="w-full rounded-xl bg-void border border-border mb-4
+                          flex items-center justify-center overflow-hidden relative"
+               style={{ aspectRatio: '9/16' }}>
             {hasThumb ? (
               <img
                 src={thumbUrl}

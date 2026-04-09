@@ -192,8 +192,8 @@ async function runPipeline(ctx: {
       },
       output: {
         format: 'mp4',
-        resolution: 'sd',   // maliyet optimizasyonu
-        // aspectRatio kasıtlı olarak yok — orijinal format korunur
+        resolution: 'sd',
+        aspectRatio: '9:16',   // dikey format — Kling videoları 9:16
       },
     }
 
@@ -332,7 +332,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'MakeVision <onboarding@resend.dev>',
+        from: 'MakeVision <noreply@makevision.video>',
         to: [email],
         subject: '✨ Your Vision Video is Ready!',
         html: `

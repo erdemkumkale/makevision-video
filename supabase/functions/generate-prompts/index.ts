@@ -4,7 +4,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const NEGATIVE_PROMPT =
-  'Multiple people, complex hand movements, walking, talking, distorted face, extra limbs'
+  'Multiple visible faces, second person facing camera, crowd, group shot, background face, two faces, distorted face, extra limbs, complex hand movements, watermark, text overlay'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -57,8 +57,9 @@ serve(async (req: Request) => {
     const geminiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiKey) return json({ error: 'GEMINI_API_KEY not set' }, 500)
 
-    const storyText = buildStoryText(project.story_inputs)
-    console.log('Story text length:', storyText.length)
+    const storyText  = buildStoryText(project.story_inputs)
+    const sceneCount = (project.story_inputs as any)?.scene_count ?? 6
+    console.log('Story text length:', storyText.length, '| scene count:', sceneCount)
 
     // gemini-2.5-flash — current stable model
     const geminiUrl =
@@ -67,7 +68,7 @@ serve(async (req: Request) => {
     // Selfie + referans görselleri Gemini'ye gönder
     const selfieUrl: string | null = project.selfie_url ?? null
     const refImages: Array<{ label: string; key: string; url: string }> = project.reference_images ?? []
-    const contents = await buildGeminiContents(storyText, selfieUrl, refImages)
+    const contents = await buildGeminiContents(storyText, sceneCount, selfieUrl, refImages)
 
     console.log('Calling Gemini...')
     let geminiRes: Response
@@ -111,11 +112,11 @@ serve(async (req: Request) => {
 
     console.log('Gemini extracted text:', rawText.slice(0, 300))
 
-    const slots = parseSlots(rawText)
-    console.log('Parsed slot count:', slots.length)
+    const slots = parseSlots(rawText, sceneCount)
+    console.log('Parsed slot count:', slots.length, '| expected:', sceneCount)
 
-    if (slots.length !== 6) {
-      return json({ error: 'Expected 6 slots from Gemini', raw: rawText.slice(0, 500) }, 502)
+    if (slots.length !== sceneCount) {
+      return json({ error: `Expected ${sceneCount} slots from Gemini, got ${slots.length}`, raw: rawText.slice(0, 500) }, 502)
     }
 
     // ── Save to media_generations ─────────────────────────────────────────────
@@ -227,10 +228,11 @@ async function fetchImagePart(url: string): Promise<{ inlineData: { mimeType: st
 // Gemini'ye gönderilecek içerik — selfie + referans görseller base64 inline
 async function buildGeminiContents(
   storyText: string,
+  sceneCount: number,
   selfieUrl: string | null,
   refImages: Array<{ label: string; key: string; url: string }>,
 ) {
-  const promptText = buildGeminiPrompt(storyText)
+  const promptText = buildGeminiPrompt(storyText, sceneCount)
 
   const parts: unknown[] = []
 
@@ -277,73 +279,89 @@ Incorporate these specific visuals into relevant scenes — place the subject IN
   return [{ parts }]
 }
 
-function buildGeminiPrompt(storyText: string): string {
-  return `You are a cinematographer and AI prompt engineer. Transform the user's life vision into 6 unique, cinematic scenes.
+function buildGeminiPrompt(storyText: string, sceneCount: number): string {
+  // Narrative arc — sahne sayısına göre dinamik yapı
+  const mid = sceneCount - 2
+  const arcDescription = sceneCount <= 6
+    ? `Scene 1: Opening (who they are becoming — establishing shot)
+Scene 2–${mid}: Dream life moments (varied locations, moods, activities from their vision)
+Scene ${sceneCount - 1}: Peak / most powerful moment (emotional climax)
+Scene ${sceneCount}: Closing (peaceful, triumphant — pulls back to reveal the full picture)`
+    : `Scene 1: Opening (who they are becoming — wide establishing shot)
+Scene 2–3: World-building (environments and settings from their dream life)
+Scene 4–${mid}: Dream life moments (key activities, relationships, achievements)
+Scene ${sceneCount - 1}: Peak / most powerful moment (emotional climax)
+Scene ${sceneCount}: Closing (peaceful, hopeful — camera pulls back)`
 
-Each scene needs two prompts:
-1. image_prompt — for Flux (photorealistic AI image generator that composites the user's face)
-2. video_prompt — for Kling (AI video generator that animates the composed image)
+  return `You are a cinematographer creating a personal vision film — a short cinematic trailer of someone's dream life.
+
+Your task: generate ${sceneCount} scenes that together form a cohesive short film.
+The scenes should feel CONNECTED — like acts in a movie trailer, not random separate images.
+
+════════════════════════════════════════
+FILM STRUCTURE (follow this arc)
+════════════════════════════════════════
+${arcDescription}
 
 ════════════════════════════════════════
 IMAGE PROMPT RULES
 ════════════════════════════════════════
 
-SUBJECT LINE (start every image_prompt with this, filling in the subject's appearance):
-"A photorealistic [SHOT_TYPE] of a [GENDER], [AGE_RANGE], [HAIR_DESCRIPTION], [SKIN_TONE] subject, whose face is seamlessly composited from a reference selfie, wearing [CLOTHING] —"
+Start every image_prompt with this subject line (fill in from selfie analysis):
+"A photorealistic [SHOT_TYPE] of a [GENDER], [AGE_RANGE], [HAIR_DESCRIPTION], [SKIN_TONE] subject, whose face is composited from a reference photo, wearing [CLOTHING FITTING THE SCENE] —"
 
-Replace [SHOT_TYPE] with one of these — VARY across the 6 scenes:
+SHOT TYPES — vary across scenes to create cinematic rhythm:
 - "wide establishing shot" (subject small in grand environment)
-- "medium environmental shot" (subject and setting equally prominent)
-- "intimate close-up" (face and upper body, emotion visible)
-- "dynamic action shot" (movement, energy)
+- "medium environmental shot" (subject and setting equally visible)
+- "intimate close-up" (face and upper body, emotion readable)
 - "over-the-shoulder shot" (subject looking at something ahead)
-- "golden-hour silhouette shot" (backlit, aspirational)
+- "low-angle power shot" (shot from below, subject looks commanding)
+- "golden-hour silhouette" (backlit, aspirational atmosphere)
 
-CONTENT RULES:
-- Take the user's specific tags LITERALLY — they chose these exact things
-  (e.g. "Remote Nomad" = laptop at a beach café, NOT a generic office)
-- Build the scene around those specific choices
-- Rich environment details: location, time of day, lighting, atmosphere, textures
-- If other people appear (family, friends, partner): show them from behind, in silhouette, or at the edge of frame — faces NOT visible
-- No generic stock photo feeling — make it feel like a real cinematic moment
+VISUAL RULES:
+- ONE face only — the subject is the ONLY person with a visible face
+- Other people (partner, friends, team): show from behind, in silhouette, or cropped at shoulder — NO other face
+- Be SPECIFIC to their vision — derive real locations, environments, activities from their description
+- Rich sensory detail: lighting quality, time of day, textures, atmosphere
+- Each scene should feel like a real cinematic still, not stock photography
 
 ════════════════════════════════════════
 VIDEO PROMPT RULES
 ════════════════════════════════════════
-The image is already composed. Tell Kling HOW TO MOVE the camera for 5 seconds.
+Describe ONLY camera movement and light — never subject locomotion.
 
-GOOD examples:
-- "Slow push-in toward the subject's face, morning light flickers through palm leaves"
-- "Camera drifts gently right, subject gazes at the horizon, waves shimmer"
-- "Subtle handheld breathing movement, golden light shifts across the subject's shoulders"
-- "Rack focus from foreground detail to subject's calm expression, city blurs softly behind"
+GOOD (camera + light only):
+- "Slow push-in toward the subject's face, golden hour light softens across their features"
+- "Camera drifts gently left, subject gazes at the view, depth of field blurs the horizon"
+- "Subtle handheld breathing movement, candlelight flickers across the scene"
+- "Gentle pull-back reveal, morning mist lifts slowly in the background"
 
-BAD (do NOT do):
-- Repeat what's in the image ("person on yacht in the Mediterranean...")
-- Generic words: "cinematic", "beautiful", "high quality"
-- Describe action that requires new elements
+FORBIDDEN — do NOT write:
+- Subject moving: walking, turning, driving, riding, gesturing
+- New objects or people appearing
+- Restating what's in the image
+- Vague words: "cinematic", "beautiful", "epic", "stunning"
 
-Each video_prompt: 1-2 sentences, ~80-150 characters, motion/light focused.
+Each video_prompt: 1–2 sentences, 80–140 characters max.
 
 ════════════════════════════════════════
-USER'S VISION (their specific choices):
----
+THEIR DREAM LIFE
+════════════════════════════════════════
 ${storyText}
----
 
-IMPORTANT: Each of the 6 scenes must be a DIFFERENT life area from the vision above.
-Use all 6 areas. No two scenes should feel similar in location, mood, or shot type.
-
-Return ONLY a valid JSON array of exactly 6 objects. No markdown, no backticks, no explanation.
+════════════════════════════════════════
+OUTPUT
+════════════════════════════════════════
+Return ONLY a valid JSON array of exactly ${sceneCount} objects. No markdown, no backticks, no explanation.
 [
   { "image_prompt": "...", "video_prompt": "..." },
-  ...6 total...
+  ... ${sceneCount} total ...
 ]`
 }
 
 type Slot = { image_prompt: string; video_prompt: string }
 
-function parseSlots(raw: string): Slot[] {
+function parseSlots(raw: string, sceneCount = 6): Slot[] {
   let cleaned = raw
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
@@ -354,8 +372,8 @@ function parseSlots(raw: string): Slot[] {
 
   try {
     const parsed = JSON.parse(cleaned)
-    if (Array.isArray(parsed) && parsed.length >= 6) {
-      return parsed.slice(0, 6).map((s: unknown) => ({
+    if (Array.isArray(parsed) && parsed.length >= sceneCount) {
+      return parsed.slice(0, sceneCount).map((s: unknown) => ({
         image_prompt: (s as Slot).image_prompt ?? String(s),
         video_prompt: (s as Slot).video_prompt ?? '',
       }))

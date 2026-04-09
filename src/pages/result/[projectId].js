@@ -14,6 +14,13 @@ export default function Result() {
   const [loading, setLoading]   = useState(true)
   const [images, setImages]     = useState([])
 
+  const loadImages = (pid) => {
+    const imgs = [0,1,2,3,4,5,6,7,8,9,10,11].map(i =>
+      `${STORAGE}/projects/${pid}/images/${i}.jpg`
+    )
+    setImages(imgs)
+  }
+
   useEffect(() => {
     if (!projectId || !user) return
 
@@ -22,6 +29,7 @@ export default function Result() {
       // Fallback: fetch directly from DB in case user lands here directly
       if (video) {
         setVideoUrl(decodeURIComponent(video))
+        loadImages(projectId)
         setLoading(false)
         return
       }
@@ -40,14 +48,26 @@ export default function Result() {
 
       if (data.final_video_url) {
         setVideoUrl(data.final_video_url)
-        // Storage'daki 6 görseli yükle
-        const imgs = [0,1,2,3,4,5].map(i =>
-          `${STORAGE}/projects/${projectId}/images/${i}.jpg`
-        )
-        setImages(imgs)
+        loadImages(projectId)
         setLoading(false)
+      } else if (data.status === 'Completed') {
+        // final_video_url DB'de yok — video_jobs'tan fallback olarak dene
+        const { data: job } = await supabase
+          .from('video_jobs')
+          .select('video_url')
+          .eq('vision_project_id', projectId)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (job?.video_url) {
+          setVideoUrl(job.video_url)
+          loadImages(projectId)
+          setLoading(false)
+        } else {
+          router.replace('/dashboard')
+        }
       } else if (data.status === 'Processing' || data.status === 'Videos_Ready') {
-        // Still processing — send them back to the waiting screen
         router.replace(`/processing/${projectId}`)
       } else {
         router.replace('/dashboard')
