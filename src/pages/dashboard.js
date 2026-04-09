@@ -35,19 +35,23 @@ const ProjectCard = ({ project, onClick }) => {
       className="group text-left w-full bg-panel border border-border rounded-2xl p-3
                  hover:border-glow-dim hover:shadow-glow-sm transition-all duration-300 animate-fade-in"
     >
-      {/* Thumbnail — dikey 9:16 (padding trick: en güvenilir yöntem) */}
+      {/* Thumbnail — dikey 9:16 (SVG spacer: browser'dan bağımsız, garantili çalışır) */}
       {(() => {
         const STORAGE = 'https://ibcxaytaewufzluxnjbc.supabase.co/storage/v1/object/public/vision-assets'
         const thumbUrl = `${STORAGE}/projects/${project.id}/images/0.jpg`
         const hasThumb = ['Images_Ready','Processing','Videos_Ready','Completed'].includes(project.status)
         return (
-          <div className="w-full relative mb-4" style={{ paddingBottom: '177.78%' }}>
-            <div className="absolute inset-0 rounded-xl bg-void border border-border overflow-hidden flex items-center justify-center">
+          <div style={{ position: 'relative', width: '100%', marginBottom: '16px' }}>
+            {/* SVG spacer: viewBox 9:16 → container'ı portrait yapar */}
+            <svg viewBox="0 0 9 16" style={{ display: 'block', width: '100%' }} aria-hidden="true" />
+            {/* İçerik: SVG'nin üstüne absolute overlay */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                 className="rounded-xl bg-void border border-border overflow-hidden flex items-center justify-center">
               {hasThumb ? (
                 <img
                   src={thumbUrl}
                   alt="preview"
-                  className="w-full h-full object-cover"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => { e.currentTarget.style.display = 'none' }}
                 />
               ) : (
@@ -252,8 +256,10 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="bg-panel border border-border rounded-2xl p-3 animate-pulse">
-                <div className="w-full relative mb-3" style={{ paddingBottom: '177.78%' }}>
-                  <div className="absolute inset-0 rounded-xl bg-void" />
+                <div style={{ position: 'relative', width: '100%', marginBottom: '12px' }}>
+                  <svg viewBox="0 0 9 16" style={{ display: 'block', width: '100%' }} aria-hidden="true" />
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                       className="rounded-xl bg-void" />
                 </div>
                 <div className="h-3 bg-border rounded w-1/2 mb-2" />
                 <div className="h-3 bg-border rounded w-1/3" />
