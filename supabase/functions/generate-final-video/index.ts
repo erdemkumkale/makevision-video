@@ -52,10 +52,10 @@ serve(async (req: Request) => {
     if (!project_id)  return json({ error: 'project_id is required' }, 400)
     if (!user_id)     return json({ error: 'user_id is required' }, 400)
 
-    const hasVideoPaths = Array.isArray(video_paths) && video_paths.length === 6
-    const hasVideoUrls  = Array.isArray(video_urls)  && video_urls.length  === 6
+    const hasVideoPaths = Array.isArray(video_paths) && video_paths.length > 0
+    const hasVideoUrls  = Array.isArray(video_urls)  && video_urls.length  > 0
     if (!hasVideoPaths && !hasVideoUrls)
-      return json({ error: 'Provide either video_paths[6] or video_urls[6]' }, 400)
+      return json({ error: 'Provide either video_paths or video_urls (non-empty array)' }, 400)
 
     // Görsel URL'si gelirse Shotstack'e göndermeden reddet
     if (hasVideoUrls) {
@@ -292,7 +292,7 @@ async function runPipeline(ctx: {
     // ── 8. Geçici Kling videolarını Storage'dan sil (yer açmak için) ──────────
     // Kling videoları sadece Shotstack render için gerekli, sonra silinebilir.
     // Path pattern: projects/{project_id}/videos/{0-5}.mp4
-    const videoStoragePaths = [0,1,2,3,4,5].map(i => `projects/${project_id}/videos/${i}.mp4`)
+    const videoStoragePaths = (video_urls ?? video_paths ?? []).map((_: unknown, i: number) => `projects/${project_id}/videos/${i}.mp4`)
     supabase.storage.from(BUCKET).remove(videoStoragePaths)
       .then(({ error }: { error: unknown }) => {
         if (error) console.warn('Storage cleanup warning:', error)
@@ -332,7 +332,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'MakeVision <noreply@makevision.video>',
+        from: 'MakeVision <onboarding@resend.dev>',
         to: [email],
         subject: '✨ Your Vision Video is Ready!',
         html: `
