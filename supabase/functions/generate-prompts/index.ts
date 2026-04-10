@@ -69,13 +69,20 @@ serve(async (req: Request) => {
     const refImages: Array<{ label: string; key: string; url: string }> = project.reference_images ?? []
     const availableRefs = refImages.map(r => r.key)
 
-    // ── ADIM 1: Selfie analizi (ayrı çağrı) ──────────────────────────────────
-    let subjectDescription = 'male, mid-30s, short dark hair, medium skin tone' // fallback
+    // Kullanıcının seçtiği cinsiyet ve yaş
+    const gender: string = (project.story_inputs as any)?.gender ?? 'male'
+    const age: string    = (project.story_inputs as any)?.age ?? 'mid-30s'
+
+    // ── ADIM 1: Selfie'den sadece saç ve ten analizi ──────────────────────────
+    let hairAndSkin = 'short dark hair, medium skin tone' // fallback
     if (selfieUrl) {
-      console.log('Step 1: Analyzing selfie...')
-      subjectDescription = await analyzeSelfie(geminiUrl, selfieUrl)
-      console.log('Subject description:', subjectDescription)
+      console.log('Step 1: Analyzing selfie for hair & skin...')
+      hairAndSkin = await analyzeHairAndSkin(geminiUrl, selfieUrl)
+      console.log('Hair & skin:', hairAndSkin)
     }
+
+    const subjectDescription = `${gender}, ${age}, ${hairAndSkin}`
+    console.log('Subject description:', subjectDescription)
 
     // ── ADIM 2: Sahne prompt'ları ─────────────────────────────────────────────
     const contents = buildGeminiContents(storyText, sceneCount, subjectDescription, availableRefs)
@@ -256,29 +263,23 @@ async function fetchImagePart(url: string): Promise<{ inlineData: { mimeType: st
   }
 }
 
-// ── Adım 1: Selfie'yi analiz et → kısa metin açıklama döndür ─────────────────
-async function analyzeSelfie(geminiUrl: string, selfieUrl: string): Promise<string> {
+// ── Adım 1: Selfie'den sadece saç rengi/uzunluğu ve ten analizi ──────────────
+async function analyzeHairAndSkin(geminiUrl: string, selfieUrl: string): Promise<string> {
   const selfiePart = await fetchImagePart(selfieUrl)
-  if (!selfiePart) return 'male, mid-30s, short dark hair, medium skin tone'
+  if (!selfiePart) return 'short dark hair, medium skin tone'
 
   const body = JSON.stringify({
     contents: [{
       parts: [
-        { text: `Analyze this person's photo carefully and return ONLY a short comma-separated description.
+        { text: `Look at this photo and return ONLY two things, comma-separated, no extra text:
+1. Hair: actual length (short/medium/long) and color visible in the photo
+2. Skin tone: specific description (e.g. "light olive", "fair", "medium brown", "dark")
 
-Rules:
-- If there is ANY facial hair (beard, stubble, mustache) → the person is MALE
-- Look at the actual hair length visible in the photo — do not assume
-- Be specific about hair color
-
-Return format (fill in the brackets, no extra text):
-[male/female], [age range e.g. "early 30s"], [hair: length + color e.g. "short dark brown"], [skin: tone e.g. "light olive"]
-
-Example output: male, early 30s, short dark brown hair, light olive skin` },
+Example output: short dark brown hair, light olive skin` },
         selfiePart,
       ],
     }],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 60 },
+    generationConfig: { temperature: 0.1, maxOutputTokens: 30 },
   })
 
   try {
@@ -287,14 +288,14 @@ Example output: male, early 30s, short dark brown hair, light olive skin` },
       headers: { 'Content-Type': 'application/json' },
       body,
     })
-    if (!res.ok) return 'male, mid-30s, short dark hair, medium skin tone'
+    if (!res.ok) return 'short dark hair, medium skin tone'
     const data = await res.json()
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
-    console.log('Selfie analysis raw:', text)
-    return text || 'male, mid-30s, short dark hair, medium skin tone'
+    console.log('Hair & skin raw:', text)
+    return text || 'short dark hair, medium skin tone'
   } catch (e) {
-    console.error('Selfie analysis failed:', e)
-    return 'male, mid-30s, short dark hair, medium skin tone'
+    console.error('Hair & skin analysis failed:', e)
+    return 'short dark hair, medium skin tone'
   }
 }
 

@@ -130,6 +130,53 @@ const SelfieUpload = ({ file, setFile }) => {
   )
 }
 
+// ─── Gender & Age Picker ──────────────────────────────────────────────────────
+
+const GENDER_OPTIONS = [
+  { value: 'male',   label: 'Male'   },
+  { value: 'female', label: 'Female' },
+]
+
+const AGE_OPTIONS = [
+  { value: '20s', label: '20s' },
+  { value: '30s', label: '30s' },
+  { value: '40s', label: '40s' },
+  { value: '50s', label: '50s+' },
+]
+
+const SubjectPicker = ({ gender, setGender, age, setAge }) => (
+  <div className="mt-6 space-y-4">
+    <div>
+      <p className="text-sm font-medium text-gray-300 mb-2">I am a</p>
+      <div className="flex gap-3">
+        {GENDER_OPTIONS.map(opt => (
+          <button key={opt.value} onClick={() => setGender(opt.value)}
+            className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all
+              ${gender === opt.value
+                ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
+                : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'}`}>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-300 mb-2">Age range</p>
+      <div className="flex gap-3">
+        {AGE_OPTIONS.map(opt => (
+          <button key={opt.value} onClick={() => setAge(opt.value)}
+            className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all
+              ${age === opt.value
+                ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
+                : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'}`}>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+)
+
 // ─── Reference Images Upload ──────────────────────────────────────────────────
 
 const ReferenceImages = ({ refImages, setRefImages }) => {
@@ -321,6 +368,8 @@ export default function CreateVision() {
 
   const [step, setStep]           = useState(0)
   const [file, setFile]           = useState(null)
+  const [gender, setGender]       = useState('male')
+  const [age, setAge]             = useState('30s')
   const [refImages, setRefImages] = useState({})
   const [dream, setDream]         = useState('')
   const [sceneCount, setSceneCount] = useState(9)
@@ -378,7 +427,7 @@ export default function CreateVision() {
           user_id:          user.id,
           status:           'Draft',
           selfie_url:       selfieUrl,
-          story_inputs:     { custom_story: dream.trim(), scene_count: sceneCount },
+          story_inputs:     { custom_story: dream.trim(), scene_count: sceneCount, gender, age },
           reference_images: uploadedRefs,
         }])
         .select()
@@ -427,6 +476,7 @@ export default function CreateVision() {
           {step === 0 && (
             <>
               <SelfieUpload file={file} setFile={setFile} />
+              <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} />
               <ReferenceImages refImages={refImages} setRefImages={setRefImages} />
             </>
           )}
