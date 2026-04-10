@@ -65,10 +65,11 @@ serve(async (req: Request) => {
     const geminiUrl =
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
 
-    // Selfie + referans görselleri Gemini'ye gönder
+    // Selfie'yi Gemini'ye gönder — referans görselleri sadece key olarak bildir (görsel gönderme)
     const selfieUrl: string | null = project.selfie_url ?? null
     const refImages: Array<{ label: string; key: string; url: string }> = project.reference_images ?? []
-    const contents = await buildGeminiContents(storyText, sceneCount, selfieUrl, refImages)
+    const availableRefs = refImages.map(r => r.key) // ['home', 'car'] gibi
+    const contents = await buildGeminiContents(storyText, sceneCount, selfieUrl, availableRefs)
 
     console.log('Calling Gemini...')
     const geminiBody = JSON.stringify({
@@ -135,6 +136,10 @@ serve(async (req: Request) => {
       return json({ error: `Expected ${sceneCount} slots from Gemini, got ${slots.length}`, raw: rawText.slice(0, 500) }, 502)
     }
 
+    // reference_key varsa o sahne için referans görsel URL'sini bul
+    const refImageMap: Record<string, string> = {}
+    for (const r of refImages) refImageMap[r.key] = r.url
+
     // ── Save to media_generations ─────────────────────────────────────────────
     const rows = slots.map((slot, idx) => ({
       vision_project_id: project_id,
@@ -142,6 +147,7 @@ serve(async (req: Request) => {
       prompt_text:       slot.image_prompt,
       video_prompt:      slot.video_prompt,
       negative_prompt:   NEGATIVE_PROMPT,
+      reference_image_url: slot.reference_key ? (refImageMap[slot.reference_key] ?? null) : null,
       media_url:         '',
       is_selected:       false,
       revision_count:    0,
@@ -241,18 +247,18 @@ async function fetchImagePart(url: string): Promise<{ inlineData: { mimeType: st
   }
 }
 
-// Gemini'ye gönderilecek içerik — selfie + referans görseller base64 inline
+// Gemini'ye gönderilecek içerik — sadece selfie + text
 async function buildGeminiContents(
   storyText: string,
   sceneCount: number,
   selfieUrl: string | null,
-  refImages: Array<{ label: string; key: string; url: string }>,
+  availableRefs: string[], // ['home', 'car'] gibi key listesi
 ) {
-  const promptText = buildGeminiPrompt(storyText, sceneCount)
+  const promptText = buildGeminiPrompt(storyText, sceneCount, availableRefs)
 
   const parts: unknown[] = []
 
-  // Selfie analizi
+  // Selfie analizi — sadece cinsiyet/yaş/saç/ten için
   if (selfieUrl) {
     const selfiePart = await fetchImagePart(selfieUrl)
     if (selfiePart) {
@@ -270,37 +276,13 @@ Use ALL of these observations in all ${sceneCount} image prompts. Never contradi
     }
   }
 
-  // Referans görseller
-  const loadedRefs: Array<{ label: string; part: { inlineData: { mimeType: string; data: string } } }> = []
-  for (const ref of refImages) {
-    const part = await fetchImagePart(ref.url)
-    if (part) loadedRefs.push({ label: ref.label, part })
-  }
-
-  if (loadedRefs.length > 0) {
-    parts.push({
-      text: `INSPIRATION IMAGES (user's dream life references):
-The following images show what the user wants in their life.
-Incorporate these specific visuals into relevant scenes — place the subject IN these environments or alongside these objects.`,
-    })
-    loadedRefs.forEach(({ label, part }, i) => {
-      parts.push({ text: `IMAGE ${(selfieUrl ? 2 : 1) + i} — ${label}:` })
-      parts.push(part)
-    })
-  }
-
   // Ana prompt
   parts.push({ text: promptText })
-
-  if (parts.length === 1) {
-    // Sadece text, görsel yok
-    return [{ parts }]
-  }
 
   return [{ parts }]
 }
 
-function buildGeminiPrompt(storyText: string, sceneCount: number): string {
+function buildGeminiPrompt(storyText: string, sceneCount: number, availableRefs: string[] = []): string {
   // Narrative arc — sahne sayısına göre dinamik yapı
   const mid = sceneCount - 2
   const arcDescription = sceneCount <= 6
@@ -371,16 +353,31 @@ THEIR DREAM LIFE
 ${storyText}
 
 ════════════════════════════════════════
+REFERENCE IMAGES
+════════════════════════════════════════
+${availableRefs.length > 0
+  ? `The user has uploaded reference images for: ${availableRefs.join(', ')}.
+Assign each scene a "reference_key" field:
+- Use the exact key (${availableRefs.join(' / ')}) when that scene naturally features that element
+- Use null for scenes that don't involve any of these references
+- Distribute references naturally — not every scene needs one
+- A key: "home" scene should take place IN or AROUND the dream home
+- A key: "car" scene should feature the dream car prominently
+- A key: "location" scene should be set in the dream location
+- A key: "lifestyle" scene should reflect that lifestyle`
+  : `The user has not uploaded any reference images. Set "reference_key": null for all scenes.`}
+
+════════════════════════════════════════
 OUTPUT
 ════════════════════════════════════════
 Return ONLY a valid JSON array of exactly ${sceneCount} objects. No markdown, no backticks, no explanation.
 [
-  { "image_prompt": "...", "video_prompt": "..." },
+  { "image_prompt": "...", "video_prompt": "...", "reference_key": null },
   ... ${sceneCount} total ...
 ]`
 }
 
-type Slot = { image_prompt: string; video_prompt: string }
+type Slot = { image_prompt: string; video_prompt: string; reference_key: string | null }
 
 function parseSlots(raw: string, sceneCount = 6): Slot[] {
   let cleaned = raw
@@ -395,8 +392,9 @@ function parseSlots(raw: string, sceneCount = 6): Slot[] {
     const parsed = JSON.parse(cleaned)
     if (Array.isArray(parsed) && parsed.length >= sceneCount) {
       return parsed.slice(0, sceneCount).map((s: unknown) => ({
-        image_prompt: (s as Slot).image_prompt ?? String(s),
-        video_prompt: (s as Slot).video_prompt ?? '',
+        image_prompt:  (s as Slot).image_prompt ?? String(s),
+        video_prompt:  (s as Slot).video_prompt ?? '',
+        reference_key: (s as Slot).reference_key ?? null,
       }))
     }
   } catch (e) {

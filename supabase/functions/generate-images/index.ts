@@ -65,7 +65,7 @@ serve(async (req: Request) => {
     // Sadece boş slotları al (retry güvenliği: dolu slotlara dokunmaz)
     const { data: generations, error: genError } = await supabase
       .from('media_generations')
-      .select('id, prompt_text, negative_prompt, order_num')
+      .select('id, prompt_text, negative_prompt, order_num, reference_image_url')
       .eq('vision_project_id', project_id)
       .eq('media_url', '')
       .order('order_num', { ascending: true })
@@ -112,7 +112,7 @@ async function runAllSlots(ctx: {
   piApiKey: string
   project_id: string
   selfieUrl: string
-  generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
+  generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number; reference_image_url?: string | null }>
 }) {
   const { supabase, piApiKey, project_id, selfieUrl, generations } = ctx
 
@@ -138,15 +138,17 @@ async function processSlotWithRetry(ctx: {
   piApiKey: string
   project_id: string
   selfieUrl: string
-  gen: { id: string; prompt_text: string; negative_prompt: string; order_num: number }
+  gen: { id: string; prompt_text: string; negative_prompt: string; order_num: number; reference_image_url?: string | null }
 }, attempt = 1): Promise<void> {
   const MAX_ATTEMPTS = 3
   const { supabase, piApiKey, project_id, selfieUrl, gen } = ctx
 
   try {
-    console.log(`Slot ${gen.order_num}: attempt ${attempt}/${MAX_ATTEMPTS}`)
+    console.log(`Slot ${gen.order_num}: attempt ${attempt}/${MAX_ATTEMPTS}${gen.reference_image_url ? ' [img2img]' : ' [txt2img]'}`)
 
-    const rawUrl      = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
+    const rawUrl = gen.reference_image_url
+      ? await generateFluxImageWithReference(piApiKey, gen.prompt_text, gen.negative_prompt, gen.reference_image_url)
+      : await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
     const safeSwapUrl = getSafeSwapImageUrl(selfieUrl)
     const faceSwapUrl = await faceSwap(piApiKey, rawUrl, safeSwapUrl)
 
@@ -251,6 +253,43 @@ async function generateFluxImage(
   if (!taskId) throw new Error(`Flux: no task_id in response: ${JSON.stringify(data)}`)
 
   console.log(`Flux task submitted: ${taskId}`)
+  return await pollTask(apiKey, taskId, 'image_url', 40, 5000)
+}
+
+// ─── Step 1b: Flux img2img — referans görsel ile ─────────────────────────────
+
+async function generateFluxImageWithReference(
+  apiKey: string,
+  prompt: string,
+  negativePrompt: string,
+  referenceImageUrl: string,
+): Promise<string> {
+  const res = await fetch(PIAPI_BASE, {
+    method: 'POST',
+    headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'Qubico/flux1-dev',
+      task_type: 'img2img',
+      input: {
+        prompt,
+        negative_prompt: negativePrompt,
+        image_url: referenceImageUrl,
+        strength: 0.65,        // 0=tam referans, 1=tam serbest — 0.65 ortada
+        width: 768,
+        height: 1024,
+        guidance_scale: 3.5,
+        num_inference_steps: 28,
+        process_mode: 'fast',
+      },
+    }),
+  })
+
+  if (!res.ok) throw new Error(`Flux img2img submit failed (${res.status}): ${await res.text()}`)
+  const data = await res.json()
+  const taskId = data?.data?.task_id
+  if (!taskId) throw new Error(`Flux img2img: no task_id in response: ${JSON.stringify(data)}`)
+
+  console.log(`Flux img2img task submitted: ${taskId}`)
   return await pollTask(apiKey, taskId, 'image_url', 40, 5000)
 }
 
