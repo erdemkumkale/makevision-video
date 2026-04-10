@@ -71,23 +71,39 @@ serve(async (req: Request) => {
     const contents = await buildGeminiContents(storyText, sceneCount, selfieUrl, refImages)
 
     console.log('Calling Gemini...')
+    const geminiBody = JSON.stringify({
+      contents,
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 8192,
+        response_mime_type: 'application/json',
+      },
+    })
+
     let geminiRes: Response
-    try {
-      geminiRes = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.9,
-            maxOutputTokens: 8192,
-            response_mime_type: 'application/json',
-          },
-        }),
-      })
-    } catch (fetchErr) {
-      console.error('Gemini fetch threw:', fetchErr)
-      return json({ error: 'Gemini network error', detail: String(fetchErr) }, 502)
+    const MAX_RETRIES = 3
+    let lastFetchErr: unknown = null
+    let attempt = 0
+    while (attempt < MAX_RETRIES) {
+      try {
+        geminiRes = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: geminiBody,
+        })
+        if (geminiRes.status !== 503) break
+        console.warn(`Gemini 503 — attempt ${attempt + 1}/${MAX_RETRIES}, retrying in 2s...`)
+        await new Promise(r => setTimeout(r, 2000))
+      } catch (fetchErr) {
+        lastFetchErr = fetchErr
+        console.error(`Gemini fetch threw (attempt ${attempt + 1}):`, fetchErr)
+        await new Promise(r => setTimeout(r, 2000))
+      }
+      attempt++
+    }
+
+    if (!geminiRes!) {
+      return json({ error: 'Gemini network error', detail: String(lastFetchErr) }, 502)
     }
 
     console.log('Gemini HTTP status:', geminiRes.status)
