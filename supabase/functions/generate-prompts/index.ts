@@ -258,8 +258,13 @@ async function buildGeminiContents(
     if (selfiePart) {
       parts.push({
         text: `IMAGE 1 — SELFIE (subject's face reference):
-Analyze this person and note: gender, approximate age range, hair color/length/style, skin tone.
-Use these observations in all 6 image prompts.`,
+Look carefully at this photo and determine:
+1. BIOLOGICAL SEX: Is this person male or female? Look at facial structure, jawline, facial hair (beard/stubble = male), brow ridge. Be definitive — do NOT guess female if there is any facial hair.
+2. HAIR: Actual hair length and color visible in the photo. Do not assume long hair.
+3. AGE RANGE: Approximate age (e.g. late 20s, mid 30s).
+4. SKIN TONE: Specific tone (e.g. light olive, medium brown, fair).
+
+Use ALL of these observations in all ${sceneCount} image prompts. Never contradict what you see — if the person has a beard, they are male with short hair.`,
       })
       parts.push(selfiePart)
     }
