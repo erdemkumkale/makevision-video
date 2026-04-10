@@ -65,13 +65,22 @@ serve(async (req: Request) => {
     const geminiUrl =
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
 
-    // Selfie'yi Gemini'ye gönder — referans görselleri sadece key olarak bildir (görsel gönderme)
     const selfieUrl: string | null = project.selfie_url ?? null
     const refImages: Array<{ label: string; key: string; url: string }> = project.reference_images ?? []
-    const availableRefs = refImages.map(r => r.key) // ['home', 'car'] gibi
-    const contents = await buildGeminiContents(storyText, sceneCount, selfieUrl, availableRefs)
+    const availableRefs = refImages.map(r => r.key)
 
-    console.log('Calling Gemini...')
+    // ── ADIM 1: Selfie analizi (ayrı çağrı) ──────────────────────────────────
+    let subjectDescription = 'male, mid-30s, short dark hair, medium skin tone' // fallback
+    if (selfieUrl) {
+      console.log('Step 1: Analyzing selfie...')
+      subjectDescription = await analyzeSelfie(geminiUrl, selfieUrl)
+      console.log('Subject description:', subjectDescription)
+    }
+
+    // ── ADIM 2: Sahne prompt'ları ─────────────────────────────────────────────
+    const contents = buildGeminiContents(storyText, sceneCount, subjectDescription, availableRefs)
+
+    console.log('Step 2: Calling Gemini for scene prompts...')
     const geminiBody = JSON.stringify({
       contents,
       generationConfig: {
@@ -247,42 +256,60 @@ async function fetchImagePart(url: string): Promise<{ inlineData: { mimeType: st
   }
 }
 
-// Gemini'ye gönderilecek içerik — sadece selfie + text
-async function buildGeminiContents(
-  storyText: string,
-  sceneCount: number,
-  selfieUrl: string | null,
-  availableRefs: string[], // ['home', 'car'] gibi key listesi
-) {
-  const promptText = buildGeminiPrompt(storyText, sceneCount, availableRefs)
+// ── Adım 1: Selfie'yi analiz et → kısa metin açıklama döndür ─────────────────
+async function analyzeSelfie(geminiUrl: string, selfieUrl: string): Promise<string> {
+  const selfiePart = await fetchImagePart(selfieUrl)
+  if (!selfiePart) return 'male, mid-30s, short dark hair, medium skin tone'
 
-  const parts: unknown[] = []
+  const body = JSON.stringify({
+    contents: [{
+      parts: [
+        { text: `Analyze this person's photo carefully and return ONLY a short comma-separated description.
 
-  // Selfie analizi — sadece cinsiyet/yaş/saç/ten için
-  if (selfieUrl) {
-    const selfiePart = await fetchImagePart(selfieUrl)
-    if (selfiePart) {
-      parts.push({
-        text: `IMAGE 1 — SELFIE (subject's face reference):
-Look carefully at this photo and determine:
-1. BIOLOGICAL SEX: Is this person male or female? Look at facial structure, jawline, facial hair (beard/stubble = male), brow ridge. Be definitive — do NOT guess female if there is any facial hair.
-2. HAIR: Actual hair length and color visible in the photo. Do not assume long hair.
-3. AGE RANGE: Approximate age (e.g. late 20s, mid 30s).
-4. SKIN TONE: Specific tone (e.g. light olive, medium brown, fair).
+Rules:
+- If there is ANY facial hair (beard, stubble, mustache) → the person is MALE
+- Look at the actual hair length visible in the photo — do not assume
+- Be specific about hair color
 
-Use ALL of these observations in all ${sceneCount} image prompts. Never contradict what you see — if the person has a beard, they are male with short hair.`,
-      })
-      parts.push(selfiePart)
-    }
+Return format (fill in the brackets, no extra text):
+[male/female], [age range e.g. "early 30s"], [hair: length + color e.g. "short dark brown"], [skin: tone e.g. "light olive"]
+
+Example output: male, early 30s, short dark brown hair, light olive skin` },
+        selfiePart,
+      ],
+    }],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 60 },
+  })
+
+  try {
+    const res = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
+    if (!res.ok) return 'male, mid-30s, short dark hair, medium skin tone'
+    const data = await res.json()
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+    console.log('Selfie analysis raw:', text)
+    return text || 'male, mid-30s, short dark hair, medium skin tone'
+  } catch (e) {
+    console.error('Selfie analysis failed:', e)
+    return 'male, mid-30s, short dark hair, medium skin tone'
   }
-
-  // Ana prompt
-  parts.push({ text: promptText })
-
-  return [{ parts }]
 }
 
-function buildGeminiPrompt(storyText: string, sceneCount: number, availableRefs: string[] = []): string {
+// ── Adım 2: Sahne prompt'ları için Gemini içeriği ─────────────────────────────
+function buildGeminiContents(
+  storyText: string,
+  sceneCount: number,
+  subjectDescription: string,
+  availableRefs: string[],
+) {
+  const promptText = buildGeminiPrompt(storyText, sceneCount, subjectDescription, availableRefs)
+  return [{ parts: [{ text: promptText }] }]
+}
+
+function buildGeminiPrompt(storyText: string, sceneCount: number, subjectDescription: string, availableRefs: string[] = []): string {
   // Narrative arc — sahne sayısına göre dinamik yapı
   const mid = sceneCount - 2
   const arcDescription = sceneCount <= 6
@@ -310,8 +337,11 @@ ${arcDescription}
 IMAGE PROMPT RULES
 ════════════════════════════════════════
 
-Start every image_prompt with this subject line (fill in from selfie analysis):
-"A photorealistic [SHOT_TYPE] of a [GENDER], [AGE_RANGE], [HAIR_DESCRIPTION], [SKIN_TONE] subject, whose face is composited from a reference photo, wearing [CLOTHING FITTING THE SCENE] —"
+THE SUBJECT (do not change this — use exactly as given):
+${subjectDescription}
+
+Start every image_prompt with this exact subject line:
+"A photorealistic [SHOT_TYPE] of a ${subjectDescription} subject, whose face is composited from a reference photo, wearing [CLOTHING FITTING THE SCENE] —"
 
 SHOT TYPES — vary across scenes to create cinematic rhythm:
 - "wide establishing shot" (subject small in grand environment)
