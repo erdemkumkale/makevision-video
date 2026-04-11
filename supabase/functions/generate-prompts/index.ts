@@ -61,9 +61,9 @@ serve(async (req: Request) => {
     const sceneCount = (project.story_inputs as any)?.scene_count ?? 6
     console.log('Story text length:', storyText.length, '| scene count:', sceneCount)
 
-    // gemini-2.5-flash — current stable model
-    const geminiUrl =
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+    // gemini-2.5-flash önce, 503'te 1.5-flash'a düş
+    const geminiUrl     = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+    const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
 
     const selfieUrl: string | null = project.selfie_url ?? null
     const refImages: Array<{ label: string; key: string; url: string }> = project.reference_images ?? []
@@ -97,29 +97,36 @@ serve(async (req: Request) => {
       },
     })
 
-    let geminiRes: Response
-    const MAX_RETRIES = 3
+    let geminiRes: Response | undefined
     let lastFetchErr: unknown = null
-    let attempt = 0
-    while (attempt < MAX_RETRIES) {
-      try {
-        geminiRes = await fetch(geminiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: geminiBody,
-        })
-        if (geminiRes.status !== 503) break
-        console.warn(`Gemini 503 — attempt ${attempt + 1}/${MAX_RETRIES}, retrying in 2s...`)
-        await new Promise(r => setTimeout(r, 2000))
-      } catch (fetchErr) {
-        lastFetchErr = fetchErr
-        console.error(`Gemini fetch threw (attempt ${attempt + 1}):`, fetchErr)
-        await new Promise(r => setTimeout(r, 2000))
+
+    // 2.5-flash: 2 deneme → başarısız olursa 1.5-flash: 2 deneme
+    const urlsToTry = [
+      { url: geminiUrl,         label: 'gemini-2.5-flash', retries: 2 },
+      { url: geminiUrlFallback, label: 'gemini-1.5-flash', retries: 2 },
+    ]
+
+    outer: for (const { url, label, retries } of urlsToTry) {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: geminiBody,
+          })
+          if (res.status !== 503) { geminiRes = res; break outer }
+          console.warn(`${label} 503 — attempt ${attempt}/${retries}, retrying in 2s...`)
+          await new Promise(r => setTimeout(r, 2000))
+        } catch (fetchErr) {
+          lastFetchErr = fetchErr
+          console.error(`${label} fetch threw (attempt ${attempt}):`, fetchErr)
+          await new Promise(r => setTimeout(r, 2000))
+        }
       }
-      attempt++
+      console.warn(`${label} exhausted, trying fallback...`)
     }
 
-    if (!geminiRes!) {
+    if (!geminiRes) {
       return json({ error: 'Gemini network error', detail: String(lastFetchErr) }, 502)
     }
 
@@ -268,6 +275,8 @@ async function analyzeHairAndSkin(geminiUrl: string, selfieUrl: string): Promise
   const selfiePart = await fetchImagePart(selfieUrl)
   if (!selfiePart) return 'short dark hair, medium skin tone'
 
+  const geminiUrlFallback = geminiUrl.replace('gemini-2.5-flash', 'gemini-1.5-flash')
+
   const body = JSON.stringify({
     contents: [{
       parts: [
@@ -282,21 +291,23 @@ Example output: short dark brown hair, light olive skin` },
     generationConfig: { temperature: 0.1, maxOutputTokens: 30 },
   })
 
-  try {
-    const res = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    })
-    if (!res.ok) return 'short dark hair, medium skin tone'
-    const data = await res.json()
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
-    console.log('Hair & skin raw:', text)
-    return text || 'short dark hair, medium skin tone'
-  } catch (e) {
-    console.error('Hair & skin analysis failed:', e)
-    return 'short dark hair, medium skin tone'
+  for (const url of [geminiUrl, geminiUrlFallback]) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+      if (!res.ok) continue
+      const data = await res.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+      console.log('Hair & skin raw:', text)
+      if (text) return text
+    } catch (e) {
+      console.error('Hair & skin analysis failed:', e)
+    }
   }
+  return 'short dark hair, medium skin tone'
 }
 
 // ── Adım 2: Sahne prompt'ları için Gemini içeriği ─────────────────────────────
