@@ -273,10 +273,8 @@ async function generateFluxImageWithReference(
       input: {
         prompt,
         negative_prompt: negativePrompt,
-        image_url: referenceImageUrl,
-        strength: 0.65,        // 0=tam referans, 1=tam serbest — 0.65 ortada
-        width: 768,
-        height: 1024,
+        image: referenceImageUrl,
+        denoise: 0.75,         // PiAPI flux img2img parametresi
         guidance_scale: 3.5,
         num_inference_steps: 28,
         process_mode: 'fast',
