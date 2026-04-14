@@ -399,14 +399,18 @@ REFERENCE IMAGES
 ════════════════════════════════════════
 ${availableRefs.length > 0
   ? `The user has uploaded reference images for: ${availableRefs.join(', ')}.
+
+CRITICAL: Every uploaded reference MUST appear in at least one scene. This is a vision board — the user wants to literally see their specific home/car/location in the video.
+
 Assign each scene a "reference_key" field:
-- Use the exact key (${availableRefs.join(' / ')}) when that scene naturally features that element
-- Use null for scenes that don't involve any of these references
-- Distribute references naturally — not every scene needs one
-- A key: "home" scene should take place IN or AROUND the dream home
-- A key: "car" scene should feature the dream car prominently
-- A key: "location" scene should be set in the dream location
-- A key: "lifestyle" scene should reflect that lifestyle`
+- MANDATORY: Each key in [${availableRefs.join(', ')}] must be used in at least one scene
+- Use the exact key when that scene features that environment/object
+- Use null for scenes that don't need a reference
+- Spread references across the film — don't cluster them together
+- A key: "home" scene: subject is IN or AROUND the dream home (interior or exterior)
+- A key: "car" scene: subject is IN or NEXT TO the dream car
+- A key: "location" scene: subject is AT the dream location
+- A key: "lifestyle" scene: subject is living that lifestyle moment`
   : `The user has not uploaded any reference images. Set "reference_key": null for all scenes.`}
 
 ════════════════════════════════════════

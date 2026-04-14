@@ -274,7 +274,7 @@ async function generateFluxImageWithReference(
         prompt,
         negative_prompt: negativePrompt,
         image: referenceImageUrl,
-        denoise: 0.75,         // PiAPI flux img2img parametresi
+        denoise: 0.30,         // düşük = referans görsel korunur, kişi eklenir
         guidance_scale: 3.5,
         num_inference_steps: 28,
         process_mode: 'fast',
