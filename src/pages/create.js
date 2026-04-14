@@ -372,7 +372,7 @@ export default function CreateVision() {
   const [age, setAge]             = useState('30s')
   const [refImages, setRefImages] = useState({})
   const [dream, setDream]         = useState('')
-  const [sceneCount, setSceneCount] = useState(9)
+  const [sceneCount, setSceneCount] = useState(6)
   const [submitting, setSubmitting] = useState(false)
   const [submitStage, setSubmitStage] = useState(0)
   const [error, setError]         = useState(null)
