@@ -327,8 +327,8 @@ export default function ReviewVision() {
     try {
       const selectedIds = Object.values(selectedVersions)
 
-      if (selectedIds.length !== 6) {
-        throw new Error(`Expected 6 selections but got ${selectedIds.length}. Make sure all slots are ready.`)
+      if (selectedIds.length !== totalSlots) {
+        throw new Error(`Expected ${totalSlots} selections but got ${selectedIds.length}. Make sure all slots are ready.`)
       }
 
       // Mark selections in DB
@@ -371,8 +371,11 @@ export default function ReviewVision() {
   const originals = generations.filter((g) => !g.is_redo)
   const allReady  = originals.length > 0 && originals.every((g) => g.media_url)
 
-  // Always render exactly 6 slots (0-5)
-  const slotEntries = Array.from({ length: 6 }, (_, i) => ({
+  // Gerçek sahne sayısını hesapla — hardcode 6 değil
+  const totalSlots = originals.length > 0
+    ? Math.max(...originals.map((g) => g.order_num)) + 1
+    : 6
+  const slotEntries = Array.from({ length: totalSlots }, (_, i) => ({
     orderNum: i,
     versions: slotMap.get(i) ?? [],
   }))
