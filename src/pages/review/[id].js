@@ -201,16 +201,22 @@ export default function ReviewVision() {
       return next
     })
 
-    // If any original slot is empty AND was created >5 min ago → stuck, show retry
-    const STALE_MS = 5 * 60 * 1000
-    const staleStuck = normalized.some(
-      (g) => !g.is_redo && !g.media_url && (Date.now() - new Date(g.created_at).getTime()) > STALE_MS
-    )
-    if (staleStuck) {
-      setGenError(
-        'One or more images timed out during generation. ' +
-        'Click "Retry Generation" — only the missing ones will be regenerated (no extra credits used).'
+    // Eğer tüm görseller gelmişse genError'ı temizle
+    const allNowReady = normalized.filter(g => !g.is_redo).every(g => g.media_url)
+    if (allNowReady) {
+      setGenError(null)
+    } else {
+      // If any original slot is empty AND was created >5 min ago → stuck, show retry
+      const STALE_MS = 5 * 60 * 1000
+      const staleStuck = normalized.some(
+        (g) => !g.is_redo && !g.media_url && (Date.now() - new Date(g.created_at).getTime()) > STALE_MS
       )
+      if (staleStuck) {
+        setGenError(
+          'One or more images timed out during generation. ' +
+          'Click "Retry Generation" — only the missing ones will be regenerated (no extra credits used).'
+        )
+      }
     }
 
     setLoading(false)
@@ -222,7 +228,7 @@ export default function ReviewVision() {
   useEffect(() => {
     const originals = generations.filter((g) => !g.is_redo)
     const hasPending = originals.some((g) => !g.media_url)
-    if (!hasPending || loading || genError) return
+    if (!hasPending || loading) return
 
     let pollCount = 0
     const MAX_POLLS = 30 // 30 × 6s = 3 minutes
