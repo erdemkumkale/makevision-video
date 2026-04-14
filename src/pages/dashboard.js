@@ -29,9 +29,12 @@ const ProjectCard = ({ project, onClick }) => {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 
-  const STORAGE = 'https://ibcxaytaewufzluxnjbc.supabase.co/storage/v1/object/public/vision-assets'
-  const thumbUrl = `${STORAGE}/projects/${project.id}/images/0.jpg`
-  const hasThumb = ['Images_Ready','Processing','Videos_Ready','Completed'].includes(project.status)
+  // DB'den gelen gerçek URL — hardcode path yerine
+  const firstImage = (project.thumbnail ?? [])
+    .filter(t => t.media_url)
+    .sort((a, b) => a.order_num - b.order_num)[0]
+  const thumbUrl = firstImage?.media_url ?? null
+  const hasThumb = !!thumbUrl && ['Images_Ready','Processing','Videos_Ready','Completed'].includes(project.status)
 
   return (
     // button yerine div — button içinde aspect-ratio / height hesabı tutarsız çalışıyor
@@ -137,7 +140,7 @@ export default function Dashboard() {
     if (!user) return
     const { data, error } = await supabase
       .from('vision_projects')
-      .select('*')
+      .select('*, thumbnail:media_generations(media_url, order_num)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     if (!error) {
