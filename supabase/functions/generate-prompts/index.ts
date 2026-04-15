@@ -346,28 +346,24 @@ FILM STRUCTURE (follow this arc)
 ${arcDescription}
 
 ════════════════════════════════════════
-IMAGE PROMPT RULES
+CRITICAL PROMPT RULES
 ════════════════════════════════════════
+1. ALWAYS establish the environment first. Never start with the subject. The world comes before the person.
+2. The subject enters the scene naturally — they belong there, they were not placed there.
+3. Every image_prompt MUST include:
+   - Camera angle: wide shot / medium shot / over-the-shoulder / back to camera / silhouette
+   - Lighting and time of day (e.g. golden hour, blue hour, overcast midday, candlelight)
+   - Emotional atmosphere (one word: triumphant, peaceful, electric, intimate, grounded...)
+4. NEVER describe a portrait. NEVER frame the face as the focal point.
+5. The subject is described below — weave them naturally into the scene, do not open with them.
 
-THE SUBJECT (do not change this — use exactly as given):
-${subjectDescription}
-
-Start every image_prompt with this exact subject line:
-"A photorealistic [SHOT_TYPE] of a ${subjectDescription} subject, whose face is composited from a reference photo, wearing [CLOTHING FITTING THE SCENE] —"
-
-SHOT TYPES — vary across scenes to create cinematic rhythm:
-- "wide establishing shot" (subject small in grand environment)
-- "medium environmental shot" (subject and setting equally visible)
-- "intimate close-up" (face and upper body, emotion readable)
-- "over-the-shoulder shot" (subject looking at something ahead)
-- "low-angle power shot" (shot from below, subject looks commanding)
-- "golden-hour silhouette" (backlit, aspirational atmosphere)
+THE SUBJECT (use naturally within the scene):
+${subjectDescription}, face composited from a reference photo
 
 VISUAL RULES:
 - ONE face only — the subject is the ONLY person with a visible face
-- Other people (partner, friends, team): show from behind, in silhouette, or cropped at shoulder — NO other face
-- Be SPECIFIC to their vision — derive real locations, environments, activities from their description
-- Rich sensory detail: lighting quality, time of day, textures, atmosphere
+- Other people: show from behind, in silhouette, or cropped — NO other face
+- Rich sensory detail: light quality, textures, atmosphere
 - Each scene should feel like a real cinematic still, not stock photography
 
 ════════════════════════════════════════
@@ -375,13 +371,13 @@ VIDEO PROMPT RULES
 ════════════════════════════════════════
 Describe ONLY camera movement and light — never subject locomotion.
 
-GOOD (camera + light only):
-- "Slow push-in toward the subject's face, golden hour light softens across their features"
-- "Camera drifts gently left, subject gazes at the view, depth of field blurs the horizon"
-- "Subtle handheld breathing movement, candlelight flickers across the scene"
-- "Gentle pull-back reveal, morning mist lifts slowly in the background"
+GOOD:
+- "Slow push-in, golden hour light softens across the terrace"
+- "Camera drifts gently left, depth of field blurs the horizon"
+- "Subtle handheld breathing movement, candlelight flickers"
+- "Gentle pull-back reveal, morning mist lifts in the background"
 
-FORBIDDEN — do NOT write:
+FORBIDDEN:
 - Subject moving: walking, turning, driving, riding, gesturing
 - New objects or people appearing
 - Restating what's in the image
@@ -400,17 +396,19 @@ REFERENCE IMAGES
 ${availableRefs.length > 0
   ? `The user has uploaded reference images for: ${availableRefs.join(', ')}.
 
-CRITICAL: Every uploaded reference MUST appear in at least one scene. This is a vision board — the user wants to literally see their specific home/car/location in the video.
+These are part of the world — weave them naturally into scenes.
+The dream home appears in the background. The car passes through a scene. They are environment, not subject.
+
+MANDATORY: Each uploaded reference [${availableRefs.join(', ')}] must appear in at least one scene.
 
 Assign each scene a "reference_key" field:
-- MANDATORY: Each key in [${availableRefs.join(', ')}] must be used in at least one scene
-- Use the exact key when that scene features that environment/object
-- Use null for scenes that don't need a reference
-- Spread references across the film — don't cluster them together
-- A key: "home" scene: subject is IN or AROUND the dream home (interior or exterior)
-- A key: "car" scene: subject is IN or NEXT TO the dream car
-- A key: "location" scene: subject is AT the dream location
-- A key: "lifestyle" scene: subject is living that lifestyle moment`
+- Use the exact key when that reference is the environment of the scene
+- Use null for scenes that don't feature a reference
+- Spread references — don't cluster them
+- "home": scene takes place IN or AROUND the dream home
+- "car": dream car is visible IN or AROUND the scene
+- "location": scene is SET AT the dream location
+- "lifestyle": scene reflects that specific lifestyle`
   : `The user has not uploaded any reference images. Set "reference_key": null for all scenes.`}
 
 ════════════════════════════════════════
