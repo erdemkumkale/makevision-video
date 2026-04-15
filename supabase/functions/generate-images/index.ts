@@ -273,7 +273,7 @@ async function generateFluxImage(
   if (!taskId) throw new Error(`Flux: no task_id in response: ${JSON.stringify(data)}`)
 
   console.log(`Flux task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 40, 5000)
+  return await pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90sn
 }
 
 // ─── Step 1b: Flux img2img — referans görsel ile ─────────────────────────────
@@ -308,7 +308,7 @@ async function generateFluxImageWithReference(
   if (!taskId) throw new Error(`Flux img2img: no task_id in response: ${JSON.stringify(data)}`)
 
   console.log(`Flux img2img task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 40, 5000)
+  return await pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90sn
 }
 
 // ─── Step 2: PiAPI Face Swap ──────────────────────────────────────────────────
@@ -337,7 +337,7 @@ async function faceSwap(
   if (!taskId) throw new Error(`Face swap: no task_id: ${JSON.stringify(data)}`)
 
   console.log(`Face swap task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 36, 5000)
+  return await pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90sn
 }
 
 // ─── Generic PiAPI task poller ────────────────────────────────────────────────
