@@ -158,17 +158,8 @@ async function processSlotWithRetry(ctx: {
   try {
     console.log(`Slot ${gen.order_num}: attempt ${attempt}/${MAX_ATTEMPTS}${gen.reference_image_url ? ' [img2img]' : ' [txt2img]'}`)
 
-    let rawUrl: string
-    if (gen.reference_image_url) {
-      try {
-        rawUrl = await generateFluxImageWithReference(piApiKey, gen.prompt_text, gen.negative_prompt, gen.reference_image_url)
-      } catch (img2imgErr) {
-        console.warn(`Slot ${gen.order_num} img2img failed, falling back to txt2img:`, String(img2imgErr))
-        rawUrl = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-      }
-    } else {
-      rawUrl = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-    }
+    // img2img devre dışı — PiAPI external URL'lere erişemiyor
+    const rawUrl = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
     const safeSwapUrl = getSafeSwapImageUrl(selfieUrl)
     const faceSwapUrl = await faceSwap(piApiKey, rawUrl, safeSwapUrl)
 
