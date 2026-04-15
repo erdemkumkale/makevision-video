@@ -104,7 +104,9 @@ serve(async (req: Request) => {
   }
 })
 
-// ─── Arka plan: slotları sırayla çalıştır — timeout'u önler ─────────────────
+// ─── Arka plan: paralel çalıştır, her slot max 3dk timeout ──────────────────
+
+const SLOT_TIMEOUT_MS = 3 * 60 * 1000 // 3 dakika per slot
 
 async function runAllSlots(ctx: {
   // deno-lint-ignore no-explicit-any
@@ -116,19 +118,28 @@ async function runAllSlots(ctx: {
 }) {
   const { supabase, piApiKey, project_id, selfieUrl, generations } = ctx
 
-  // Sırayla çalıştır — paralel değil. Her slot bitince bir sonraki başlar.
-  // Timeout riskini ortadan kaldırır.
-  for (const gen of generations) {
-    await processSlotWithRetry({ supabase, piApiKey, project_id, selfieUrl, gen })
-  }
+  await Promise.all(
+    generations.map((gen) => {
+      const slotPromise = processSlotWithRetry({ supabase, piApiKey, project_id, selfieUrl, gen })
+      const timeoutPromise = new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error(`Slot ${gen.order_num} timed out after 3min`)), SLOT_TIMEOUT_MS)
+      )
+      return Promise.race([slotPromise, timeoutPromise]).catch(async (err) => {
+        console.error(`Slot ${gen.order_num} killed by timeout:`, String(err))
+        await supabase
+          .from('media_generations')
+          .update({ error: `Timeout: ${String(err)}` })
+          .eq('id', gen.id)
+      })
+    })
+  )
 
-  // Tüm slotlar tamamlandı — status güncelle
   await supabase
     .from('vision_projects')
     .update({ status: 'Images_Ready' })
     .eq('id', project_id)
 
-  console.log(`Project ${project_id}: all image slots processed → Images_Ready`)
+  console.log(`Project ${project_id}: all slots done → Images_Ready`)
 }
 
 // ─── Slot işleyici: otomatik retry (max 3 deneme) ────────────────────────────
