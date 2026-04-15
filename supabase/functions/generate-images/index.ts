@@ -104,7 +104,7 @@ serve(async (req: Request) => {
   }
 })
 
-// ─── Arka plan: tüm slotları paralel çalıştır ────────────────────────────────
+// ─── Arka plan: slotları sırayla çalıştır — timeout'u önler ─────────────────
 
 async function runAllSlots(ctx: {
   // deno-lint-ignore no-explicit-any
@@ -116,12 +116,13 @@ async function runAllSlots(ctx: {
 }) {
   const { supabase, piApiKey, project_id, selfieUrl, generations } = ctx
 
-  // Her slot bağımsız çalışır — biri bitince hemen DB'ye yazar
-  await Promise.all(
-    generations.map((gen) => processSlotWithRetry({ supabase, piApiKey, project_id, selfieUrl, gen }))
-  )
+  // Sırayla çalıştır — paralel değil. Her slot bitince bir sonraki başlar.
+  // Timeout riskini ortadan kaldırır.
+  for (const gen of generations) {
+    await processSlotWithRetry({ supabase, piApiKey, project_id, selfieUrl, gen })
+  }
 
-  // Tüm slotlar tamamlandı (başarılı veya başarısız) — status güncelle
+  // Tüm slotlar tamamlandı — status güncelle
   await supabase
     .from('vision_projects')
     .update({ status: 'Images_Ready' })
