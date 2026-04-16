@@ -61,8 +61,9 @@ serve(async (req: Request) => {
     const sceneCount = (project.story_inputs as any)?.scene_count ?? 6
     console.log('Story text length:', storyText.length, '| scene count:', sceneCount)
 
-    // gemini-2.5-flash önce, 503'te 1.5-flash'a düş
-    const geminiUrl     = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+    // gemini-2.0-flash (stable) önce, hata alınca 1.5-flash'a düş
+    // NOT: gemini-2.5-flash 404 veriyor — model ID değişmiş veya yavaş döndü
+    const geminiUrl         = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`
     const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
 
     const selfieUrl: string | null = project.selfie_url ?? null
@@ -279,7 +280,7 @@ async function analyzeHairAndSkin(geminiUrl: string, selfieUrl: string): Promise
   const selfiePart = await fetchImagePart(selfieUrl)
   if (!selfiePart) return 'short dark hair, medium skin tone'
 
-  const geminiUrlFallback = geminiUrl.replace('gemini-2.5-flash', 'gemini-1.5-flash')
+  const geminiUrlFallback = geminiUrl.replace('gemini-2.0-flash', 'gemini-1.5-flash')
 
   const body = JSON.stringify({
     contents: [{
