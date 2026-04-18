@@ -135,16 +135,32 @@ async function runFluxPhase(
   console.log('Flux: polling all tasks in parallel')
   return Promise.all(submitted.map(async ({ gen, taskId, error }) => {
     if (!taskId) return { id: gen.id, order_num: gen.order_num, flux_url: null, error }
-    try {
-      const piApiUrl = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
-      // PiAPI URL'i hemen Supabase Storage'a yükle — faceswap geçici URL'e erişemez
+
+    const tryFlux = async (tid: string): Promise<string> => {
+      const piApiUrl = await pollTask(piApiKey, tid, 'image_url', 18, 5000)
       const storagePath = `projects/${project_id}/flux/${gen.order_num}.jpg`
       const flux_url = await uploadToStorage(supabase, piApiUrl, storagePath)
+      return flux_url
+    }
+
+    try {
+      const flux_url = await tryFlux(taskId)
       console.log(`Slot ${gen.order_num} flux done → uploaded to storage`)
       return { id: gen.id, order_num: gen.order_num, flux_url, error: null }
     } catch (err) {
-      console.error(`Slot ${gen.order_num} flux poll/upload failed:`, String(err))
-      return { id: gen.id, order_num: gen.order_num, flux_url: null, error: String(err) }
+      // Auto-retry once
+      console.warn(`Slot ${gen.order_num} flux failed, retrying once:`, String(err))
+      await sleep(3000)
+      try {
+        const retryTaskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt)
+        console.log(`Slot ${gen.order_num} flux retry submitted: ${retryTaskId}`)
+        const flux_url = await tryFlux(retryTaskId)
+        console.log(`Slot ${gen.order_num} flux retry done`)
+        return { id: gen.id, order_num: gen.order_num, flux_url, error: null }
+      } catch (retryErr) {
+        console.error(`Slot ${gen.order_num} flux retry also failed:`, String(retryErr))
+        return { id: gen.id, order_num: gen.order_num, flux_url: null, error: String(retryErr) }
+      }
     }
   }))
 }
@@ -183,8 +199,19 @@ async function runFaceswapPhase(
       console.log(`Slot ${slot.order_num} faceswap done`)
       return { slot, finalUrl, error: null }
     } catch (err) {
-      console.error(`Slot ${slot.order_num} faceswap poll failed:`, String(err))
-      return { slot, finalUrl: null, error: String(err) }
+      // Auto-retry once — "invalid request" often resolves on second attempt
+      console.warn(`Slot ${slot.order_num} faceswap failed, retrying once:`, String(err))
+      await sleep(3000)
+      try {
+        const retryTaskId = await submitFaceswap(piApiKey, slot.flux_url!, selfieUrl)
+        console.log(`Slot ${slot.order_num} faceswap retry submitted: ${retryTaskId}`)
+        const finalUrl = await pollTask(piApiKey, retryTaskId, 'image_url', 18, 5000)
+        console.log(`Slot ${slot.order_num} faceswap retry done`)
+        return { slot, finalUrl, error: null }
+      } catch (retryErr) {
+        console.error(`Slot ${slot.order_num} faceswap retry also failed:`, String(retryErr))
+        return { slot, finalUrl: null, error: String(retryErr) }
+      }
     }
   }))
 
