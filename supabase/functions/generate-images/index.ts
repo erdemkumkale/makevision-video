@@ -82,7 +82,7 @@ serve(async (req: Request) => {
       }
 
       console.log(`Flux phase: ${generations.length} slots`)
-      const result = await runFluxPhase(piApiKey, generations)
+      const result = await runFluxPhase(supabase, piApiKey, project_id, generations)
       return json({ success: true, flux_slots: result })
     }
 
@@ -112,7 +112,10 @@ serve(async (req: Request) => {
 type FluxSlot = { id: string; order_num: number; flux_url: string | null; error: string | null }
 
 async function runFluxPhase(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
   piApiKey: string,
+  project_id: string,
   generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
 ): Promise<FluxSlot[]> {
   // Hepsini aynı anda submit et
@@ -133,11 +136,14 @@ async function runFluxPhase(
   return Promise.all(submitted.map(async ({ gen, taskId, error }) => {
     if (!taskId) return { id: gen.id, order_num: gen.order_num, flux_url: null, error }
     try {
-      const flux_url = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
-      console.log(`Slot ${gen.order_num} flux done`)
+      const piApiUrl = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
+      // PiAPI URL'i hemen Supabase Storage'a yükle — faceswap geçici URL'e erişemez
+      const storagePath = `projects/${project_id}/flux/${gen.order_num}.jpg`
+      const flux_url = await uploadToStorage(supabase, piApiUrl, storagePath)
+      console.log(`Slot ${gen.order_num} flux done → uploaded to storage`)
       return { id: gen.id, order_num: gen.order_num, flux_url, error: null }
     } catch (err) {
-      console.error(`Slot ${gen.order_num} flux poll failed:`, String(err))
+      console.error(`Slot ${gen.order_num} flux poll/upload failed:`, String(err))
       return { id: gen.id, order_num: gen.order_num, flux_url: null, error: String(err) }
     }
   }))
