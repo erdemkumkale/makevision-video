@@ -289,7 +289,8 @@ const SUBMIT_STAGES = [
   'Uploading your photo...',
   'Saving your vision...',
   'Analyzing your story with AI...',
-  'Generating your images...',
+  'Generating your scenes... (this takes ~2 minutes)',
+  'Adding your face to each scene...',
   'Almost ready...',
 ]
 
@@ -352,12 +353,16 @@ export default function CreateVision() {
       setSubmitStage(2)
       await api.generatePrompts(project.id)
 
-      // 4. Generate images (fire-and-forget)
+      // 4. Generate Flux images (synchronous, ~2min)
       setSubmitStage(3)
-      await api.generateImages(project.id)
+      const { flux_slots } = await api.generateFlux(project.id)
 
-      // 5. Redirect to review
+      // 5. Generate faceswap (synchronous, ~1.5min)
       setSubmitStage(4)
+      await api.generateFaceswap(project.id, flux_slots)
+
+      // 6. Redirect to review
+      setSubmitStage(5)
       router.push(`/review/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)

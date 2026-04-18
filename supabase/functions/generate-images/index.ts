@@ -1,12 +1,17 @@
 // supabase/functions/generate-images/index.ts
 //
-// Mimari: fire-and-forget
-//   1. Auth + input doğrulama  (senkron, ~1s)
-//   2. 200 hemen döner         → create.js review'e yönlendirir
-//   3. Arka planda devam eder  → EdgeRuntime.waitUntil
-//      Her slot bağımsız: Flux (txt2img) → Face Swap → DB update
-//      Tüm slotlar paralel, her biri max 4dk timeout
-//      İşlem bitince vision_projects.status = 'Images_Ready'
+// İki aşamalı pipeline — her aşama ~120s, Edge Function limitine sığar:
+//
+//   Phase "flux":
+//     Tüm Flux task'larını 3'erli batch ile işle → flux URL'lerini döndür
+//     Süre: 2 batch × 90s = ~120s ✓
+//
+//   Phase "faceswap":
+//     flux_slots'tan URL'leri al → faceswap yap → DB'ye kaydet
+//     Süre: 2 batch × 60s = ~90s ✓
+//
+//   Frontend her iki aşamayı sırayla BEKLEYEREK çağırır (~3-4dk toplam).
+//   Fire-and-forget YOK — Edge Function ölmeden tamamlanır.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -43,8 +48,13 @@ serve(async (req: Request) => {
       auth: { persistSession: false },
     })
 
-    const { project_id } = await req.json()
+    const body = await req.json()
+    const { project_id, phase, flux_slots } = body
+
     if (!project_id) return json({ error: 'project_id is required' }, 400)
+    if (!phase || !['flux', 'faceswap'].includes(phase)) {
+      return json({ error: 'phase must be "flux" or "faceswap"' }, 400)
+    }
 
     const { data: project, error: projectError } = await supabase
       .from('vision_projects')
@@ -54,40 +64,39 @@ serve(async (req: Request) => {
       .single()
 
     if (projectError || !project) return json({ error: 'Project not found' }, 404)
-    if (!project.selfie_url) return json({ error: 'No selfie_url on project' }, 400)
-
-    // Sadece boş slotları al (retry güvenliği: dolu slotlara dokunmaz)
-    const { data: generations, error: genError } = await supabase
-      .from('media_generations')
-      .select('id, prompt_text, negative_prompt, order_num')
-      .eq('vision_project_id', project_id)
-      .eq('media_url', '')
-      .order('order_num', { ascending: true })
-
-    if (genError || !generations?.length) {
-      return json({ error: 'No pending generations found. Run generate-prompts first.' }, 400)
-    }
 
     const piApiKey = Deno.env.get('PIAPI_API_KEY')
     if (!piApiKey) return json({ error: 'PIAPI_API_KEY not set' }, 500)
 
-    console.log(`Starting ${generations.length} slots for project ${project_id}`)
+    // ── Phase 1: Flux ─────────────────────────────────────────────────────────
+    if (phase === 'flux') {
+      const { data: generations, error: genError } = await supabase
+        .from('media_generations')
+        .select('id, prompt_text, negative_prompt, order_num')
+        .eq('vision_project_id', project_id)
+        .eq('media_url', '')
+        .order('order_num', { ascending: true })
 
-    const pipeline = runAllSlots({
-      supabase, piApiKey, project_id,
-      selfieUrl: project.selfie_url,
-      generations,
-    })
+      if (genError || !generations?.length) {
+        return json({ error: 'No pending generations found' }, 400)
+      }
 
-    // @ts-ignore — Supabase Edge Runtime global
-    if (typeof EdgeRuntime !== 'undefined') {
-      // deno-lint-ignore no-explicit-any
-      ;(EdgeRuntime as any).waitUntil(pipeline)
-    } else {
-      pipeline.catch((e) => console.error('Pipeline error (local):', e))
+      console.log(`Flux phase: ${generations.length} slots`)
+      const result = await runFluxPhase(piApiKey, generations)
+      return json({ success: true, flux_slots: result })
     }
 
-    return json({ success: true, started: generations.length })
+    // ── Phase 2: Faceswap ─────────────────────────────────────────────────────
+    if (phase === 'faceswap') {
+      if (!project.selfie_url) return json({ error: 'No selfie_url on project' }, 400)
+      if (!Array.isArray(flux_slots) || !flux_slots.length) {
+        return json({ error: 'flux_slots required for faceswap phase' }, 400)
+      }
+
+      console.log(`Faceswap phase: ${flux_slots.length} slots`)
+      await runFaceswapPhase(supabase, piApiKey, project_id, project.selfie_url, flux_slots)
+      return json({ success: true })
+    }
 
   } catch (err) {
     console.error('Unhandled error:', err)
@@ -95,141 +104,164 @@ serve(async (req: Request) => {
   }
 })
 
-// ─── Tüm slotlar paralel — her biri max 4dk timeout ──────────────────────────
+// ─── Phase 1: Flux — 3'erli batch, synchronous ───────────────────────────────
 
-const SLOT_TIMEOUT_MS = 5 * 60 * 1000
+type FluxSlot = { id: string; order_num: number; flux_url: string | null; error: string | null }
 
-async function runAllSlots(ctx: {
-  // deno-lint-ignore no-explicit-any
-  supabase: any
-  piApiKey: string
-  project_id: string
-  selfieUrl: string
+async function runFluxPhase(
+  piApiKey: string,
   generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
-}) {
-  const { supabase, piApiKey, project_id, selfieUrl, generations } = ctx
+): Promise<FluxSlot[]> {
+  const results: FluxSlot[] = []
+  const BATCH = 3
 
-  await Promise.all(
-    generations.map((gen) => {
-      const slotPromise = processSlot({ supabase, piApiKey, project_id, selfieUrl, gen })
-      const timeoutPromise = new Promise<void>((_, reject) =>
-        setTimeout(() => reject(new Error(`Slot ${gen.order_num} timed out`)), SLOT_TIMEOUT_MS)
-      )
-      return Promise.race([slotPromise, timeoutPromise]).catch(async (err) => {
-        console.error(`Slot ${gen.order_num} killed:`, String(err))
-        await supabase
-          .from('media_generations')
-          .update({ error: String(err) })
-          .eq('id', gen.id)
-      })
-    })
-  )
+  for (let i = 0; i < generations.length; i += BATCH) {
+    const batch = generations.slice(i, i + BATCH)
+    console.log(`Flux batch ${Math.floor(i / BATCH) + 1}: slots ${batch.map(g => g.order_num).join(', ')}`)
 
-  await supabase
-    .from('vision_projects')
+    // Submit
+    const submitted = await Promise.all(batch.map(async (gen) => {
+      try {
+        const taskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt)
+        return { gen, taskId, error: null }
+      } catch (err) {
+        console.error(`Slot ${gen.order_num} flux submit failed:`, String(err))
+        return { gen, taskId: null, error: String(err) }
+      }
+    }))
+
+    // Poll
+    const polled = await Promise.all(submitted.map(async ({ gen, taskId, error }) => {
+      if (!taskId) return { id: gen.id, order_num: gen.order_num, flux_url: null, error }
+      try {
+        const flux_url = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
+        console.log(`Slot ${gen.order_num} flux done`)
+        return { id: gen.id, order_num: gen.order_num, flux_url, error: null }
+      } catch (err) {
+        console.error(`Slot ${gen.order_num} flux poll failed:`, String(err))
+        return { id: gen.id, order_num: gen.order_num, flux_url: null, error: String(err) }
+      }
+    }))
+
+    results.push(...polled)
+  }
+
+  return results
+}
+
+// ─── Phase 2: Faceswap — 3'erli batch, synchronous ──────────────────────────
+
+async function runFaceswapPhase(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  piApiKey: string,
+  project_id: string,
+  selfieUrl: string,
+  flux_slots: FluxSlot[]
+): Promise<void> {
+  const BATCH = 3
+  const validSlots = flux_slots.filter(s => s.flux_url)
+
+  for (let i = 0; i < validSlots.length; i += BATCH) {
+    const batch = validSlots.slice(i, i + BATCH)
+    console.log(`Faceswap batch ${Math.floor(i / BATCH) + 1}: slots ${batch.map(s => s.order_num).join(', ')}`)
+
+    // Submit
+    const submitted = await Promise.all(batch.map(async (slot) => {
+      try {
+        const taskId = await submitFaceswap(piApiKey, slot.flux_url!, selfieUrl)
+        return { slot, taskId, error: null }
+      } catch (err) {
+        console.error(`Slot ${slot.order_num} faceswap submit failed:`, String(err))
+        return { slot, taskId: null, error: String(err) }
+      }
+    }))
+
+    // Poll
+    const polled = await Promise.all(submitted.map(async ({ slot, taskId, error }) => {
+      if (!taskId) return { slot, finalUrl: null, error }
+      try {
+        const finalUrl = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
+        console.log(`Slot ${slot.order_num} faceswap done`)
+        return { slot, finalUrl, error: null }
+      } catch (err) {
+        console.error(`Slot ${slot.order_num} faceswap poll failed:`, String(err))
+        return { slot, finalUrl: null, error: String(err) }
+      }
+    }))
+
+    // DB güncelle
+    await Promise.all(polled.map(async ({ slot, finalUrl, error }) => {
+      if (!finalUrl) {
+        await supabase.from('media_generations')
+          .update({ error: error ?? 'Faceswap failed' })
+          .eq('id', slot.id)
+        return
+      }
+
+      const storagePath = `projects/${project_id}/images/${slot.order_num}.jpg`
+      let stableUrl = finalUrl
+      try {
+        stableUrl = await uploadToStorage(supabase, finalUrl, storagePath)
+      } catch (uploadErr) {
+        console.warn(`Slot ${slot.order_num} storage upload failed, using PiAPI URL:`, uploadErr)
+      }
+
+      await supabase.from('media_generations')
+        .update({ media_url: stableUrl, error: null })
+        .eq('id', slot.id)
+    }))
+  }
+
+  // Failed flux slotlarına hata yaz
+  const failedSlots = flux_slots.filter(s => !s.flux_url)
+  await Promise.all(failedSlots.map(s =>
+    supabase.from('media_generations')
+      .update({ error: s.error ?? 'Flux generation failed' })
+      .eq('id', s.id)
+  ))
+
+  await supabase.from('vision_projects')
     .update({ status: 'Images_Ready' })
     .eq('id', project_id)
 
-  console.log(`Project ${project_id}: all slots done → Images_Ready`)
+  console.log(`Project ${project_id}: faceswap phase complete → Images_Ready`)
 }
 
-// ─── Tek slot işleyici: Flux → faceswap → storage → DB ───────────────────────
+// ─── Submit helpers ───────────────────────────────────────────────────────────
 
-async function processSlot(ctx: {
-  // deno-lint-ignore no-explicit-any
-  supabase: any
-  piApiKey: string
-  project_id: string
-  selfieUrl: string
-  gen: { id: string; prompt_text: string; negative_prompt: string; order_num: number }
-}, attempt = 1): Promise<void> {
-  const MAX_ATTEMPTS = 3
-  const { supabase, piApiKey, project_id, selfieUrl, gen } = ctx
-
-  try {
-    console.log(`Slot ${gen.order_num}: attempt ${attempt}/${MAX_ATTEMPTS}`)
-
-    const fluxUrl     = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-    const faceSwapUrl = await faceSwap(piApiKey, fluxUrl, selfieUrl)
-
-    const storagePath = `projects/${project_id}/images/${gen.order_num}.jpg`
-    let finalUrl = faceSwapUrl
-    try {
-      finalUrl = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
-    } catch (uploadErr) {
-      console.warn(`Slot ${gen.order_num}: storage upload failed, using PiAPI URL:`, uploadErr)
-    }
-
-    await supabase
-      .from('media_generations')
-      .update({ media_url: finalUrl, error: null })
-      .eq('id', gen.id)
-
-    console.log(`Slot ${gen.order_num} ✓`)
-
-  } catch (err) {
-    console.error(`Slot ${gen.order_num} attempt ${attempt} failed:`, String(err))
-
-    if (attempt < MAX_ATTEMPTS) {
-      await sleep(attempt * 5000) // 5s, 10s
-      return processSlot(ctx, attempt + 1)
-    }
-
-    await supabase
-      .from('media_generations')
-      .update({ error: `Failed after ${MAX_ATTEMPTS} attempts: ${String(err)}` })
-      .eq('id', gen.id)
-  }
-}
-
-// ─── Flux txt2img ─────────────────────────────────────────────────────────────
-
-async function generateFluxImage(apiKey: string, prompt: string, negativePrompt: string): Promise<string> {
+async function submitFlux(apiKey: string, prompt: string, negativePrompt: string): Promise<string> {
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',
     headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'Qubico/flux1-dev',
       task_type: 'txt2img',
-      input: {
-        prompt,
-        negative_prompt: negativePrompt,
-        width: 768,
-        height: 1024,
-        guidance_scale: 3.5,
-        num_inference_steps: 28,
-      },
+      input: { prompt, negative_prompt: negativePrompt, width: 768, height: 1024, guidance_scale: 3.5, num_inference_steps: 28 },
     }),
   })
   if (!res.ok) throw new Error(`Flux submit failed (${res.status}): ${await res.text()}`)
   const data = await res.json()
   const taskId = data?.data?.task_id
   if (!taskId) throw new Error(`Flux: no task_id: ${JSON.stringify(data)}`)
-  console.log(`Slot flux task: ${taskId}`)
-  return pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90s
+  return taskId
 }
 
-// ─── Face Swap ────────────────────────────────────────────────────────────────
-
-async function faceSwap(apiKey: string, targetImageUrl: string, swapImageUrl: string): Promise<string> {
+async function submitFaceswap(apiKey: string, targetUrl: string, swapUrl: string): Promise<string> {
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',
     headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'Qubico/image-toolkit',
       task_type: 'face-swap',
-      input: {
-        target_image: targetImageUrl,
-        swap_image:   swapImageUrl,
-      },
+      input: { target_image: targetUrl, swap_image: swapUrl },
     }),
   })
   if (!res.ok) throw new Error(`Faceswap submit failed (${res.status}): ${await res.text()}`)
   const data = await res.json()
   const taskId = data?.data?.task_id
   if (!taskId) throw new Error(`Faceswap: no task_id: ${JSON.stringify(data)}`)
-  console.log(`Slot faceswap task: ${taskId}`)
-  return pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90s
+  return taskId
 }
 
 // ─── Poller ───────────────────────────────────────────────────────────────────
@@ -243,10 +275,7 @@ async function pollTask(apiKey: string, taskId: string, outputKey: string, maxAt
     const status: string = data?.data?.status ?? ''
     console.log(`Poll ${taskId} attempt ${i + 1}: ${status}`)
     if (status === 'completed') {
-      const url = data?.data?.output?.[outputKey]
-        ?? data?.data?.output?.image_url
-        ?? data?.data?.output?.image
-        ?? data?.data?.output?.url
+      const url = data?.data?.output?.[outputKey] ?? data?.data?.output?.image_url ?? data?.data?.output?.image ?? data?.data?.output?.url
       if (url) return url
       throw new Error(`Task ${taskId} completed but no URL: ${JSON.stringify(data?.data?.output)}`)
     }
@@ -255,30 +284,25 @@ async function pollTask(apiKey: string, taskId: string, outputKey: string, maxAt
   throw new Error(`Task ${taskId} timed out after ${maxAttempts} attempts`)
 }
 
-// ─── Storage upload ───────────────────────────────────────────────────────────
+// ─── Storage ──────────────────────────────────────────────────────────────────
 
 // deno-lint-ignore no-explicit-any
-async function uploadImageToStorage(supabase: any, imageUrl: string, storagePath: string): Promise<string> {
-  const BUCKET = 'vision-assets'
+async function uploadToStorage(supabase: any, imageUrl: string, storagePath: string): Promise<string> {
   const res = await fetch(imageUrl)
-  if (!res.ok) throw new Error(`Image download failed (${res.status})`)
+  if (!res.ok) throw new Error(`Download failed (${res.status})`)
   const buffer = await res.arrayBuffer()
   const contentType = res.headers.get('content-type') ?? 'image/jpeg'
-  const { error: uploadError } = await supabase.storage
-    .from(BUCKET).upload(storagePath, buffer, { contentType, upsert: true })
-  if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
-  if (!data?.publicUrl) throw new Error(`getPublicUrl failed for ${storagePath}`)
+  const { error } = await supabase.storage.from('vision-assets').upload(storagePath, buffer, { contentType, upsert: true })
+  if (error) throw new Error(`Upload failed: ${error.message}`)
+  const { data } = supabase.storage.from('vision-assets').getPublicUrl(storagePath)
+  if (!data?.publicUrl) throw new Error(`getPublicUrl failed`)
   return data.publicUrl
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-  })
+  return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
 }
 
 function sleep(ms: number) {
