@@ -93,8 +93,6 @@ serve(async (req: Request) => {
         return json({ error: 'flux_slots required for faceswap phase' }, 400)
       }
 
-      // Storage CDN'in propagate olması için kısa bekleme
-      await sleep(5000)
       console.log(`Faceswap phase: ${flux_slots.length} slots`)
       await runFaceswapPhase(supabase, piApiKey, project_id, project.selfie_url, flux_slots)
       return json({ success: true })
@@ -293,7 +291,24 @@ async function uploadToStorage(supabase: any, imageUrl: string, storagePath: str
   if (error) throw new Error(`Upload failed: ${error.message}`)
   const { data } = supabase.storage.from('vision-assets').getPublicUrl(storagePath)
   if (!data?.publicUrl) throw new Error(`getPublicUrl failed`)
-  return data.publicUrl
+
+  // CDN propagation: poll until URL is accessible (max 30s)
+  const publicUrl = data.publicUrl
+  for (let i = 0; i < 15; i++) {
+    await sleep(2000)
+    try {
+      const check = await fetch(publicUrl, { method: 'HEAD' })
+      if (check.ok) {
+        console.log(`Storage URL accessible after ${(i + 1) * 2}s: ${storagePath}`)
+        return publicUrl
+      }
+      console.log(`Storage URL not ready yet (${check.status}), attempt ${i + 1}/15`)
+    } catch (e) {
+      console.log(`Storage URL check failed, attempt ${i + 1}/15:`, e)
+    }
+  }
+  console.warn(`Storage URL still not confirmed after 30s, proceeding anyway: ${storagePath}`)
+  return publicUrl
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
