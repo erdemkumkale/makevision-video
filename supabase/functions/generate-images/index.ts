@@ -161,6 +161,7 @@ async function processSlotWithRetry(ctx: {
     // img2img devre dışı — PiAPI external URL'lere erişemiyor
     const rawUrl = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
     const safeSwapUrl = getSafeSwapImageUrl(selfieUrl)
+    console.log(`Slot ${gen.order_num}: swap_image URL = ${safeSwapUrl.slice(0, 80)}...`)
     const faceSwapUrl = await faceSwap(piApiKey, rawUrl, safeSwapUrl)
 
     const storagePath = `projects/${project_id}/images/${gen.order_num}.jpg`
@@ -224,13 +225,14 @@ async function uploadImageToStorage(supabase: any, imageUrl: string, storagePath
   return data.publicUrl
 }
 
-// ─── Selfie resize proxy ──────────────────────────────────────────────────────
-// PiAPI face-swap max 2048x2048. Telefon fotoğrafları 4000x3000+ olabilir.
-// images.weserv.nl ücretsiz proxy ile URL seviyesinde resize yap.
+// ─── Selfie URL ───────────────────────────────────────────────────────────────
+// Selfie'yi doğrudan Supabase public URL olarak kullan.
+// images.weserv.nl proxy denemesi yapıldı ama PiAPI sunucuları erişemedi →
+// "invalid request / failed to do request" hatası veriyordu.
+// Supabase storage public bucket URL'leri PiAPI tarafından erişilebilir.
 
 function getSafeSwapImageUrl(selfieUrl: string): string {
-  // Zaten küçükse değiştirme — büyükse proxy ile 1536px'e düşür
-  return `https://images.weserv.nl/?url=${encodeURIComponent(selfieUrl)}&w=1536&h=1536&fit=inside&output=jpg`
+  return selfieUrl
 }
 
 // ─── Step 1: Flux-1-dev text-to-image ────────────────────────────────────────
@@ -253,7 +255,8 @@ async function generateFluxImage(
         height: 1024,
         guidance_scale: 3.5,
         num_inference_steps: 28,
-        process_mode: 'fast',
+        // process_mode: 'fast' kaldırıldı — fast kuyruğu tıkandığında task
+        // "processing" durumunda sonsuza kalıyordu. Varsayılan kuyruk daha güvenilir.
       },
     }),
   })

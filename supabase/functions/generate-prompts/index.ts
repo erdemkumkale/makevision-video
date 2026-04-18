@@ -61,31 +61,20 @@ serve(async (req: Request) => {
     const sceneCount = (project.story_inputs as any)?.scene_count ?? 6
     console.log('Story text length:', storyText.length, '| scene count:', sceneCount)
 
-    // gemini-2.5-flash önce, 503'te 1.5-flash'a düş
-    const geminiUrl     = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
-    const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+    // gemini-2.0-flash primary (AI Studio'da kanıtlandı — 06:10 başarılı)
+    // gemini-1.5-flash/1.5-pro v1beta'da 404, gemini-2.5-flash da 404
+    // 503 alınca retry yapıyoruz — 2.0-flash geçici overload durumundan kurtarır
+    const geminiUrl         = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+    const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${geminiKey}`
 
-    const selfieUrl: string | null = project.selfie_url ?? null
-    const refImages: Array<{ label: string; key: string; url: string }> = project.reference_images ?? []
-    const availableRefs = refImages.map(r => r.key)
-
-    // Kullanıcının seçtiği cinsiyet ve yaş
+    // Kullanıcının seçtiği cinsiyet ve yaş — selfie analizi kaldırıldı (token maliyeti)
     const gender: string = (project.story_inputs as any)?.gender ?? 'male'
     const age: string    = (project.story_inputs as any)?.age ?? 'mid-30s'
-
-    // ── ADIM 1: Selfie'den sadece saç ve ten analizi ──────────────────────────
-    let hairAndSkin = 'short dark hair, medium skin tone' // fallback
-    if (selfieUrl) {
-      console.log('Step 1: Analyzing selfie for hair & skin...')
-      hairAndSkin = await analyzeHairAndSkin(geminiUrl, selfieUrl)
-      console.log('Hair & skin:', hairAndSkin)
-    }
-
-    const subjectDescription = `${gender}, ${age}, ${hairAndSkin}`
+    const subjectDescription = `${gender}, ${age}`
     console.log('Subject description:', subjectDescription)
 
-    // ── ADIM 2: Sahne prompt'ları ─────────────────────────────────────────────
-    const contents = buildGeminiContents(storyText, sceneCount, subjectDescription, availableRefs)
+    // ── Sahne prompt'ları ─────────────────────────────────────────────────────
+    const contents = buildGeminiContents(storyText, sceneCount, subjectDescription)
 
     console.log('Step 2: Calling Gemini for scene prompts...')
     const geminiBody = JSON.stringify({
@@ -100,11 +89,13 @@ serve(async (req: Request) => {
     let geminiRes: Response | undefined
     let lastFetchErr: unknown = null
 
-    // 2.5-flash: 2 deneme → başarısız olursa 1.5-flash: 2 deneme
     const urlsToTry = [
-      { url: geminiUrl,         label: 'gemini-2.5-flash', retries: 2 },
-      { url: geminiUrlFallback, label: 'gemini-1.5-flash', retries: 2 },
+      { url: geminiUrl,         label: 'gemini-2.5-flash',      retries: 3 },
+      { url: geminiUrlFallback, label: 'gemini-2.0-flash-lite', retries: 2 },
     ]
+
+    // 429/500/502/503 → retry; diğer hatalar (400 gibi) → hemen çık
+    const RETRYABLE = new Set([429, 500, 502, 503])
 
     outer: for (const { url, label, retries } of urlsToTry) {
       for (let attempt = 1; attempt <= retries; attempt++) {
@@ -114,9 +105,10 @@ serve(async (req: Request) => {
             headers: { 'Content-Type': 'application/json' },
             body: geminiBody,
           })
-          if (res.status !== 503) { geminiRes = res; break outer }
-          console.warn(`${label} 503 — attempt ${attempt}/${retries}, retrying in 2s...`)
-          await new Promise(r => setTimeout(r, 2000))
+          if (!RETRYABLE.has(res.status)) { geminiRes = res; break outer }
+          const waitMs = res.status === 429 ? 5000 : 2000
+          console.warn(`${label} ${res.status} — attempt ${attempt}/${retries}, retrying in ${waitMs}ms...`)
+          await new Promise(r => setTimeout(r, waitMs))
         } catch (fetchErr) {
           lastFetchErr = fetchErr
           console.error(`${label} fetch threw (attempt ${attempt}):`, fetchErr)
@@ -136,7 +128,8 @@ serve(async (req: Request) => {
     console.log('Gemini raw response:', geminiRaw.slice(0, 500))
 
     if (!geminiRes.ok) {
-      return json({ error: 'Gemini API failed', status: geminiRes.status, detail: geminiRaw }, 502)
+      const errMsg = `Gemini ${geminiRes.status}: ${geminiRaw.slice(0, 300)}`
+      return json({ error: errMsg }, 502)
     }
 
     let geminiData: Record<string, unknown>
@@ -159,10 +152,6 @@ serve(async (req: Request) => {
       return json({ error: `Expected ${sceneCount} slots from Gemini, got ${slots.length}`, raw: rawText.slice(0, 500) }, 502)
     }
 
-    // reference_key varsa o sahne için referans görsel URL'sini bul
-    const refImageMap: Record<string, string> = {}
-    for (const r of refImages) refImageMap[r.key] = r.url
-
     // ── Save to media_generations ─────────────────────────────────────────────
     const rows = slots.map((slot, idx) => ({
       vision_project_id: project_id,
@@ -170,7 +159,6 @@ serve(async (req: Request) => {
       prompt_text:       slot.image_prompt,
       video_prompt:      slot.video_prompt,
       negative_prompt:   NEGATIVE_PROMPT,
-      reference_image_url: slot.reference_key ? (refImageMap[slot.reference_key] ?? null) : null,
       media_url:         '',
       is_selected:       false,
       revision_count:    0,
@@ -275,7 +263,7 @@ async function analyzeHairAndSkin(geminiUrl: string, selfieUrl: string): Promise
   const selfiePart = await fetchImagePart(selfieUrl)
   if (!selfiePart) return 'short dark hair, medium skin tone'
 
-  const geminiUrlFallback = geminiUrl.replace('gemini-2.5-flash', 'gemini-1.5-flash')
+  const geminiUrlFallback = geminiUrl.replace('gemini-2.5-flash', 'gemini-2.0-flash-lite')
 
   const body = JSON.stringify({
     contents: [{
@@ -310,80 +298,22 @@ Example output: short dark brown hair, light olive skin` },
   return 'short dark hair, medium skin tone'
 }
 
-// ── Adım 2: Sahne prompt'ları için Gemini içeriği ─────────────────────────────
-function buildGeminiContents(
-  storyText: string,
-  sceneCount: number,
-  subjectDescription: string,
-  availableRefs: string[],
-) {
-  const promptText = buildGeminiPrompt(storyText, sceneCount, subjectDescription, availableRefs)
-  return [{ parts: [{ text: promptText }] }]
+// ── Sahne prompt'ları için Gemini içeriği ────────────────────────────────────
+function buildGeminiContents(storyText: string, sceneCount: number, subjectDescription: string) {
+  return [{ parts: [{ text: buildGeminiPrompt(storyText, sceneCount, subjectDescription) }] }]
 }
 
-function buildGeminiPrompt(storyText: string, sceneCount: number, subjectDescription: string, availableRefs: string[] = []): string {
-  // Narrative arc — sahne sayısına göre dinamik yapı
-  const mid = sceneCount - 2
-  const arcDescription = sceneCount <= 6
-    ? `Scene 1: Opening (who they are becoming — establishing shot)
-Scene 2–${mid}: Dream life moments (varied locations, moods, activities from their vision)
-Scene ${sceneCount - 1}: Peak / most powerful moment (emotional climax)
-Scene ${sceneCount}: Closing (peaceful, triumphant — pulls back to reveal the full picture)`
-    : `Scene 1: Opening (who they are becoming — wide establishing shot)
-Scene 2–3: World-building (environments and settings from their dream life)
-Scene 4–${mid}: Dream life moments (key activities, relationships, achievements)
-Scene ${sceneCount - 1}: Peak / most powerful moment (emotional climax)
-Scene ${sceneCount}: Closing (peaceful, hopeful — camera pulls back)`
+function buildGeminiPrompt(storyText: string, sceneCount: number, subjectDescription: string): string {
+  return `You are a world-class film director and cinematographer creating a personal vision film — a cinematic trailer of someone's dream life.
 
-  return `You are a cinematographer creating a personal vision film — a short cinematic trailer of someone's dream life.
-
-Your task: generate ${sceneCount} scenes that together form a cohesive short film.
-The scenes should feel CONNECTED — like acts in a movie trailer, not random separate images.
+Generate exactly ${sceneCount} image prompts. Each scene is a single powerful cinematic still from their dream life.
 
 ════════════════════════════════════════
-FILM STRUCTURE (follow this arc)
+THE PERSON
 ════════════════════════════════════════
-${arcDescription}
-
-════════════════════════════════════════
-CRITICAL PROMPT RULES
-════════════════════════════════════════
-1. ALWAYS establish the environment first. Never start with the subject. The world comes before the person.
-2. The subject enters the scene naturally — they belong there, they were not placed there.
-3. Every image_prompt MUST include:
-   - Camera angle: wide shot / medium shot / over-the-shoulder / back to camera / silhouette
-   - Lighting and time of day (e.g. golden hour, blue hour, overcast midday, candlelight)
-   - Emotional atmosphere (one word: triumphant, peaceful, electric, intimate, grounded...)
-4. NEVER describe a portrait. NEVER frame the face as the focal point.
-5. The subject is described below — weave them naturally into the scene, do not open with them.
-
-THE SUBJECT (use naturally within the scene):
-${subjectDescription}, face composited from a reference photo
-
-VISUAL RULES:
-- ONE face only — the subject is the ONLY person with a visible face
-- Other people: show from behind, in silhouette, or cropped — NO other face
-- Rich sensory detail: light quality, textures, atmosphere
-- Each scene should feel like a real cinematic still, not stock photography
-
-════════════════════════════════════════
-VIDEO PROMPT RULES
-════════════════════════════════════════
-Describe ONLY camera movement and light — never subject locomotion.
-
-GOOD:
-- "Slow push-in, golden hour light softens across the terrace"
-- "Camera drifts gently left, depth of field blurs the horizon"
-- "Subtle handheld breathing movement, candlelight flickers"
-- "Gentle pull-back reveal, morning mist lifts in the background"
-
-FORBIDDEN:
-- Subject moving: walking, turning, driving, riding, gesturing
-- New objects or people appearing
-- Restating what's in the image
-- Vague words: "cinematic", "beautiful", "epic", "stunning"
-
-Each video_prompt: 1–2 sentences, 80–140 characters max.
+${subjectDescription}
+Posture: upright, relaxed confidence — shoulders back, at ease, like they belong exactly where they are.
+Their face will be composited in later. Do NOT describe their face. Do NOT write "portrait" or close-up of face.
 
 ════════════════════════════════════════
 THEIR DREAM LIFE
@@ -391,37 +321,46 @@ THEIR DREAM LIFE
 ${storyText}
 
 ════════════════════════════════════════
-REFERENCE IMAGES
+IMAGE PROMPT RULES (follow strictly)
 ════════════════════════════════════════
-${availableRefs.length > 0
-  ? `The user has uploaded reference images for: ${availableRefs.join(', ')}.
+Every image_prompt MUST have ALL of these:
+1. Setting described first — environment, location, textures, light quality
+2. Camera framing: wide shot / medium shot / over-the-shoulder / back-to-camera / low angle / aerial
+3. Time of day + light: golden hour / blue hour / midday sun / overcast / candlelight / neon night
+4. Subject placement: where they are, what they're doing (NOT walking/running — standing, sitting, leaning, looking out)
+5. Mood/atmosphere in ONE word at the end: triumphant / grounded / electric / intimate / expansive / serene
 
-These are part of the world — weave them naturally into scenes.
-The dream home appears in the background. The car passes through a scene. They are environment, not subject.
+FORBIDDEN in image prompts:
+- Face as focal point or close-up portrait
+- Subject walking, running, or mid-motion
+- Generic stock photo vibes: "man in suit at desk", "woman smiling at camera"
+- Boring office interiors, generic conference rooms
+- Multiple visible faces
 
-MANDATORY: Each uploaded reference [${availableRefs.join(', ')}] must appear in at least one scene.
+VARIETY — spread across these across ${sceneCount} scenes, no repeats:
+- Interiors: home, restaurant, private office with a view, yacht cabin, hotel suite
+- Outdoors: coastline, rooftop, mountain path, city street at night, private garden
+- Scale: mix wide establishing shots with medium intimate moments
+- Light: mix golden hour, night, overcast, interior warm light
 
-Assign each scene a "reference_key" field:
-- Use the exact key when that reference is the environment of the scene
-- Use null for scenes that don't feature a reference
-- Spread references — don't cluster them
-- "home": scene takes place IN or AROUND the dream home
-- "car": dream car is visible IN or AROUND the scene
-- "location": scene is SET AT the dream location
-- "lifestyle": scene reflects that specific lifestyle`
-  : `The user has not uploaded any reference images. Set "reference_key": null for all scenes.`}
+════════════════════════════════════════
+VIDEO PROMPT RULES
+════════════════════════════════════════
+Camera movement only — no subject movement, no new objects.
+Examples: "Slow push-in, golden light warms the frame" / "Gentle pull-back, horizon expands" / "Camera drifts left, bokeh deepens"
+Max 100 characters. No vague words: cinematic, beautiful, epic, stunning.
 
 ════════════════════════════════════════
 OUTPUT
 ════════════════════════════════════════
 Return ONLY a valid JSON array of exactly ${sceneCount} objects. No markdown, no backticks, no explanation.
 [
-  { "image_prompt": "...", "video_prompt": "...", "reference_key": null },
-  ... ${sceneCount} total ...
+  { "image_prompt": "...", "video_prompt": "..." },
+  ...
 ]`
 }
 
-type Slot = { image_prompt: string; video_prompt: string; reference_key: string | null }
+type Slot = { image_prompt: string; video_prompt: string }
 
 function parseSlots(raw: string, sceneCount = 6): Slot[] {
   let cleaned = raw
@@ -436,9 +375,8 @@ function parseSlots(raw: string, sceneCount = 6): Slot[] {
     const parsed = JSON.parse(cleaned)
     if (Array.isArray(parsed) && parsed.length >= sceneCount) {
       return parsed.slice(0, sceneCount).map((s: unknown) => ({
-        image_prompt:  (s as Slot).image_prompt ?? String(s),
-        video_prompt:  (s as Slot).video_prompt ?? '',
-        reference_key: (s as Slot).reference_key ?? null,
+        image_prompt: (s as Slot).image_prompt ?? String(s),
+        video_prompt: (s as Slot).video_prompt ?? '',
       }))
     }
   } catch (e) {
