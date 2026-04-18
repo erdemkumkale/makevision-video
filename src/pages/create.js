@@ -130,74 +130,53 @@ const SelfieUpload = ({ file, setFile }) => {
   )
 }
 
-// ─── Reference Images Upload ──────────────────────────────────────────────────
+// ─── Gender & Age Picker ──────────────────────────────────────────────────────
 
-const ReferenceImages = ({ refImages, setRefImages }) => {
-  const inputRefs = useRef({})
+const GENDER_OPTIONS = [
+  { value: 'male',   label: 'Male'   },
+  { value: 'female', label: 'Female' },
+]
 
-  const handleFile = (key, e) => {
-    const file = e.target.files[0]
-    if (!file?.type.startsWith('image/')) return
-    setRefImages(prev => ({ ...prev, [key]: { file, preview: URL.createObjectURL(file) } }))
-  }
+const AGE_OPTIONS = [
+  { value: '20s', label: '20s' },
+  { value: '30s', label: '30s' },
+  { value: '40s', label: '40s' },
+  { value: '50s', label: '50s+' },
+]
 
-  const removeImage = (key) => {
-    setRefImages(prev => { const next = { ...prev }; delete next[key]; return next })
-  }
-
-  return (
-    <div className="mt-8">
-      <div className="flex items-center gap-2 mb-1">
-        <p className="text-sm font-medium text-gray-300">Inspiration Images</p>
-        <span className="text-xs text-gray-600 bg-surface border border-border px-2 py-0.5 rounded-full">Optional</span>
-      </div>
-      <p className="text-xs text-gray-600 mb-4">
-        Add images of your dream home, car, or destination — the AI will place you there.
-      </p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {REF_CATEGORIES.map(({ key, label, emoji }) => {
-          const img = refImages[key]
-          return (
-            <div key={key} className="relative">
-              {img ? (
-                <div className="relative rounded-xl overflow-hidden border border-glow-dim aspect-square">
-                  <img src={img.preview} alt={label} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity
-                                  flex items-center justify-center">
-                    <button onClick={() => removeImage(key)}
-                      className="w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60 text-xs text-gray-300">
-                    {emoji} {label}
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => inputRefs.current[key]?.click()}
-                  className="w-full aspect-square rounded-xl border border-dashed border-border
-                             bg-panel hover:border-glow-dim hover:bg-surface transition-all
-                             flex flex-col items-center justify-center gap-1.5 text-gray-600 hover:text-gray-400"
-                >
-                  <span className="text-xl">{emoji}</span>
-                  <span className="text-xs font-medium">{label}</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              )}
-              <input ref={el => inputRefs.current[key] = el} type="file" accept="image/*"
-                className="hidden" onChange={(e) => handleFile(key, e)} />
-            </div>
-          )
-        })}
+const SubjectPicker = ({ gender, setGender, age, setAge }) => (
+  <div className="mt-6 space-y-4">
+    <div>
+      <p className="text-sm font-medium text-gray-300 mb-2">I am a</p>
+      <div className="flex gap-3">
+        {GENDER_OPTIONS.map(opt => (
+          <button key={opt.value} onClick={() => setGender(opt.value)}
+            className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all
+              ${gender === opt.value
+                ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
+                : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'}`}>
+            {opt.label}
+          </button>
+        ))}
       </div>
     </div>
-  )
-}
+    <div>
+      <p className="text-sm font-medium text-gray-300 mb-2">Age range</p>
+      <div className="flex gap-3">
+        {AGE_OPTIONS.map(opt => (
+          <button key={opt.value} onClick={() => setAge(opt.value)}
+            className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all
+              ${age === opt.value
+                ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
+                : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'}`}>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+)
+
 
 // ─── Step 2: Dream Form ───────────────────────────────────────────────────────
 
@@ -308,7 +287,6 @@ const ReviewStep = ({ file, dream, sceneCount, submitting, submitStage }) => {
 
 const SUBMIT_STAGES = [
   'Uploading your photo...',
-  'Uploading inspiration images...',
   'Saving your vision...',
   'Analyzing your story with AI...',
   'Generating your images...',
@@ -321,9 +299,10 @@ export default function CreateVision() {
 
   const [step, setStep]           = useState(0)
   const [file, setFile]           = useState(null)
-  const [refImages, setRefImages] = useState({})
+  const [gender, setGender]       = useState('male')
+  const [age, setAge]             = useState('30s')
   const [dream, setDream]         = useState('')
-  const [sceneCount, setSceneCount] = useState(9)
+  const [sceneCount, setSceneCount] = useState(6)
   const [submitting, setSubmitting] = useState(false)
   const [submitStage, setSubmitStage] = useState(0)
   const [error, setError]         = useState(null)
@@ -355,46 +334,30 @@ export default function CreateVision() {
         selfieUrl = urlData.publicUrl
       }
 
-      // 2. Upload reference images
+      // 2. Insert project
       setSubmitStage(1)
-      const uploadedRefs = []
-      for (const cat of REF_CATEGORIES) {
-        const img = refImages[cat.key]
-        if (!img?.file) continue
-        const ext  = img.file.name.split('.').pop()
-        const path = `refs/${user.id}/${Date.now()}-${cat.key}.${ext}`
-        const { error: refErr } = await supabase.storage
-          .from('vision-assets').upload(path, img.file, { upsert: false })
-        if (refErr) { console.warn(`Ref upload failed (${cat.key}):`, refErr.message); continue }
-        const { data: refUrl } = supabase.storage.from('vision-assets').getPublicUrl(path)
-        uploadedRefs.push({ label: cat.label, key: cat.key, url: refUrl.publicUrl })
-      }
-
-      // 3. Insert project
-      setSubmitStage(2)
       const { data: project, error: insertError } = await supabase
         .from('vision_projects')
         .insert([{
-          user_id:          user.id,
-          status:           'Draft',
-          selfie_url:       selfieUrl,
-          story_inputs:     { custom_story: dream.trim(), scene_count: sceneCount },
-          reference_images: uploadedRefs,
+          user_id:      user.id,
+          status:       'Draft',
+          selfie_url:   selfieUrl,
+          story_inputs: { custom_story: dream.trim(), scene_count: sceneCount, gender, age },
         }])
         .select()
         .single()
       if (insertError) throw insertError
 
-      // 4. Generate prompts
-      setSubmitStage(3)
+      // 3. Generate prompts
+      setSubmitStage(2)
       await api.generatePrompts(project.id)
 
-      // 5. Generate images (fire-and-forget)
-      setSubmitStage(4)
+      // 4. Generate images (fire-and-forget)
+      setSubmitStage(3)
       await api.generateImages(project.id)
 
-      // 6. Redirect to review
-      setSubmitStage(5)
+      // 5. Redirect to review
+      setSubmitStage(4)
       router.push(`/review/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)
@@ -427,7 +390,7 @@ export default function CreateVision() {
           {step === 0 && (
             <>
               <SelfieUpload file={file} setFile={setFile} />
-              <ReferenceImages refImages={refImages} setRefImages={setRefImages} />
+              <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} />
             </>
           )}
           {step === 1 && (
