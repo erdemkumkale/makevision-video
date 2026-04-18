@@ -74,7 +74,7 @@ serve(async (req: Request) => {
     console.log('Subject description:', subjectDescription)
 
     // ── Sahne prompt'ları ─────────────────────────────────────────────────────
-    const contents = buildGeminiContents(storyText, sceneCount, subjectDescription)
+    const contents = buildGeminiContents(storyText, sceneCount, gender, age)
 
     console.log('Step 2: Calling Gemini for scene prompts...')
     const geminiBody = JSON.stringify({
@@ -299,11 +299,11 @@ Example output: short dark brown hair, light olive skin` },
 }
 
 // ── Sahne prompt'ları için Gemini içeriği ────────────────────────────────────
-function buildGeminiContents(storyText: string, sceneCount: number, subjectDescription: string) {
-  return [{ parts: [{ text: buildGeminiPrompt(storyText, sceneCount, subjectDescription) }] }]
+function buildGeminiContents(storyText: string, sceneCount: number, gender: string, age: string) {
+  return [{ parts: [{ text: buildGeminiPrompt(storyText, sceneCount, gender, age) }] }]
 }
 
-function buildGeminiPrompt(storyText: string, sceneCount: number, subjectDescription: string): string {
+function buildGeminiPrompt(storyText: string, sceneCount: number, gender: string, age: string): string {
   return `You are a world-class film director and cinematographer creating a personal vision film — a cinematic trailer of someone's dream life.
 
 Generate exactly ${sceneCount} image prompts. Each scene is a single powerful cinematic still from their dream life.
