@@ -104,7 +104,10 @@ serve(async (req: Request) => {
   }
 })
 
-// ─── Phase 1: Flux — 3'erli batch, synchronous ───────────────────────────────
+// ─── Phase 1: Flux — hepsini aynı anda submit et, hepsini paralel poll et ─────
+// PiAPI 3 eşzamanlı işler, diğerleri queue'da bekler.
+// Paralel polling devam ederken queue'dakiler de tamamlanır.
+// Toplam süre: ~6s submit + ~90s poll = ~96s (150s limitin altında ✓)
 
 type FluxSlot = { id: string; order_num: number; flux_url: string | null; error: string | null }
 
@@ -112,44 +115,35 @@ async function runFluxPhase(
   piApiKey: string,
   generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
 ): Promise<FluxSlot[]> {
-  const results: FluxSlot[] = []
-  const BATCH = 3
+  // Hepsini aynı anda submit et
+  console.log(`Flux: submitting all ${generations.length} tasks simultaneously`)
+  const submitted = await Promise.all(generations.map(async (gen) => {
+    try {
+      const taskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt)
+      console.log(`Slot ${gen.order_num} submitted: ${taskId}`)
+      return { gen, taskId, error: null }
+    } catch (err) {
+      console.error(`Slot ${gen.order_num} submit failed:`, String(err))
+      return { gen, taskId: null, error: String(err) }
+    }
+  }))
 
-  for (let i = 0; i < generations.length; i += BATCH) {
-    const batch = generations.slice(i, i + BATCH)
-    console.log(`Flux batch ${Math.floor(i / BATCH) + 1}: slots ${batch.map(g => g.order_num).join(', ')}`)
-
-    // Submit
-    const submitted = await Promise.all(batch.map(async (gen) => {
-      try {
-        const taskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt)
-        return { gen, taskId, error: null }
-      } catch (err) {
-        console.error(`Slot ${gen.order_num} flux submit failed:`, String(err))
-        return { gen, taskId: null, error: String(err) }
-      }
-    }))
-
-    // Poll
-    const polled = await Promise.all(submitted.map(async ({ gen, taskId, error }) => {
-      if (!taskId) return { id: gen.id, order_num: gen.order_num, flux_url: null, error }
-      try {
-        const flux_url = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
-        console.log(`Slot ${gen.order_num} flux done`)
-        return { id: gen.id, order_num: gen.order_num, flux_url, error: null }
-      } catch (err) {
-        console.error(`Slot ${gen.order_num} flux poll failed:`, String(err))
-        return { id: gen.id, order_num: gen.order_num, flux_url: null, error: String(err) }
-      }
-    }))
-
-    results.push(...polled)
-  }
-
-  return results
+  // Hepsini paralel poll et — PiAPI queue'su işledikçe tamamlanır
+  console.log('Flux: polling all tasks in parallel')
+  return Promise.all(submitted.map(async ({ gen, taskId, error }) => {
+    if (!taskId) return { id: gen.id, order_num: gen.order_num, flux_url: null, error }
+    try {
+      const flux_url = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
+      console.log(`Slot ${gen.order_num} flux done`)
+      return { id: gen.id, order_num: gen.order_num, flux_url, error: null }
+    } catch (err) {
+      console.error(`Slot ${gen.order_num} flux poll failed:`, String(err))
+      return { id: gen.id, order_num: gen.order_num, flux_url: null, error: String(err) }
+    }
+  }))
 }
 
-// ─── Phase 2: Faceswap — 3'erli batch, synchronous ──────────────────────────
+// ─── Phase 2: Faceswap — hepsini aynı anda submit et, paralel poll et ────────
 
 async function runFaceswapPhase(
   // deno-lint-ignore no-explicit-any
@@ -159,59 +153,54 @@ async function runFaceswapPhase(
   selfieUrl: string,
   flux_slots: FluxSlot[]
 ): Promise<void> {
-  const BATCH = 3
   const validSlots = flux_slots.filter(s => s.flux_url)
 
-  for (let i = 0; i < validSlots.length; i += BATCH) {
-    const batch = validSlots.slice(i, i + BATCH)
-    console.log(`Faceswap batch ${Math.floor(i / BATCH) + 1}: slots ${batch.map(s => s.order_num).join(', ')}`)
+  // Hepsini aynı anda submit et
+  console.log(`Faceswap: submitting all ${validSlots.length} tasks simultaneously`)
+  const submitted = await Promise.all(validSlots.map(async (slot) => {
+    try {
+      const taskId = await submitFaceswap(piApiKey, slot.flux_url!, selfieUrl)
+      console.log(`Slot ${slot.order_num} faceswap submitted: ${taskId}`)
+      return { slot, taskId, error: null }
+    } catch (err) {
+      console.error(`Slot ${slot.order_num} faceswap submit failed:`, String(err))
+      return { slot, taskId: null, error: String(err) }
+    }
+  }))
 
-    // Submit
-    const submitted = await Promise.all(batch.map(async (slot) => {
-      try {
-        const taskId = await submitFaceswap(piApiKey, slot.flux_url!, selfieUrl)
-        return { slot, taskId, error: null }
-      } catch (err) {
-        console.error(`Slot ${slot.order_num} faceswap submit failed:`, String(err))
-        return { slot, taskId: null, error: String(err) }
-      }
-    }))
+  // Hepsini paralel poll et
+  console.log('Faceswap: polling all tasks in parallel')
+  const polled = await Promise.all(submitted.map(async ({ slot, taskId, error }) => {
+    if (!taskId) return { slot, finalUrl: null, error }
+    try {
+      const finalUrl = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
+      console.log(`Slot ${slot.order_num} faceswap done`)
+      return { slot, finalUrl, error: null }
+    } catch (err) {
+      console.error(`Slot ${slot.order_num} faceswap poll failed:`, String(err))
+      return { slot, finalUrl: null, error: String(err) }
+    }
+  }))
 
-    // Poll
-    const polled = await Promise.all(submitted.map(async ({ slot, taskId, error }) => {
-      if (!taskId) return { slot, finalUrl: null, error }
-      try {
-        const finalUrl = await pollTask(piApiKey, taskId, 'image_url', 18, 5000)
-        console.log(`Slot ${slot.order_num} faceswap done`)
-        return { slot, finalUrl, error: null }
-      } catch (err) {
-        console.error(`Slot ${slot.order_num} faceswap poll failed:`, String(err))
-        return { slot, finalUrl: null, error: String(err) }
-      }
-    }))
-
-    // DB güncelle
-    await Promise.all(polled.map(async ({ slot, finalUrl, error }) => {
-      if (!finalUrl) {
-        await supabase.from('media_generations')
-          .update({ error: error ?? 'Faceswap failed' })
-          .eq('id', slot.id)
-        return
-      }
-
-      const storagePath = `projects/${project_id}/images/${slot.order_num}.jpg`
-      let stableUrl = finalUrl
-      try {
-        stableUrl = await uploadToStorage(supabase, finalUrl, storagePath)
-      } catch (uploadErr) {
-        console.warn(`Slot ${slot.order_num} storage upload failed, using PiAPI URL:`, uploadErr)
-      }
-
+  // DB güncelle
+  await Promise.all(polled.map(async ({ slot, finalUrl, error }) => {
+    if (!finalUrl) {
       await supabase.from('media_generations')
-        .update({ media_url: stableUrl, error: null })
+        .update({ error: error ?? 'Faceswap failed' })
         .eq('id', slot.id)
-    }))
-  }
+      return
+    }
+    const storagePath = `projects/${project_id}/images/${slot.order_num}.jpg`
+    let stableUrl = finalUrl
+    try {
+      stableUrl = await uploadToStorage(supabase, finalUrl, storagePath)
+    } catch (uploadErr) {
+      console.warn(`Slot ${slot.order_num} storage upload failed, using PiAPI URL:`, uploadErr)
+    }
+    await supabase.from('media_generations')
+      .update({ media_url: stableUrl, error: null })
+      .eq('id', slot.id)
+  }))
 
   // Failed flux slotlarına hata yaz
   const failedSlots = flux_slots.filter(s => !s.flux_url)
