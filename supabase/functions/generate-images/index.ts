@@ -4,13 +4,9 @@
 //   1. Auth + input doğrulama  (senkron, ~1s)
 //   2. 200 hemen döner         → create.js review'e yönlendirir
 //   3. Arka planda devam eder  → EdgeRuntime.waitUntil
-//      Her slot: Flux (txt2img) → Face Swap → DB update (media_url)
-//      Tüm slotlar paralel çalışır, birbirini beklemez.
+//      Her slot bağımsız: Flux (txt2img) → Face Swap → DB update
+//      Tüm slotlar paralel, her biri max 4dk timeout
 //      İşlem bitince vision_projects.status = 'Images_Ready'
-//
-// Review sayfası DB'yi her 6s poll'lar, media_url dolunca gösterir.
-// Eğer 5dk+ geçmesine rağmen boş slot varsa review sayfası Retry butonu gösterir.
-// Retry güvenli: sadece media_url='' olan slotları yeniden işler.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -29,7 +25,6 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
   try {
-    // ── 1. Auth ───────────────────────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return json({ error: 'Unauthorized' }, 401)
 
@@ -48,7 +43,6 @@ serve(async (req: Request) => {
       auth: { persistSession: false },
     })
 
-    // ── 2. Input doğrulama ────────────────────────────────────────────────────
     const { project_id } = await req.json()
     if (!project_id) return json({ error: 'project_id is required' }, 400)
 
@@ -65,7 +59,7 @@ serve(async (req: Request) => {
     // Sadece boş slotları al (retry güvenliği: dolu slotlara dokunmaz)
     const { data: generations, error: genError } = await supabase
       .from('media_generations')
-      .select('id, prompt_text, negative_prompt, order_num, reference_image_url')
+      .select('id, prompt_text, negative_prompt, order_num')
       .eq('vision_project_id', project_id)
       .eq('media_url', '')
       .order('order_num', { ascending: true })
@@ -77,13 +71,10 @@ serve(async (req: Request) => {
     const piApiKey = Deno.env.get('PIAPI_API_KEY')
     if (!piApiKey) return json({ error: 'PIAPI_API_KEY not set' }, 500)
 
-    console.log(`Starting ${generations.length} image slots in background for project ${project_id}`)
+    console.log(`Starting ${generations.length} slots for project ${project_id}`)
 
-    // ── 3. Arka planda çalıştır — hemen 200 dön ──────────────────────────────
     const pipeline = runAllSlots({
-      supabase,
-      piApiKey,
-      project_id,
+      supabase, piApiKey, project_id,
       selfieUrl: project.selfie_url,
       generations,
     })
@@ -104,9 +95,9 @@ serve(async (req: Request) => {
   }
 })
 
-// ─── Arka plan: paralel çalıştır, her slot max 3dk timeout ──────────────────
+// ─── Tüm slotlar paralel — her biri max 4dk timeout ──────────────────────────
 
-const SLOT_TIMEOUT_MS = 3 * 60 * 1000 // 3 dakika per slot
+const SLOT_TIMEOUT_MS = 5 * 60 * 1000
 
 async function runAllSlots(ctx: {
   // deno-lint-ignore no-explicit-any
@@ -114,21 +105,21 @@ async function runAllSlots(ctx: {
   piApiKey: string
   project_id: string
   selfieUrl: string
-  generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number; reference_image_url?: string | null }>
+  generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
 }) {
   const { supabase, piApiKey, project_id, selfieUrl, generations } = ctx
 
   await Promise.all(
     generations.map((gen) => {
-      const slotPromise = processSlotWithRetry({ supabase, piApiKey, project_id, selfieUrl, gen })
+      const slotPromise = processSlot({ supabase, piApiKey, project_id, selfieUrl, gen })
       const timeoutPromise = new Promise<void>((_, reject) =>
-        setTimeout(() => reject(new Error(`Slot ${gen.order_num} timed out after 3min`)), SLOT_TIMEOUT_MS)
+        setTimeout(() => reject(new Error(`Slot ${gen.order_num} timed out`)), SLOT_TIMEOUT_MS)
       )
       return Promise.race([slotPromise, timeoutPromise]).catch(async (err) => {
-        console.error(`Slot ${gen.order_num} killed by timeout:`, String(err))
+        console.error(`Slot ${gen.order_num} killed:`, String(err))
         await supabase
           .from('media_generations')
-          .update({ error: `Timeout: ${String(err)}` })
+          .update({ error: String(err) })
           .eq('id', gen.id)
       })
     })
@@ -142,56 +133,48 @@ async function runAllSlots(ctx: {
   console.log(`Project ${project_id}: all slots done → Images_Ready`)
 }
 
-// ─── Slot işleyici: otomatik retry (max 3 deneme) ────────────────────────────
+// ─── Tek slot işleyici: Flux → faceswap → storage → DB ───────────────────────
 
-async function processSlotWithRetry(ctx: {
+async function processSlot(ctx: {
   // deno-lint-ignore no-explicit-any
   supabase: any
   piApiKey: string
   project_id: string
   selfieUrl: string
-  gen: { id: string; prompt_text: string; negative_prompt: string; order_num: number; reference_image_url?: string | null }
+  gen: { id: string; prompt_text: string; negative_prompt: string; order_num: number }
 }, attempt = 1): Promise<void> {
   const MAX_ATTEMPTS = 3
   const { supabase, piApiKey, project_id, selfieUrl, gen } = ctx
 
   try {
-    console.log(`Slot ${gen.order_num}: attempt ${attempt}/${MAX_ATTEMPTS}${gen.reference_image_url ? ' [img2img]' : ' [txt2img]'}`)
+    console.log(`Slot ${gen.order_num}: attempt ${attempt}/${MAX_ATTEMPTS}`)
 
-    // img2img devre dışı — PiAPI external URL'lere erişemiyor
-    const rawUrl = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
-    const safeSwapUrl = getSafeSwapImageUrl(selfieUrl)
-    console.log(`Slot ${gen.order_num}: swap_image URL = ${safeSwapUrl.slice(0, 80)}...`)
-    const faceSwapUrl = await faceSwap(piApiKey, rawUrl, safeSwapUrl)
+    const fluxUrl     = await generateFluxImage(piApiKey, gen.prompt_text, gen.negative_prompt)
+    const faceSwapUrl = await faceSwap(piApiKey, fluxUrl, selfieUrl)
 
     const storagePath = `projects/${project_id}/images/${gen.order_num}.jpg`
-    let stableUrl = faceSwapUrl
+    let finalUrl = faceSwapUrl
     try {
-      stableUrl = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
+      finalUrl = await uploadImageToStorage(supabase, faceSwapUrl, storagePath)
     } catch (uploadErr) {
-      console.warn(`Slot ${gen.order_num} storage upload failed, using PiAPI URL:`, uploadErr)
+      console.warn(`Slot ${gen.order_num}: storage upload failed, using PiAPI URL:`, uploadErr)
     }
 
     await supabase
       .from('media_generations')
-      .update({ media_url: stableUrl, error: null })
+      .update({ media_url: finalUrl, error: null })
       .eq('id', gen.id)
 
-    console.log(`Slot ${gen.order_num} ✓ (attempt ${attempt})`)
+    console.log(`Slot ${gen.order_num} ✓`)
 
   } catch (err) {
-    console.error(`Slot ${gen.order_num} failed (attempt ${attempt}):`, String(err))
+    console.error(`Slot ${gen.order_num} attempt ${attempt} failed:`, String(err))
 
     if (attempt < MAX_ATTEMPTS) {
-      // Kısa bekleme sonra tekrar dene — PiAPI geçici hataları genellikle düzelir
-      const waitMs = attempt * 4000   // 4s, 8s
-      console.log(`Slot ${gen.order_num}: retrying in ${waitMs}ms...`)
-      await sleep(waitMs)
-      return processSlotWithRetry(ctx, attempt + 1)
+      await sleep(attempt * 5000) // 5s, 10s
+      return processSlot(ctx, attempt + 1)
     }
 
-    // 3 denemede de başarısız — hatayı kaydet
-    console.error(`Slot ${gen.order_num}: gave up after ${MAX_ATTEMPTS} attempts`)
     await supabase
       .from('media_generations')
       .update({ error: `Failed after ${MAX_ATTEMPTS} attempts: ${String(err)}` })
@@ -199,49 +182,9 @@ async function processSlotWithRetry(ctx: {
   }
 }
 
-// ─── Storage: PiAPI geçici URL → Supabase Storage kalıcı public URL ──────────
+// ─── Flux txt2img ─────────────────────────────────────────────────────────────
 
-// deno-lint-ignore no-explicit-any
-async function uploadImageToStorage(supabase: any, imageUrl: string, storagePath: string): Promise<string> {
-  const BUCKET = 'vision-assets'
-
-  // İndir
-  const res = await fetch(imageUrl)
-  if (!res.ok) throw new Error(`Image download failed (${res.status}): ${imageUrl}`)
-  const buffer = await res.arrayBuffer()
-  const contentType = res.headers.get('content-type') ?? 'image/jpeg'
-
-  // Yükle
-  const { error: uploadError } = await supabase.storage
-    .from(BUCKET)
-    .upload(storagePath, buffer, { contentType, upsert: true })
-
-  if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
-
-  // Public URL al (görsel için signed URL'e gerek yok — public bucket)
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
-  if (!data?.publicUrl) throw new Error(`getPublicUrl failed for ${storagePath}`)
-
-  return data.publicUrl
-}
-
-// ─── Selfie URL ───────────────────────────────────────────────────────────────
-// Selfie'yi doğrudan Supabase public URL olarak kullan.
-// images.weserv.nl proxy denemesi yapıldı ama PiAPI sunucuları erişemedi →
-// "invalid request / failed to do request" hatası veriyordu.
-// Supabase storage public bucket URL'leri PiAPI tarafından erişilebilir.
-
-function getSafeSwapImageUrl(selfieUrl: string): string {
-  return selfieUrl
-}
-
-// ─── Step 1: Flux-1-dev text-to-image ────────────────────────────────────────
-
-async function generateFluxImage(
-  apiKey: string,
-  prompt: string,
-  negativePrompt: string,
-): Promise<string> {
+async function generateFluxImage(apiKey: string, prompt: string, negativePrompt: string): Promise<string> {
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',
     headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
@@ -255,63 +198,20 @@ async function generateFluxImage(
         height: 1024,
         guidance_scale: 3.5,
         num_inference_steps: 28,
-        // process_mode: 'fast' kaldırıldı — fast kuyruğu tıkandığında task
-        // "processing" durumunda sonsuza kalıyordu. Varsayılan kuyruk daha güvenilir.
       },
     }),
   })
-
   if (!res.ok) throw new Error(`Flux submit failed (${res.status}): ${await res.text()}`)
   const data = await res.json()
   const taskId = data?.data?.task_id
-  if (!taskId) throw new Error(`Flux: no task_id in response: ${JSON.stringify(data)}`)
-
-  console.log(`Flux task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90sn
+  if (!taskId) throw new Error(`Flux: no task_id: ${JSON.stringify(data)}`)
+  console.log(`Slot flux task: ${taskId}`)
+  return pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90s
 }
 
-// ─── Step 1b: Flux img2img — referans görsel ile ─────────────────────────────
+// ─── Face Swap ────────────────────────────────────────────────────────────────
 
-async function generateFluxImageWithReference(
-  apiKey: string,
-  prompt: string,
-  negativePrompt: string,
-  referenceImageUrl: string,
-): Promise<string> {
-  const res = await fetch(PIAPI_BASE, {
-    method: 'POST',
-    headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'Qubico/flux1-dev',
-      task_type: 'img2img',
-      input: {
-        prompt,
-        negative_prompt: negativePrompt,
-        image: referenceImageUrl,
-        denoise: 0.30,         // düşük = referans görsel korunur, kişi eklenir
-        guidance_scale: 3.5,
-        num_inference_steps: 28,
-        process_mode: 'fast',
-      },
-    }),
-  })
-
-  if (!res.ok) throw new Error(`Flux img2img submit failed (${res.status}): ${await res.text()}`)
-  const data = await res.json()
-  const taskId = data?.data?.task_id
-  if (!taskId) throw new Error(`Flux img2img: no task_id in response: ${JSON.stringify(data)}`)
-
-  console.log(`Flux img2img task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90sn
-}
-
-// ─── Step 2: PiAPI Face Swap ──────────────────────────────────────────────────
-
-async function faceSwap(
-  apiKey: string,
-  targetImageUrl: string,
-  swapImageUrl: string,
-): Promise<string> {
+async function faceSwap(apiKey: string, targetImageUrl: string, swapImageUrl: string): Promise<string> {
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',
     headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
@@ -324,56 +224,52 @@ async function faceSwap(
       },
     }),
   })
-
-  if (!res.ok) throw new Error(`Face swap submit failed (${res.status}): ${await res.text()}`)
+  if (!res.ok) throw new Error(`Faceswap submit failed (${res.status}): ${await res.text()}`)
   const data = await res.json()
   const taskId = data?.data?.task_id
-  if (!taskId) throw new Error(`Face swap: no task_id: ${JSON.stringify(data)}`)
-
-  console.log(`Face swap task submitted: ${taskId}`)
-  return await pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90sn
+  if (!taskId) throw new Error(`Faceswap: no task_id: ${JSON.stringify(data)}`)
+  console.log(`Slot faceswap task: ${taskId}`)
+  return pollTask(apiKey, taskId, 'image_url', 18, 5000) // max 90s
 }
 
-// ─── Generic PiAPI task poller ────────────────────────────────────────────────
+// ─── Poller ───────────────────────────────────────────────────────────────────
 
-async function pollTask(
-  apiKey: string,
-  taskId: string,
-  outputKey: string,
-  maxAttempts: number,
-  intervalMs: number,
-): Promise<string> {
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+async function pollTask(apiKey: string, taskId: string, outputKey: string, maxAttempts: number, intervalMs: number): Promise<string> {
+  for (let i = 0; i < maxAttempts; i++) {
     await sleep(intervalMs)
-
-    const res = await fetch(PIAPI_FETCH(taskId), {
-      headers: { 'X-API-Key': apiKey },
-    })
-
-    if (!res.ok) {
-      console.warn(`Poll ${taskId} attempt ${attempt + 1}: HTTP ${res.status}`)
-      continue
-    }
-
+    const res = await fetch(PIAPI_FETCH(taskId), { headers: { 'X-API-Key': apiKey } })
+    if (!res.ok) { console.warn(`Poll ${taskId} attempt ${i + 1}: HTTP ${res.status}`); continue }
     const data = await res.json()
     const status: string = data?.data?.status ?? ''
-    console.log(`Poll ${taskId} attempt ${attempt + 1}: ${status}`)
-
+    console.log(`Poll ${taskId} attempt ${i + 1}: ${status}`)
     if (status === 'completed') {
       const url = data?.data?.output?.[outputKey]
         ?? data?.data?.output?.image_url
         ?? data?.data?.output?.image
         ?? data?.data?.output?.url
       if (url) return url
-      throw new Error(`Task ${taskId} completed but no URL in output: ${JSON.stringify(data?.data?.output)}`)
+      throw new Error(`Task ${taskId} completed but no URL: ${JSON.stringify(data?.data?.output)}`)
     }
-
-    if (status === 'failed') {
-      throw new Error(`Task ${taskId} failed: ${JSON.stringify(data?.data?.error)}`)
-    }
-    // pending / processing — devam et
+    if (status === 'failed') throw new Error(`Task ${taskId} failed: ${JSON.stringify(data?.data?.error)}`)
   }
   throw new Error(`Task ${taskId} timed out after ${maxAttempts} attempts`)
+}
+
+// ─── Storage upload ───────────────────────────────────────────────────────────
+
+// deno-lint-ignore no-explicit-any
+async function uploadImageToStorage(supabase: any, imageUrl: string, storagePath: string): Promise<string> {
+  const BUCKET = 'vision-assets'
+  const res = await fetch(imageUrl)
+  if (!res.ok) throw new Error(`Image download failed (${res.status})`)
+  const buffer = await res.arrayBuffer()
+  const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET).upload(storagePath, buffer, { contentType, upsert: true })
+  if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
+  if (!data?.publicUrl) throw new Error(`getPublicUrl failed for ${storagePath}`)
+  return data.publicUrl
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
