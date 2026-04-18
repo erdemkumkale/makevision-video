@@ -93,6 +93,8 @@ serve(async (req: Request) => {
         return json({ error: 'flux_slots required for faceswap phase' }, 400)
       }
 
+      // Storage CDN'in propagate olması için kısa bekleme
+      await sleep(5000)
       console.log(`Faceswap phase: ${flux_slots.length} slots`)
       await runFaceswapPhase(supabase, piApiKey, project_id, project.selfie_url, flux_slots)
       return json({ success: true })
