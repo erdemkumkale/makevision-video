@@ -311,10 +311,11 @@ Generate exactly ${sceneCount} image prompts. Each scene is a single powerful ci
 ════════════════════════════════════════
 THE PERSON
 ════════════════════════════════════════
-${subjectDescription}
+Gender: ${gender}
+Context (for lifestyle/setting choices only, do NOT mention age in image prompts): ${age}
 Physique: lean, fit, healthy — natural athletic build. Never overweight, never frail, never elderly-looking.
 Posture: upright, relaxed confidence — shoulders back, at ease, like they belong exactly where they are.
-Their face will be composited in later. Do NOT describe their face. Do NOT write "portrait" or close-up of face.
+Their face will be composited in later. Do NOT describe their face, age, or body weight. Do NOT write "portrait" or close-up of face.
 
 ════════════════════════════════════════
 THEIR DREAM LIFE
