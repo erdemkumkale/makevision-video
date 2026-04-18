@@ -264,7 +264,8 @@ export default function ReviewVision() {
     setRetrying(true)
     setGenError(null)
     try {
-      await api.generateImages(projectId)
+      const { flux_slots } = await api.generateFlux(projectId)
+      await api.generateFaceswap(projectId, flux_slots)
       await loadData()
     } catch (err) {
       setGenError(err.message ?? 'Image generation failed. Please try again.')
