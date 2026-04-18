@@ -139,7 +139,8 @@ async function runFluxPhase(
     const tryFlux = async (tid: string): Promise<string> => {
       const piApiUrl = await pollTask(piApiKey, tid, 'image_url', 18, 5000)
       const storagePath = `projects/${project_id}/flux/${gen.order_num}.jpg`
-      const flux_url = await uploadToStorage(supabase, piApiUrl, storagePath)
+      // Signed URL — CDN propagation yok, PiAPI anında erişebilir
+      const flux_url = await uploadToStorageSigned(supabase, piApiUrl, storagePath)
       return flux_url
     }
 
@@ -318,24 +319,21 @@ async function uploadToStorage(supabase: any, imageUrl: string, storagePath: str
   if (error) throw new Error(`Upload failed: ${error.message}`)
   const { data } = supabase.storage.from('vision-assets').getPublicUrl(storagePath)
   if (!data?.publicUrl) throw new Error(`getPublicUrl failed`)
+  return data.publicUrl
+}
 
-  // CDN propagation: poll until URL is accessible (max 30s)
-  const publicUrl = data.publicUrl
-  for (let i = 0; i < 15; i++) {
-    await sleep(2000)
-    try {
-      const check = await fetch(publicUrl, { method: 'HEAD' })
-      if (check.ok) {
-        console.log(`Storage URL accessible after ${(i + 1) * 2}s: ${storagePath}`)
-        return publicUrl
-      }
-      console.log(`Storage URL not ready yet (${check.status}), attempt ${i + 1}/15`)
-    } catch (e) {
-      console.log(`Storage URL check failed, attempt ${i + 1}/15:`, e)
-    }
-  }
-  console.warn(`Storage URL still not confirmed after 30s, proceeding anyway: ${storagePath}`)
-  return publicUrl
+// Flux için signed URL — CDN propagation'a gerek yok, PiAPI anında erişir (1 saatlik)
+// deno-lint-ignore no-explicit-any
+async function uploadToStorageSigned(supabase: any, imageUrl: string, storagePath: string): Promise<string> {
+  const res = await fetch(imageUrl)
+  if (!res.ok) throw new Error(`Download failed (${res.status})`)
+  const buffer = await res.arrayBuffer()
+  const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+  const { error } = await supabase.storage.from('vision-assets').upload(storagePath, buffer, { contentType, upsert: true })
+  if (error) throw new Error(`Upload failed: ${error.message}`)
+  const { data, error: signErr } = await supabase.storage.from('vision-assets').createSignedUrl(storagePath, 3600)
+  if (signErr || !data?.signedUrl) throw new Error(`createSignedUrl failed: ${signErr?.message}`)
+  return data.signedUrl
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
