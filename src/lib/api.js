@@ -37,8 +37,11 @@ export const api = {
   generatePrompts: (projectId) =>
     invokeFunction('generate-prompts', { project_id: projectId }),
 
-  generateImages: (projectId) =>
-    invokeFunction('generate-images', { project_id: projectId }),
+  generateFlux: (projectId) =>
+    invokeFunction('generate-images', { project_id: projectId, phase: 'flux' }),
+
+  generateFaceswap: (projectId, fluxSlots) =>
+    invokeFunction('generate-images', { project_id: projectId, phase: 'faceswap', flux_slots: fluxSlots }),
 
   redoImage: (generationId, feedback) =>
     invokeFunction('redo-image', { generation_id: generationId, feedback }),
