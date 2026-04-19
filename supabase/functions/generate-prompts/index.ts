@@ -4,7 +4,10 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const NEGATIVE_PROMPT =
-  'Multiple visible faces, second person facing camera, crowd, group shot, background face, two faces, distorted face, extra limbs, complex hand movements, watermark, text overlay'
+  'multiple people, crowd, group, second face, background person, stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
+
+const CINEMATIC_SUFFIX =
+  ', shot on ARRI Alexa, anamorphic lens, shallow depth of field, rich color grading, luxury lifestyle campaign, editorial photography, award-winning cinematography'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -156,7 +159,7 @@ serve(async (req: Request) => {
     const rows = slots.map((slot, idx) => ({
       vision_project_id: project_id,
       media_type:        'Image',
-      prompt_text:       slot.image_prompt,
+      prompt_text:       slot.image_prompt + CINEMATIC_SUFFIX,
       video_prompt:      slot.video_prompt,
       negative_prompt:   NEGATIVE_PROMPT,
       media_url:         '',
