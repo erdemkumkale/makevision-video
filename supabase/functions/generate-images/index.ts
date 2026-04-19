@@ -272,7 +272,7 @@ async function submitFlux(apiKey: string, prompt: string, negativePrompt: string
     body: JSON.stringify({
       model: 'Qubico/flux1-dev',
       task_type: 'txt2img',
-      input: { prompt, negative_prompt: negativePrompt, width: 768, height: 1024, guidance_scale: 3.5, num_inference_steps: 28 },
+      input: { prompt, negative_prompt: negativePrompt, width: 768, height: 1024, guidance_scale: 5.5, num_inference_steps: 30 },
     }),
   })
   if (!res.ok) throw new Error(`Flux submit failed (${res.status}): ${await res.text()}`)
