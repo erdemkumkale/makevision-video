@@ -93,8 +93,21 @@ serve(async (req: Request) => {
         return json({ error: 'flux_slots required for faceswap phase' }, 400)
       }
 
+      // Selfie CDN URL'ini signed URL'e çevir — PiAPI farklı bölgeden CDN'e erişemiyor
+      const selfieStoragePath = project.selfie_url.split('/vision-assets/')[1]?.split('?')[0]
+      let selfieUrl = project.selfie_url
+      if (selfieStoragePath) {
+        const { data: signed } = await supabase.storage.from('vision-assets').createSignedUrl(selfieStoragePath, 3600)
+        if (signed?.signedUrl) {
+          selfieUrl = signed.signedUrl
+          console.log('Selfie signed URL created')
+        } else {
+          console.warn('Could not create selfie signed URL, using original')
+        }
+      }
+
       console.log(`Faceswap phase: ${flux_slots.length} slots`)
-      await runFaceswapPhase(supabase, piApiKey, project_id, project.selfie_url, flux_slots)
+      await runFaceswapPhase(supabase, piApiKey, project_id, selfieUrl, flux_slots)
       return json({ success: true })
     }
 
