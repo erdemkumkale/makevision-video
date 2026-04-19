@@ -304,18 +304,16 @@ function buildGeminiContents(storyText: string, sceneCount: number, gender: stri
 }
 
 function buildGeminiPrompt(storyText: string, sceneCount: number, gender: string, age: string): string {
-  return `You are a world-class film director and cinematographer creating a personal vision film — a cinematic trailer of someone's dream life.
-
-Generate exactly ${sceneCount} image prompts. Each scene is a single powerful cinematic still from their dream life.
+  return `You are the creative director of a luxury lifestyle film studio. Your job: write ${sceneCount} image prompts for a hyper-cinematic personal vision film — a 30-second trailer of someone's most aspirational life. Think Lamborghini commercial meets National Geographic meets a luxury real estate video. Every frame must make the viewer feel something.
 
 ════════════════════════════════════════
-THE PERSON
+THE SUBJECT
 ════════════════════════════════════════
 Gender: ${gender}
-Context (for lifestyle/setting choices only, do NOT mention age in image prompts): ${age}
-Physique: lean, fit, healthy — natural athletic build. Never overweight, never frail, never elderly-looking.
-Posture: upright, relaxed confidence — shoulders back, at ease, like they belong exactly where they are.
-Their face will be composited in later. Do NOT describe their face, age, or body weight. Do NOT write "portrait" or close-up of face.
+Life stage context (DO NOT describe age or body in prompts): ${age}
+Body: lean, fit, athletic — always. Never mention body type in prompts.
+Posture: owns the space — relaxed, powerful, unhurried.
+Face composited in post. Do NOT describe face, do NOT frame as portrait, do NOT crop at shoulders.
 
 ════════════════════════════════════════
 THEIR DREAM LIFE
@@ -323,45 +321,52 @@ THEIR DREAM LIFE
 ${storyText}
 
 ════════════════════════════════════════
-IMAGE PROMPT RULES (follow strictly)
+THE VISUAL LANGUAGE — READ CAREFULLY
 ════════════════════════════════════════
-Every image_prompt MUST have ALL of these:
-1. Setting described first — environment, location, textures, light quality
-2. Camera framing: wide shot / medium shot / over-the-shoulder / back-to-camera / low angle / aerial
-3. Time of day + light: golden hour / blue hour / midday sun / overcast / candlelight / neon night
-4. Subject placement: where they are, what they're doing (NOT walking/running — standing, sitting, leaning, looking out)
-5. Mood/atmosphere in ONE word at the end: triumphant / grounded / electric / intimate / expansive / serene
+Each image prompt must feel like a frame pulled from a film where the ENVIRONMENT is the star and the subject belongs in it naturally. Follow this structure every time:
 
-FORBIDDEN in image prompts (STRICT — violation = bad output):
-- Any desk, table, or counter in front of the subject — NEVER place the subject behind furniture
-- Office interiors, conference rooms, meeting tables, cubicles
-- Subject walking, running, or mid-motion
-- Face as focal point or close-up portrait
-- Generic stock photo vibes: "man in suit at desk", "woman smiling at camera"
-- Multiple visible faces
-- The words "desk", "office", "table", "conference", "meeting", "boardroom"
-
-VARIETY — spread across these across ${sceneCount} scenes, no repeats:
-- Interiors: luxury home living room, restaurant, yacht cabin, hotel suite, penthouse
-- Outdoors: coastline, rooftop, mountain path, city street at night, private garden, terrace
-- The subject is always STANDING or SITTING with full upper body visible — never hidden behind objects
-- Scale: mix wide establishing shots with medium intimate moments
-- Light: mix golden hour, night, overcast, interior warm light
+[ENVIRONMENT] — rich, specific, textured. Not "a beach" but "black volcanic sand beach, steam rising from warm tide pools, fog rolling in from the sea"
+[LIGHT] — exact quality: raking golden hour sidelight / diffused overcast silver / deep blue pre-dawn / tungsten warmth against cold window glass / harsh noon shadows
+[CAMERA] — choose one: extreme wide shot establishing scale / medium shot waist up / over-the-shoulder looking into distance / low angle hero shot / aerial bird's eye / through-glass or through-foliage foreground
+[SUBJECT ACTION] — static but alive: arms open to horizon / phone to ear turned away / crouching to inspect something / leaning on railing, weight forward / hand pressed to window glass
+[MOOD WORD] — one word only: electric / sovereign / tender / untamed / magnetic / still / luminous
 
 ════════════════════════════════════════
-VIDEO PROMPT RULES
+SCENE VARIETY — MANDATORY
 ════════════════════════════════════════
-Camera movement only — no subject movement, no new objects.
-Examples: "Slow push-in, golden light warms the frame" / "Gentle pull-back, horizon expands" / "Camera drifts left, bokeh deepens"
-Max 100 characters. No vague words: cinematic, beautiful, epic, stunning.
+Distribute across ALL of these categories, no category repeated:
+1. Water: oceanfront / lake / yacht / pool at sunset
+2. Urban power: city rooftop at night / rain-slicked street with neon / glass tower observation deck
+3. Nature escape: forest clearing / mountain ridge / desert dunes / clifftop
+4. Intimate interior: candlelit restaurant corner / luxury bedroom at dawn / private plane cabin
+5. Aspirational transition: private airfield / garage with sports car / art gallery after hours
+6. Open horizon: wide field / open road stretching to mountains / empty beach at blue hour
 
 ════════════════════════════════════════
-OUTPUT
+STRICTLY FORBIDDEN (instant disqualification)
+════════════════════════════════════════
+- desk / office / conference room / meeting / boardroom / cubicle
+- any furniture blocking the subject's torso
+- walking or running subject
+- face close-up or shoulder-cropped portrait
+- stock photo clichés: man in suit pointing at whiteboard, woman laughing at salad
+- multiple people visible
+- flat even light with no drama
+
+════════════════════════════════════════
+VIDEO PROMPT
+════════════════════════════════════════
+Describe ONLY camera movement. The subject does not move. Be specific:
+Good: "Slow push-in from wide, foreground reeds blur into bokeh"
+Bad: "cinematic pan" / "beautiful movement" / "epic shot"
+Max 90 characters.
+
+════════════════════════════════════════
+OUTPUT FORMAT
 ════════════════════════════════════════
 Return ONLY a valid JSON array of exactly ${sceneCount} objects. No markdown, no backticks, no explanation.
 [
-  { "image_prompt": "...", "video_prompt": "..." },
-  ...
+  { "image_prompt": "...", "video_prompt": "..." }
 ]`
 }
 
