@@ -304,16 +304,23 @@ function buildGeminiContents(storyText: string, sceneCount: number, gender: stri
 }
 
 function buildGeminiPrompt(storyText: string, sceneCount: number, gender: string, age: string): string {
-  return `You are the creative director of a luxury lifestyle film studio. Your job: write ${sceneCount} image prompts for a hyper-cinematic personal vision film — a 30-second trailer of someone's most aspirational life. Think Lamborghini commercial meets National Geographic meets a luxury real estate video. Every frame must make the viewer feel something.
+  const genderWord = gender === 'female' ? 'woman' : 'man'
+  const genderPronoun = gender === 'female' ? 'her' : 'his'
+
+  return `You are the creative director of a luxury lifestyle film studio. Write ${sceneCount} image prompts for a hyper-cinematic personal vision film — a 30-second trailer of someone's most aspirational life. Think Lamborghini commercial meets National Geographic. Every frame must feel expensive and alive.
 
 ════════════════════════════════════════
-THE SUBJECT
+THE SUBJECT — CRITICAL
 ════════════════════════════════════════
-Gender: ${gender}
-Life stage context (DO NOT describe age or body in prompts): ${age}
-Body: lean, fit, athletic — always. Never mention body type in prompts.
-Posture: owns the space — relaxed, powerful, unhurried.
-Face composited in post. Do NOT describe face, do NOT frame as portrait, do NOT crop at shoulders.
+The subject is a ${genderWord}. Every prompt MUST use the word "${genderWord}" explicitly.
+Life stage context (affects setting choices only, never describe age): ${age}
+Body: lean, fit, athletic. Never describe body type in prompts.
+Face will be composited via face-swap in post-production.
+
+FACE VISIBILITY RULE — NON-NEGOTIABLE:
+The ${genderWord}'s face MUST be visible and forward-facing (or at a slight angle) in EVERY scene.
+This is required for the face-swap to work. NO back-to-camera, NO silhouettes, NO turned-away shots.
+The ${genderWord} is always facing toward or slightly away from camera — face visible, expression readable.
 
 ════════════════════════════════════════
 THEIR DREAM LIFE
@@ -321,50 +328,48 @@ THEIR DREAM LIFE
 ${storyText}
 
 ════════════════════════════════════════
-THE VISUAL LANGUAGE — READ CAREFULLY
+PROMPT STRUCTURE — follow every time
 ════════════════════════════════════════
-Each image prompt must feel like a frame pulled from a film where the ENVIRONMENT is the star and the subject belongs in it naturally. Follow this structure every time:
-
-[ENVIRONMENT] — rich, specific, textured. Not "a beach" but "black volcanic sand beach, steam rising from warm tide pools, fog rolling in from the sea"
-[LIGHT] — exact quality: raking golden hour sidelight / diffused overcast silver / deep blue pre-dawn / tungsten warmth against cold window glass / harsh noon shadows
-[CAMERA] — choose one: extreme wide shot establishing scale / medium shot waist up / over-the-shoulder looking into distance / low angle hero shot / aerial bird's eye / through-glass or through-foliage foreground
-[SUBJECT ACTION] — static but alive: arms open to horizon / phone to ear turned away / crouching to inspect something / leaning on railing, weight forward / hand pressed to window glass
-[MOOD WORD] — one word only: electric / sovereign / tender / untamed / magnetic / still / luminous
+[ENVIRONMENT] specific textures, not generic: "rain-slicked cobblestone alley with neon reflections" not "a street"
+[LIGHT] exact quality: golden hour sidelight / blue hour glow / candlelight warmth / harsh noon shadow
+[CAMERA] medium shot waist-up / low angle looking up at subject / slight over-shoulder with face still visible / wide shot with subject in foreground
+[SUBJECT] "a ${genderWord} standing/sitting/leaning [specific action], face [toward camera / turned slightly]"
+[MOOD] one word: sovereign / electric / tender / untamed / luminous / magnetic
 
 ════════════════════════════════════════
-SCENE VARIETY — MANDATORY
+SCENE VARIETY — one from each, no repeats
 ════════════════════════════════════════
-Distribute across ALL of these categories, no category repeated:
-1. Water: oceanfront / lake / yacht / pool at sunset
-2. Urban power: city rooftop at night / rain-slicked street with neon / glass tower observation deck
-3. Nature escape: forest clearing / mountain ridge / desert dunes / clifftop
-4. Intimate interior: candlelit restaurant corner / luxury bedroom at dawn / private plane cabin
-5. Aspirational transition: private airfield / garage with sports car / art gallery after hours
-6. Open horizon: wide field / open road stretching to mountains / empty beach at blue hour
+1. Water: oceanfront / yacht deck / infinity pool at dusk
+2. Urban power: rooftop at night / glass tower lobby / rain-soaked city street
+3. Nature: mountain ridge / forest clearing / clifftop with horizon
+4. Intimate interior: candlelit restaurant / luxury bedroom at dawn / private jet cabin
+5. Aspirational: sports car garage / art gallery after hours / private airfield tarmac
+6. Open horizon: empty beach at blue hour / open road to mountains / desert dunes at sunrise
 
 ════════════════════════════════════════
-STRICTLY FORBIDDEN (instant disqualification)
+FORBIDDEN
 ════════════════════════════════════════
-- desk / office / conference room / meeting / boardroom / cubicle
-- any furniture blocking the subject's torso
-- walking or running subject
-- face close-up or shoulder-cropped portrait
-- stock photo clichés: man in suit pointing at whiteboard, woman laughing at salad
-- multiple people visible
-- flat even light with no drama
+- desk / office / conference / boardroom / cubicle / meeting
+- furniture blocking the subject's torso
+- back-to-camera / silhouette / face not visible ← this breaks face-swap
+- walking or running
+- close-up face portrait (keep waist-up minimum)
+- teenage or child figure — the subject is an adult ${genderWord}
+- multiple visible people
+- wrong gender: must be a ${genderWord}, never a ${gender === 'female' ? 'man' : 'woman'} or child
 
 ════════════════════════════════════════
 VIDEO PROMPT
 ════════════════════════════════════════
-Describe ONLY camera movement. The subject does not move. Be specific:
+Camera movement only, subject is still. Be specific:
 Good: "Slow push-in from wide, foreground reeds blur into bokeh"
-Bad: "cinematic pan" / "beautiful movement" / "epic shot"
+Bad: "cinematic pan" / "epic shot" / "beautiful movement"
 Max 90 characters.
 
 ════════════════════════════════════════
-OUTPUT FORMAT
+OUTPUT
 ════════════════════════════════════════
-Return ONLY a valid JSON array of exactly ${sceneCount} objects. No markdown, no backticks, no explanation.
+Return ONLY a valid JSON array of exactly ${sceneCount} objects. No markdown, no backticks.
 [
   { "image_prompt": "...", "video_prompt": "..." }
 ]`
