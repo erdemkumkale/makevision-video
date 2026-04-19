@@ -31,7 +31,7 @@ const ProjectCard = ({ project, onClick }) => {
 
   // DB'den gelen gerçek URL — hardcode path yerine
   const firstImage = (project.thumbnail ?? [])
-    .filter(t => t.media_url)
+    .filter(t => t.media_url && !t.is_redo)
     .sort((a, b) => a.order_num - b.order_num)[0]
   const thumbUrl = firstImage?.media_url ?? null
   const hasThumb = !!thumbUrl && ['Images_Ready','Processing','Videos_Ready','Completed'].includes(project.status)
@@ -54,19 +54,20 @@ const ProjectCard = ({ project, onClick }) => {
             src={thumbUrl}
             alt="preview"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+              e.currentTarget.nextSibling.style.display = 'flex'
+            }}
           />
         )}
-        {!hasThumb && (
-          <div style={{ position: 'absolute', inset: 0 }}
-               className="flex flex-col items-center justify-center gap-2 opacity-30">
-            <svg className="w-8 h-8 text-glow-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-            </svg>
-            <span className="text-xs text-gray-600">No preview yet</span>
-          </div>
-        )}
+        <div style={{ position: 'absolute', inset: 0, display: hasThumb ? 'none' : 'flex' }}
+             className="flex-col items-center justify-center gap-2 opacity-30">
+          <svg className="w-8 h-8 text-glow-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+              d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+          </svg>
+          <span className="text-xs text-gray-600">No preview yet</span>
+        </div>
         {project.status === 'Completed' && (
           <div style={{ position: 'absolute', inset: 0 }}
                className="bg-black/30 flex items-center justify-center
@@ -140,7 +141,7 @@ export default function Dashboard() {
     if (!user) return
     const { data, error } = await supabase
       .from('vision_projects')
-      .select('*, thumbnail:media_generations(media_url, order_num)')
+      .select('*, thumbnail:media_generations(media_url, order_num, is_redo)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     if (!error) {
