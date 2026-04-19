@@ -365,10 +365,18 @@ FORBIDDEN
 ════════════════════════════════════════
 VIDEO PROMPT
 ════════════════════════════════════════
-Camera movement only, subject is still. Be specific:
-Good: "Slow push-in from wide, foreground reeds blur into bokeh"
-Bad: "cinematic pan" / "epic shot" / "beautiful movement"
-Max 90 characters.
+Write what MOVES and what is FELT in this 5-second clip. This drives Kling AI to animate the scene with real motion and emotion.
+
+Include ALL of these:
+1. What physically moves: clothing rippling in wind / waves rolling in / leaves trembling / light shifting across skin / smoke curling / hair lifting
+2. Subject's emotional state visible in body: shoulders drop with relief / chest opens / breath visible / slight smile forming
+3. Atmosphere: warm golden haze thickens / mist rolls across water / city lights blur in rain
+4. One emotion word at the end: triumphant / tender / electric / sovereign / expansive / still
+
+Good: "Shirt fabric moves in coastal wind, waves crash below frame, golden light warms across his chest, shoulders open with quiet pride — sovereign"
+Bad: "slow push-in" / "cinematic pan" / "camera drifts left" / "gentle movement"
+
+Max 150 characters.
 
 ════════════════════════════════════════
 OUTPUT
