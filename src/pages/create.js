@@ -67,7 +67,7 @@ const StepDots = ({ current }) => (
 
 // ─── Step 1: Selfie Upload ────────────────────────────────────────────────────
 
-const SelfieUpload = ({ file, setFile }) => {
+const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
   const inputRef = useRef()
   const [dragging, setDragging] = useState(false)
   const preview = file ? URL.createObjectURL(file) : null
@@ -126,6 +126,25 @@ const SelfieUpload = ({ file, setFile }) => {
         )}
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       </div>
+
+      {file && (
+        <label className="flex items-start gap-3 mt-5 cursor-pointer group">
+          <div
+            onClick={() => setConsent(v => !v)}
+            className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
+              ${consent ? 'bg-glow border-glow' : 'border-border bg-panel group-hover:border-muted'}`}
+          >
+            {consent && (
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
+              </svg>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 leading-relaxed" onClick={() => setConsent(v => !v)}>
+            I confirm that this photo is of me and I have the right to use it. I understand that using another person&apos;s likeness without consent may be illegal in many jurisdictions, and I take full responsibility for the content I generate.
+          </p>
+        </label>
+      )}
     </div>
   )
 }
@@ -288,10 +307,8 @@ const ReviewStep = ({ file, dream, sceneCount, submitting, submitStage }) => {
 const SUBMIT_STAGES = [
   'Uploading your photo...',
   'Saving your vision...',
-  'Analyzing your story with AI...',
-  'Generating your scenes... (this takes ~2 minutes)',
-  'Adding your face to each scene...',
-  'Almost ready...',
+  'Crafting your scenes with AI...',
+  'Starting your vision...',
 ]
 
 export default function CreateVision() {
@@ -300,6 +317,7 @@ export default function CreateVision() {
 
   const [step, setStep]           = useState(0)
   const [file, setFile]           = useState(null)
+  const [consent, setConsent]     = useState(false)
   const [gender, setGender]       = useState('male')
   const [age, setAge]             = useState('30s')
   const [dream, setDream]         = useState('')
@@ -309,7 +327,7 @@ export default function CreateVision() {
   const [error, setError]         = useState(null)
 
   const canAdvance = () => {
-    if (step === 0) return !!file
+    if (step === 0) return !!file && consent
     if (step === 1) return dream.trim().length >= 20
     return true
   }
@@ -353,16 +371,11 @@ export default function CreateVision() {
       setSubmitStage(2)
       await api.generatePrompts(project.id)
 
-      // 4. Generate Flux images (synchronous, ~2min)
+      // 4. Start image generation in background — returns immediately
       setSubmitStage(3)
-      const { flux_slots } = await api.generateFlux(project.id)
+      await api.startGeneration(project.id)
 
-      // 5. Generate faceswap (synchronous, ~1.5min)
-      setSubmitStage(4)
-      await api.generateFaceswap(project.id, flux_slots)
-
-      // 6. Redirect to review
-      setSubmitStage(5)
+      // 5. Redirect immediately — review page polls DB until images appear
       router.push(`/review/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)
@@ -394,7 +407,7 @@ export default function CreateVision() {
 
           {step === 0 && (
             <>
-              <SelfieUpload file={file} setFile={setFile} />
+              <SelfieUpload file={file} setFile={setFile} consent={consent} setConsent={setConsent} />
               <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} />
             </>
           )}
