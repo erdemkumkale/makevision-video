@@ -207,25 +207,25 @@ async function runFaceswapPhase(
   console.log('Faceswap: polling all tasks in parallel')
   const polled = await Promise.all(submitted.map(async ({ slot, taskId, error }) => {
     if (!taskId) return { slot, finalUrl: null, error }
-    try {
-      const finalUrl = await pollTask(piApiKey, taskId, 'image_url', 15, 5000) // 15×5s = 75s
-      console.log(`Slot ${slot.order_num} faceswap done`)
-      return { slot, finalUrl, error: null }
-    } catch (err) {
-      // Auto-retry once — 12 attempts (60s), total max: 75+3+60=138s < 150s limit
-      console.warn(`Slot ${slot.order_num} faceswap failed, retrying once:`, String(err))
-      await sleep(3000)
+    // Up to 3 attempts. Each "invalid request" fail is instant (1-2 polls = 5-10s),
+    // so 3 attempts + delays comfortably fits within the 150s wall-clock limit.
+    const delays = [0, 4000, 8000] // ms before each attempt
+    let lastErr = ''
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (delays[attempt] > 0) await sleep(delays[attempt])
+      const tid = attempt === 0 ? taskId : await submitFaceswap(piApiKey, slot.flux_url!, selfieUrl).catch(e => { lastErr = String(e); return null })
+      if (!tid) continue
       try {
-        const retryTaskId = await submitFaceswap(piApiKey, slot.flux_url!, selfieUrl)
-        console.log(`Slot ${slot.order_num} faceswap retry submitted: ${retryTaskId}`)
-        const finalUrl = await pollTask(piApiKey, retryTaskId, 'image_url', 12, 5000) // 12×5s = 60s
-        console.log(`Slot ${slot.order_num} faceswap retry done`)
+        const finalUrl = await pollTask(piApiKey, tid, 'image_url', 15, 5000)
+        console.log(`Slot ${slot.order_num} faceswap done (attempt ${attempt + 1})`)
         return { slot, finalUrl, error: null }
-      } catch (retryErr) {
-        console.error(`Slot ${slot.order_num} faceswap retry also failed:`, String(retryErr))
-        return { slot, finalUrl: null, error: String(retryErr) }
+      } catch (e) {
+        lastErr = String(e)
+        console.warn(`Slot ${slot.order_num} faceswap attempt ${attempt + 1}/3 failed:`, lastErr)
       }
     }
+    console.error(`Slot ${slot.order_num} faceswap all 3 attempts failed`)
+    return { slot, finalUrl: null, error: lastErr }
   }))
 
   // DB güncelle
