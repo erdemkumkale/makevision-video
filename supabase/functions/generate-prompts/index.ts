@@ -340,14 +340,15 @@ PROMPT STRUCTURE — follow every time
 [MOOD] one word: sovereign / electric / tender / untamed / luminous / magnetic
 
 ════════════════════════════════════════
-SCENE VARIETY — one from each, no repeats
+SCENE VARIETY
 ════════════════════════════════════════
-1. Water: oceanfront / yacht deck / infinity pool at dusk
-2. Urban power: rooftop at night / glass tower lobby / rain-soaked city street
-3. Nature: mountain ridge / forest clearing / clifftop with horizon
-4. Intimate interior: candlelit restaurant / luxury bedroom at dawn / private jet cabin
-5. Aspirational: sports car garage / art gallery after hours / private airfield tarmac
-6. Open horizon: empty beach at blue hour / open road to mountains / desert dunes at sunrise
+PRIORITY: Each scene must come directly from the person's dream life above. If they mentioned the sea, show the sea. If they mentioned family, show an intimate home. If they mentioned forests, show nature. Do NOT invent things they didn't ask for.
+
+VARIETY rules (apply after serving their story):
+- No two scenes in the same location type
+- Mix: at least one outdoor, one indoor, one with water/nature if their story allows
+- Mix lighting: at least one golden hour, one night/low-light scene
+- Do NOT default to private jets, sports cars, or yachts unless their story specifically mentions them — these are clichés that may not fit their life
 
 ════════════════════════════════════════
 FORBIDDEN
