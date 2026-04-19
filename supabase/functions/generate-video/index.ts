@@ -280,15 +280,15 @@ async function generateKlingVideo(
       task_type: 'video_generation',
       input: {
         prompt:          motionPrompt,
-        negative_prompt: 'blurry, low quality, distorted, shaky, fast motion',
+        negative_prompt: 'blurry, low quality, distorted, shaky, fast motion, jump cut, zoomed in too close',
         image_url:       img.media_url,
         duration:        5,
         aspect_ratio:    '9:16',
         mode:            'std',
         version:         '2.1',
-        cfg_scale:       0.5,
+        cfg_scale:       0.7,
       },
-      config: { service_mode: '', without_watermark: false },
+      config: { service_mode: '', without_watermark: true },
     }),
   })
 
