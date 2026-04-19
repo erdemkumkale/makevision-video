@@ -332,16 +332,19 @@ Every image_prompt MUST have ALL of these:
 4. Subject placement: where they are, what they're doing (NOT walking/running — standing, sitting, leaning, looking out)
 5. Mood/atmosphere in ONE word at the end: triumphant / grounded / electric / intimate / expansive / serene
 
-FORBIDDEN in image prompts:
-- Face as focal point or close-up portrait
+FORBIDDEN in image prompts (STRICT — violation = bad output):
+- Any desk, table, or counter in front of the subject — NEVER place the subject behind furniture
+- Office interiors, conference rooms, meeting tables, cubicles
 - Subject walking, running, or mid-motion
+- Face as focal point or close-up portrait
 - Generic stock photo vibes: "man in suit at desk", "woman smiling at camera"
-- Boring office interiors, generic conference rooms
 - Multiple visible faces
+- The words "desk", "office", "table", "conference", "meeting", "boardroom"
 
 VARIETY — spread across these across ${sceneCount} scenes, no repeats:
-- Interiors: home, restaurant, private office with a view, yacht cabin, hotel suite
-- Outdoors: coastline, rooftop, mountain path, city street at night, private garden
+- Interiors: luxury home living room, restaurant, yacht cabin, hotel suite, penthouse
+- Outdoors: coastline, rooftop, mountain path, city street at night, private garden, terrace
+- The subject is always STANDING or SITTING with full upper body visible — never hidden behind objects
 - Scale: mix wide establishing shots with medium intimate moments
 - Light: mix golden hour, night, overcast, interior warm light
 
