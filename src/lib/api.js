@@ -37,6 +37,10 @@ export const api = {
   generatePrompts: (projectId) =>
     invokeFunction('generate-prompts', { project_id: projectId }),
 
+  // Fire-and-forget — returns immediately, pipeline runs in background
+  startGeneration: (projectId) =>
+    invokeFunction('generate-images', { project_id: projectId, phase: 'all' }),
+
   generateFlux: (projectId) =>
     invokeFunction('generate-images', { project_id: projectId, phase: 'flux' }),
 

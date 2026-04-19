@@ -52,8 +52,8 @@ serve(async (req: Request) => {
     const { project_id, phase, flux_slots } = body
 
     if (!project_id) return json({ error: 'project_id is required' }, 400)
-    if (!phase || !['flux', 'faceswap'].includes(phase)) {
-      return json({ error: 'phase must be "flux" or "faceswap"' }, 400)
+    if (!phase || !['flux', 'faceswap', 'all'].includes(phase)) {
+      return json({ error: 'phase must be "flux", "faceswap", or "all"' }, 400)
     }
 
     const { data: project, error: projectError } = await supabase
@@ -109,6 +109,43 @@ serve(async (req: Request) => {
       console.log(`Faceswap phase: ${flux_slots.length} slots`)
       await runFaceswapPhase(supabase, piApiKey, project_id, selfieUrl, flux_slots)
       return json({ success: true })
+    }
+
+    // ── Phase "all": fire-and-forget — returns immediately, runs in background ──
+    if (phase === 'all') {
+      if (!project.selfie_url) return json({ error: 'No selfie_url on project' }, 400)
+
+      const pipeline = async () => {
+        try {
+          const { data: generations } = await supabase
+            .from('media_generations')
+            .select('id, prompt_text, negative_prompt, order_num')
+            .eq('vision_project_id', project_id)
+            .eq('media_url', '')
+            .order('order_num', { ascending: true })
+
+          if (!generations?.length) { console.error('No generations found'); return }
+
+          console.log(`Background pipeline: ${generations.length} slots`)
+          const fluxSlots = await runFluxPhase(supabase, piApiKey, project_id, generations)
+
+          const selfieStoragePath = project.selfie_url.split('/vision-assets/')[1]?.split('?')[0]
+          let selfieUrl = project.selfie_url
+          if (selfieStoragePath) {
+            const { data: signed } = await supabase.storage.from('vision-assets').createSignedUrl(selfieStoragePath, 3600)
+            if (signed?.signedUrl) selfieUrl = signed.signedUrl
+          }
+
+          await runFaceswapPhase(supabase, piApiKey, project_id, selfieUrl, fluxSlots)
+          console.log(`Background pipeline complete for project ${project_id}`)
+        } catch (err) {
+          console.error('Background pipeline error:', err)
+        }
+      }
+
+      // deno-lint-ignore no-explicit-any
+      ;(EdgeRuntime as any).waitUntil(pipeline())
+      return json({ started: true })
     }
 
   } catch (err) {
