@@ -199,7 +199,7 @@ const SubjectPicker = ({ gender, setGender, age, setAge }) => (
 
 // ─── Step 2: Dream Form ───────────────────────────────────────────────────────
 
-const DreamForm = ({ dream, setDream, sceneCount, setSceneCount }) => (
+const DreamForm = ({ dream, setDream }) => (
   <div className="animate-slide-up">
     <h2 className="text-2xl font-semibold text-white mb-1">Describe Your Dream Life</h2>
     <p className="text-gray-500 text-sm mb-6">
@@ -214,30 +214,9 @@ const DreamForm = ({ dream, setDream, sceneCount, setSceneCount }) => (
       className="input-field resize-none text-sm w-full leading-relaxed"
       autoFocus
     />
-    <p className="text-xs text-gray-600 mt-2 mb-8">
+    <p className="text-xs text-gray-600 mt-2">
       {dream.length} characters — aim for 100+ for best results
     </p>
-
-    {/* Scene count picker */}
-    <div>
-      <p className="text-sm font-medium text-gray-300 mb-3">How long should your film be?</p>
-      <div className="flex gap-3">
-        {SCENE_OPTIONS.map(opt => (
-          <button
-            key={opt.count}
-            onClick={() => setSceneCount(opt.count)}
-            className={`flex-1 py-3 px-2 rounded-xl border text-center transition-all duration-150
-              ${sceneCount === opt.count
-                ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
-                : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'
-              }`}
-          >
-            <div className="text-sm font-medium">{opt.label}</div>
-            <div className="text-xs mt-0.5 opacity-60">{opt.count} scenes · {opt.duration}</div>
-          </button>
-        ))}
-      </div>
-    </div>
   </div>
 )
 
@@ -280,15 +259,12 @@ const ReviewStep = ({ file, dream, sceneCount, submitting, submitStage }) => {
           </p>
         </div>
 
-        {/* Film length */}
-        <div className="bg-panel border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-0.5">Film Length</p>
-            <p className="text-sm text-gray-200 font-medium">{selectedOption?.label} — {selectedOption?.duration}</p>
-          </div>
-          <span className="text-xs text-glow-soft bg-glow-dim/30 border border-glow-dim px-2.5 py-1 rounded-full">
-            {sceneCount} scenes
-          </span>
+        {/* What happens next */}
+        <div className="bg-glow-dim/10 border border-glow-dim/40 rounded-xl p-4">
+          <p className="text-xs text-glow-soft uppercase tracking-wider mb-2">What happens next</p>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Based on your vision, our AI will create <span className="text-gray-200 font-medium">6 cinematic scenes</span> with your face composited into each one. Review the results — if you&apos;re happy, proceed to checkout and receive your <span className="text-gray-200 font-medium">1-minute vision video</span>.
+          </p>
         </div>
       </div>
 
@@ -412,10 +388,7 @@ export default function CreateVision() {
             </>
           )}
           {step === 1 && (
-            <DreamForm
-              dream={dream} setDream={setDream}
-              sceneCount={sceneCount} setSceneCount={setSceneCount}
-            />
+            <DreamForm dream={dream} setDream={setDream} />
           )}
           {step === 2 && (
             <ReviewStep
