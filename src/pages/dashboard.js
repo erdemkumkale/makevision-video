@@ -29,11 +29,13 @@ const ProjectCard = ({ project, onClick }) => {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 
-  // DB'den gelen gerçek URL — hardcode path yerine
+  // Completed projelerde video thumbnail, diğerlerinde ilk görsel
   const firstImage = (project.thumbnail ?? [])
     .filter(t => t.media_url && !t.is_redo)
     .sort((a, b) => a.order_num - b.order_num)[0]
-  const thumbUrl = firstImage?.media_url ?? null
+  const imageThumbUrl = firstImage?.media_url ?? null
+  const videoUrl = project.final_video_url ?? null
+  const thumbUrl = imageThumbUrl ?? null
   const hasThumb = !!thumbUrl && ['Images_Ready','Processing','Videos_Ready','Completed'].includes(project.status)
 
   return (
@@ -49,7 +51,15 @@ const ProjectCard = ({ project, onClick }) => {
       {/* Thumbnail — 9:16 portrait. aspect-ratio div'de kesinlikle çalışır */}
       <div style={{ aspectRatio: '9/16', width: '100%', position: 'relative', marginBottom: '12px' }}
            className="rounded-xl bg-void border border-border overflow-hidden">
-        {hasThumb && (
+        {project.status === 'Completed' && videoUrl ? (
+          <video
+            src={videoUrl}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            muted
+            playsInline
+            preload="metadata"
+          />
+        ) : hasThumb ? (
           <img
             src={thumbUrl}
             alt="preview"
@@ -59,8 +69,8 @@ const ProjectCard = ({ project, onClick }) => {
               e.currentTarget.nextSibling.style.display = 'flex'
             }}
           />
-        )}
-        <div style={{ position: 'absolute', inset: 0, display: hasThumb ? 'none' : 'flex' }}
+        ) : null}
+        <div style={{ position: 'absolute', inset: 0, display: (project.status === 'Completed' && videoUrl) || hasThumb ? 'none' : 'flex' }}
              className="flex-col items-center justify-center gap-2 opacity-30">
           <svg className="w-8 h-8 text-glow-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -141,7 +151,7 @@ export default function Dashboard() {
     if (!user) return
     const { data, error } = await supabase
       .from('vision_projects')
-      .select('*, thumbnail:media_generations(media_url, order_num, is_redo)')
+      .select('*, final_video_url, thumbnail:media_generations(media_url, order_num, is_redo)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     if (!error) {
