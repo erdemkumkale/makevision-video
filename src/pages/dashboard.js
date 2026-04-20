@@ -292,6 +292,14 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+
+      <footer className="border-t border-border mt-16 py-6 text-center text-xs text-gray-700">
+        <div className="flex justify-center gap-6">
+          <a href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</a>
+          <a href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
+          <a href="mailto:hello@makevision.video" className="hover:text-gray-400 transition-colors">Contact</a>
+        </div>
+      </footer>
     </div>
   )
 }
