@@ -334,23 +334,98 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
       body: JSON.stringify({
         from: 'MakeVision <onboarding@resend.dev>',
         to: [email],
-        subject: '✨ Your Vision Video is Ready!',
-        html: `
-          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0a0a0f;color:#fff;padding:40px 32px;border-radius:16px">
-            <h1 style="font-size:24px;font-weight:600;margin-bottom:8px">Your Vision Is Alive ✦</h1>
-            <p style="color:#a0a0b0;font-size:15px;line-height:1.6;margin-bottom:32px">
-              Your cinematic vision video has been created. Click below to watch and download it.
-            </p>
-            <a href="${resultUrl}"
-               style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;
-                      padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">
-              Watch Your Video →
-            </a>
-            <p style="color:#555;font-size:12px;margin-top:32px">
-              MakeVision • <a href="https://makevision.vercel.app" style="color:#555">makevision.vercel.app</a>
-            </p>
+        subject: 'Your vision is alive ✦',
+        html: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#05050a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#05050a;padding:48px 16px">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+
+        <!-- Logo -->
+        <tr><td style="padding-bottom:40px">
+          <span style="font-size:15px;font-weight:600;letter-spacing:0.05em;color:#a78bfa">
+            MakeVision<span style="color:#4b5563">.video</span>
+          </span>
+        </td></tr>
+
+        <!-- Hero card -->
+        <tr><td style="background:linear-gradient(135deg,#0f0a1e 0%,#0d0d18 100%);
+                        border:1px solid #2d1f5e;border-radius:20px;padding:40px 36px">
+
+          <!-- Glow dot -->
+          <div style="width:48px;height:48px;border-radius:50%;
+                      background:linear-gradient(135deg,#7c3aed,#4f46e5);
+                      display:flex;align-items:center;justify-content:center;
+                      margin-bottom:28px;font-size:22px;line-height:48px;text-align:center">
+            🎬
           </div>
-        `,
+
+          <h1 style="margin:0 0 12px;font-size:26px;font-weight:700;
+                     color:#ffffff;line-height:1.3;letter-spacing:-0.01em">
+            Your vision is alive.
+          </h1>
+
+          <p style="margin:0 0 32px;font-size:15px;line-height:1.7;color:#9ca3af">
+            The cinematic vision video you created is ready to watch.<br>
+            Every scene, every frame — tailored to your story.
+          </p>
+
+          <!-- CTA button -->
+          <a href="${resultUrl}"
+             style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                    color:#ffffff;text-decoration:none;padding:15px 32px;
+                    border-radius:12px;font-weight:600;font-size:15px;
+                    letter-spacing:0.01em;box-shadow:0 0 24px rgba(124,58,237,0.4)">
+            Watch Your Video &nbsp;→
+          </a>
+
+          <!-- Divider -->
+          <div style="border-top:1px solid #1e1535;margin:36px 0"></div>
+
+          <!-- What's inside -->
+          <p style="margin:0 0 16px;font-size:11px;font-weight:600;
+                    letter-spacing:0.1em;text-transform:uppercase;color:#6b7280">
+            What's inside
+          </p>
+          <table cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+              <td style="padding:6px 0">
+                <span style="color:#7c3aed;margin-right:10px">✦</span>
+                <span style="font-size:14px;color:#d1d5db">6 cinematic scenes — your face, your story</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0">
+                <span style="color:#7c3aed;margin-right:10px">✦</span>
+                <span style="font-size:14px;color:#d1d5db">1-minute vision film with ambient soundtrack</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0">
+                <span style="color:#7c3aed;margin-right:10px">✦</span>
+                <span style="font-size:14px;color:#d1d5db">Download &amp; share — yours to keep</span>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding-top:28px">
+          <p style="margin:0;font-size:12px;color:#374151;line-height:1.6">
+            You received this because you created a vision on
+            <a href="https://makevision.video" style="color:#4b5563;text-decoration:none">makevision.video</a>.<br>
+            Questions? Reply to this email or contact
+            <a href="mailto:hello@makevision.video" style="color:#4b5563;text-decoration:none">hello@makevision.video</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
       }),
     })
 
