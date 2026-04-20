@@ -7,7 +7,7 @@ const NEGATIVE_PROMPT =
   'multiple people, crowd, group, second face, background person, stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
 
 const CINEMATIC_SUFFIX =
-  ', shot on ARRI Alexa, anamorphic lens, shallow depth of field, rich color grading, luxury lifestyle campaign, editorial photography, award-winning cinematography'
+  ', face clearly visible and in focus, medium shot minimum, shot on ARRI Alexa, anamorphic lens, shallow depth of field, rich color grading, luxury lifestyle campaign, editorial photography, award-winning cinematography'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -351,6 +351,22 @@ VARIETY rules (apply after serving their story):
 - Do NOT default to private jets, sports cars, or yachts unless their story specifically mentions them — these are clichés that may not fit their life
 
 ════════════════════════════════════════
+FACE VISIBILITY — ABSOLUTE REQUIREMENT
+════════════════════════════════════════
+Every single prompt MUST include this exact phrase structure: "a ${genderWord} [action], face clearly visible, looking [toward camera / slightly away / into distance]"
+The face must occupy at least 15% of the frame. Medium shot minimum (waist up).
+If the face is not clearly visible, face-swap technology CANNOT work and the image is wasted.
+
+════════════════════════════════════════
+PHYSICAL REALISM — MANDATORY
+════════════════════════════════════════
+Every scene must be physically possible and make visual sense:
+- If on a boat: subject stands on deck, not inside hull with nautical objects floating around
+- If in nature: subject stands on ground or rock, not floating
+- Objects and environment must be spatially coherent — no objects clipping through bodies
+- Camera framing must show the subject in their actual environment, not disjointed elements
+
+════════════════════════════════════════
 FORBIDDEN
 ════════════════════════════════════════
 - desk / office / conference / boardroom / cubicle / meeting
@@ -361,6 +377,7 @@ FORBIDDEN
 - teenage or child figure — the subject is an adult ${genderWord}
 - multiple visible people
 - wrong gender: must be a ${genderWord}, never a ${gender === 'female' ? 'man' : 'woman'} or child
+- physically impossible compositions: objects inside other objects, misplaced props
 
 ════════════════════════════════════════
 VIDEO PROMPT
