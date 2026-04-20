@@ -68,7 +68,7 @@ serve(async (req: Request) => {
     // gemini-1.5-flash/1.5-pro v1beta'da 404, gemini-2.5-flash da 404
     // 503 alınca retry yapıyoruz — 2.0-flash geçici overload durumundan kurtarır
     const geminiUrl         = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
-    const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${geminiKey}`
+    const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`
 
     // Kullanıcının seçtiği cinsiyet ve yaş — selfie analizi kaldırıldı (token maliyeti)
     const gender: string = (project.story_inputs as any)?.gender ?? 'male'
