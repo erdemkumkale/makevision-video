@@ -153,6 +153,7 @@ export default function ReviewVision() {
   const [error, setError]             = useState(null)
   const [genError, setGenError]       = useState(null)
   const [retrying, setRetrying]       = useState(false)
+  const generationStartedRef          = React.useRef(false)
   // { [order_num]: generation_id }
   const [selectedVersions, setSelectedVersions] = useState({})
 
@@ -223,6 +224,24 @@ export default function ReviewVision() {
   }, [user, projectId])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // Auto-start generation if prompts exist but no images yet (came from create page)
+  useEffect(() => {
+    if (loading || generationStartedRef.current) return
+    const originals = generations.filter(g => !g.is_redo)
+    const hasPrompts = originals.length > 0
+    const hasNoImages = originals.every(g => !g.media_url)
+    if (hasPrompts && hasNoImages) {
+      generationStartedRef.current = true
+      api.generateFlux(projectId)
+        .then(({ flux_slots }) => api.generateFaceswap(projectId, flux_slots))
+        .then(() => loadData())
+        .catch(err => {
+          console.error('Auto-generation failed:', err)
+          setGenError('Image generation failed. Click "Retry Generation" to try again.')
+        })
+    }
+  }, [generations, loading, projectId, loadData])
 
   // Poll while any original is still pending — timeout after ~3 minutes
   useEffect(() => {
