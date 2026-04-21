@@ -414,7 +414,7 @@ export default function ReviewVision() {
             Dashboard
           </button>
           <span className="text-glow-soft font-semibold tracking-wide text-sm">
-            MakeVision<span className="text-gray-500">.video</span>
+            YourVision<span className="text-gray-500">.video</span>
           </span>
         </div>
       </header>

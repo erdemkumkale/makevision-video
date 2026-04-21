@@ -24,7 +24,7 @@ export default function PrivacyPolicy() {
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <button onClick={() => router.push('/')}
             className="text-glow-soft font-semibold tracking-wide text-sm">
-            MakeVision<span className="text-gray-500">.video</span>
+            YourVision<span className="text-gray-500">.video</span>
           </button>
           <span className="text-xs text-gray-500">Legal</span>
         </div>
@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
 
         <div className="bg-panel border border-yellow-800/40 rounded-xl px-5 py-4 mb-10">
           <p className="text-sm text-yellow-300/80 leading-relaxed">
-            <strong className="text-yellow-300">Important:</strong> MakeVision processes your facial image using AI technology.
+            <strong className="text-yellow-300">Important:</strong> YourVision processes your facial image using AI technology.
             This Privacy Policy explains exactly what data we collect, how we use it, who we share it with,
             and how you can request its deletion.
           </p>
@@ -46,11 +46,11 @@ export default function PrivacyPolicy() {
 
         <Section title="1. Who We Are">
           <p>
-            MakeVision (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates the MakeVision service at makevision.video.
+            YourVision (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates the YourVision service at yourvision.video.
             We are responsible for the personal data you provide when using our platform.
           </p>
           <p>
-            Contact: <a href="mailto:hello@makevision.video" className="text-glow-soft hover:underline">hello@makevision.video</a>
+            Contact: <a href="mailto:hello@yourvision.video" className="text-glow-soft hover:underline">hello@yourvision.video</a>
           </p>
         </Section>
 
@@ -104,7 +104,7 @@ export default function PrivacyPolicy() {
             <li>Your uploaded image is retained in secure cloud storage only as long as needed and may be deleted upon request.</li>
           </ul>
           <p>
-            By using MakeVision, you provide explicit, informed consent to this processing, as acknowledged by the consent checkbox during upload.
+            By using YourVision, you provide explicit, informed consent to this processing, as acknowledged by the consent checkbox during upload.
           </p>
         </Section>
 
@@ -198,7 +198,7 @@ export default function PrivacyPolicy() {
           <p>
             Depending on your location, you may have the following rights regarding your personal data.
             To exercise any of these rights, contact us at{' '}
-            <a href="mailto:hello@makevision.video" className="text-glow-soft hover:underline">hello@makevision.video</a>:
+            <a href="mailto:hello@yourvision.video" className="text-glow-soft hover:underline">hello@yourvision.video</a>:
           </p>
           <ul className="list-disc list-inside space-y-2 pl-2">
             <li><strong className="text-gray-200">Access:</strong> Request a copy of the personal data we hold about you.</li>
@@ -214,7 +214,7 @@ export default function PrivacyPolicy() {
 
         <Section title="8. Cookies">
           <p>
-            MakeVision uses essential cookies and browser storage (localStorage) to maintain your login session and store temporary project data. We do not use advertising cookies or third-party tracking pixels.
+            YourVision uses essential cookies and browser storage (localStorage) to maintain your login session and store temporary project data. We do not use advertising cookies or third-party tracking pixels.
           </p>
           <p>
             You can disable cookies in your browser settings, but doing so will prevent you from logging in or using the Service.
@@ -238,7 +238,7 @@ export default function PrivacyPolicy() {
 
         <Section title="10. Children's Privacy">
           <p>
-            MakeVision is not intended for, and does not knowingly collect personal data from, individuals under 18 years of age. If you believe a minor has provided us with personal data, contact us immediately and we will delete it.
+            YourVision is not intended for, and does not knowingly collect personal data from, individuals under 18 years of age. If you believe a minor has provided us with personal data, contact us immediately and we will delete it.
           </p>
         </Section>
 
@@ -259,9 +259,9 @@ export default function PrivacyPolicy() {
             For any privacy-related questions, data requests, or concerns, contact us at:
           </p>
           <div className="bg-panel border border-border rounded-xl px-5 py-4 mt-2">
-            <p className="text-gray-200 font-medium">MakeVision</p>
+            <p className="text-gray-200 font-medium">YourVision</p>
             <p className="mt-1">
-              <a href="mailto:hello@makevision.video" className="text-glow-soft hover:underline">hello@makevision.video</a>
+              <a href="mailto:hello@yourvision.video" className="text-glow-soft hover:underline">hello@yourvision.video</a>
             </p>
             <p className="text-gray-500 text-xs mt-2">We aim to respond to all privacy inquiries within 5 business days.</p>
           </div>
@@ -272,9 +272,9 @@ export default function PrivacyPolicy() {
         <div className="flex justify-center gap-6">
           <button onClick={() => router.push('/terms')} className="hover:text-gray-400 transition-colors">Terms of Service</button>
           <button onClick={() => router.push('/privacy')} className="hover:text-gray-400 transition-colors">Privacy Policy</button>
-          <a href="mailto:hello@makevision.video" className="hover:text-gray-400 transition-colors">Contact</a>
+          <a href="mailto:hello@yourvision.video" className="hover:text-gray-400 transition-colors">Contact</a>
         </div>
-        <p className="mt-4">© {new Date().getFullYear()} MakeVision. All rights reserved.</p>
+        <p className="mt-4">© {new Date().getFullYear()} YourVision. All rights reserved.</p>
       </footer>
     </div>
   )

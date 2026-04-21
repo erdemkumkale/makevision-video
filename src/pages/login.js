@@ -49,7 +49,7 @@ export default function Login() {
       {/* Logo */}
       <div className="mb-10 text-center animate-slide-up">
         <p className="text-glow-soft font-semibold text-xl tracking-wide mb-2">
-          MakeVision<span className="text-gray-500">.video</span>
+          YourVision<span className="text-gray-500">.video</span>
         </p>
         <h1 className="text-4xl font-semibold text-white leading-tight">
           Manifest your<br />

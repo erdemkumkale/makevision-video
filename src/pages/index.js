@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 /**
- * makevision.video — Landing Page v2 (Dark / Magician)
+ * yourvision.video — Landing Page v2 (Dark / Magician)
  *
  * Assumptions:
  * 1. Fonts: Fraunces (Google Fonts, variable) for headlines + General Sans (Fontshare) for body
@@ -349,17 +349,17 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>MakeVision — Name the life you&apos;re becoming.</title>
+        <title>YourVision — Name the life you&apos;re becoming.</title>
         <meta name="description" content="Write the vision in your own words. Receive a 60-second film of yourself, already inside it. One-time, $20." />
-        <meta property="og:title" content="MakeVision — Name the life you're becoming." />
+        <meta property="og:title" content="YourVision — Name the life you're becoming." />
         <meta property="og:description" content="Write the vision in your own words. Receive a 60-second film of yourself, already inside it." />
-        <meta property="og:image" content="https://makevision.video/og-image.jpg" />
+        <meta property="og:image" content="https://yourvision.video/og-image.jpg" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://makevision.video" />
+        <meta property="og:url" content="https://yourvision.video" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="MakeVision — Name the life you're becoming." />
+        <meta name="twitter:title" content="YourVision — Name the life you're becoming." />
         <meta name="twitter:description" content="Write the vision in your own words. Receive a 60-second film of yourself, already inside it." />
-        <meta name="twitter:image" content="https://makevision.video/og-image.jpg" />
+        <meta name="twitter:image" content="https://yourvision.video/og-image.jpg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -407,7 +407,7 @@ export default function Home() {
             letterSpacing: '0.06em',
             color: C.text,
           }}>
-            MakeVision
+            YourVision
           </span>
           <button
             onClick={() => router.push('/login')}
@@ -901,13 +901,13 @@ export default function Home() {
             letterSpacing: '0.06em',
             color: C.text,
           }}>
-            MakeVision
+            YourVision
           </span>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '24px' }}>
             {[
               { label: 'Terms', href: '/terms', isLink: true },
               { label: 'Privacy', href: '/privacy', isLink: true },
-              { label: 'Contact', href: 'mailto:hello@makevision.video', isLink: false },
+              { label: 'Contact', href: 'mailto:hello@yourvision.video', isLink: false },
             ].map(item => item.isLink ? (
               <Link
                 key={item.label}
@@ -930,7 +930,7 @@ export default function Home() {
               </a>
             ))}
             <span style={{ fontSize: '0.75rem', color: C.subtle }}>
-              © {new Date().getFullYear()} MakeVision
+              © {new Date().getFullYear()} YourVision
             </span>
           </div>
         </footer>

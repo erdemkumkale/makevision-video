@@ -100,7 +100,7 @@ export default function Result() {
             Dashboard
           </button>
           <span className="text-glow-soft font-semibold tracking-wide text-sm">
-            MakeVision<span className="text-gray-500">.video</span>
+            YourVision<span className="text-gray-500">.video</span>
           </span>
         </div>
       </header>
@@ -184,7 +184,7 @@ export default function Result() {
                   if (navigator.share) {
                     try {
                       await navigator.share({
-                        title: 'My Vision Video — MakeVision',
+                        title: 'My Vision Video — YourVision',
                         text: 'I just created a cinematic video of my dream life ✨',
                         url: shareUrl,
                       })

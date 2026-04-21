@@ -323,7 +323,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
       return
     }
     const email = userData.user.email
-    const resultUrl = `https://makevision.vercel.app/result/${projectId}`
+    const resultUrl = `https://yourvision.video/result/${projectId}`
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -332,7 +332,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'MakeVision <onboarding@resend.dev>',
+        from: 'YourVision <onboarding@resend.dev>',
         to: [email],
         subject: 'Your vision is alive ✦',
         html: `<!DOCTYPE html>
@@ -346,7 +346,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         <!-- Logo -->
         <tr><td style="padding-bottom:40px">
           <span style="font-size:15px;font-weight:600;letter-spacing:0.05em;color:#a78bfa">
-            MakeVision<span style="color:#4b5563">.video</span>
+            YourVision<span style="color:#4b5563">.video</span>
           </span>
         </td></tr>
 
@@ -415,9 +415,9 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         <tr><td style="padding-top:28px">
           <p style="margin:0;font-size:12px;color:#374151;line-height:1.6">
             You received this because you created a vision on
-            <a href="https://makevision.video" style="color:#4b5563;text-decoration:none">makevision.video</a>.<br>
+            <a href="https://yourvision.video" style="color:#4b5563;text-decoration:none">yourvision.video</a>.<br>
             Questions? Reply to this email or contact
-            <a href="mailto:hello@makevision.video" style="color:#4b5563;text-decoration:none">hello@makevision.video</a>
+            <a href="mailto:hello@yourvision.video" style="color:#4b5563;text-decoration:none">hello@yourvision.video</a>
           </p>
         </td></tr>
 

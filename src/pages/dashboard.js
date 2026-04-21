@@ -227,7 +227,7 @@ export default function Dashboard() {
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <span className="text-glow-soft font-semibold tracking-wide text-sm">
-            MakeVision<span className="text-gray-500">.video</span>
+            YourVision<span className="text-gray-500">.video</span>
           </span>
           <div className="flex items-center gap-3">
             {profile?.profile_picture && (
@@ -305,7 +305,7 @@ export default function Dashboard() {
         <div className="flex justify-center gap-6">
           <Link href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</Link>
           <Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</Link>
-          <a href="mailto:hello@makevision.video" className="hover:text-gray-400 transition-colors">Contact</a>
+          <a href="mailto:hello@yourvision.video" className="hover:text-gray-400 transition-colors">Contact</a>
         </div>
       </footer>
     </div>

@@ -99,7 +99,7 @@ export default function Checkout() {
             Back to Review
           </button>
           <span className="text-glow-soft font-semibold tracking-wide text-sm">
-            MakeVision<span className="text-gray-500">.video</span>
+            YourVision<span className="text-gray-500">.video</span>
           </span>
         </div>
       </header>
@@ -129,7 +129,7 @@ export default function Checkout() {
             <div className="px-6 py-5 border-b border-border flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Vision Video</p>
-                <p className="text-gray-200 font-medium text-sm">MakeVision.video — Full Package</p>
+                <p className="text-gray-200 font-medium text-sm">YourVision.video — Full Package</p>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-semibold text-white">${PRICE}</p>
