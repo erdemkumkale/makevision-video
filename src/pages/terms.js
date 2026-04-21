@@ -168,7 +168,7 @@ export default function TermsOfService() {
 
         <Section title="13. Governing Law">
           <p>
-            These Terms shall be governed by and construed in accordance with the laws of the Republic of Turkey, without regard to its conflict of law provisions. Any disputes arising from these Terms shall be resolved in the competent courts of Istanbul, Turkey.
+            These Terms shall be governed by and construed in accordance with the laws of the State of Delaware, United States, without regard to its conflict of law provisions. Any disputes arising from these Terms shall be subject to binding arbitration or resolved in the competent courts of Delaware.
           </p>
         </Section>
 

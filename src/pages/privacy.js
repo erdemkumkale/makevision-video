@@ -248,23 +248,13 @@ export default function PrivacyPolicy() {
           </p>
         </Section>
 
-        <Section title="12. Turkish KVKK Notice">
-          <p>
-            If you are located in Turkey, your personal data is processed in accordance with the Law on Protection of Personal Data (KVKK, Law No. 6698). As a data controller, we process your data based on your explicit consent (Article 5/1) for biometric data and on legitimate interest and contractual necessity for other data categories.
-          </p>
-          <p>
-            You may exercise your rights under KVKK Article 11 by contacting us at{' '}
-            <a href="mailto:hello@makevision.video" className="text-glow-soft hover:underline">hello@makevision.video</a>.
-          </p>
-        </Section>
-
-        <Section title="13. Changes to This Policy">
+        <Section title="12. Changes to This Policy">
           <p>
             We may update this Privacy Policy periodically. We will notify you of significant changes by email or by posting a notice on the Service. The &quot;Last updated&quot; date at the top of this page reflects the most recent revision. Continued use of the Service after changes constitutes acceptance.
           </p>
         </Section>
 
-        <Section title="14. Contact Us">
+        <Section title="13. Contact Us">
           <p>
             For any privacy-related questions, data requests, or concerns, contact us at:
           </p>
