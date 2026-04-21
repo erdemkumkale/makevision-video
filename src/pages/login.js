@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
@@ -166,9 +167,9 @@ export default function Login() {
 
         <p className="text-center text-xs text-gray-600 mt-5">
           By continuing, you agree to our{' '}
-          <a href="/terms" className="hover:text-gray-400 underline underline-offset-2 transition-colors">Terms of Service</a>
+          <Link href="/terms" className="hover:text-gray-400 underline underline-offset-2 transition-colors">Terms of Service</Link>
           {' '}and{' '}
-          <a href="/privacy" className="hover:text-gray-400 underline underline-offset-2 transition-colors">Privacy Policy</a>.
+          <Link href="/privacy" className="hover:text-gray-400 underline underline-offset-2 transition-colors">Privacy Policy</Link>.
         </p>
       </div>
 
