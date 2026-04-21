@@ -139,7 +139,7 @@ const EmptyState = ({ onCreate }) => (
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { user, profile } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const router = useRouter()
   const [projects, setProjects]     = useState([])
   const [loading, setLoading]       = useState(true)
@@ -233,7 +233,14 @@ export default function Dashboard() {
               <img src={profile.profile_picture} alt="avatar"
                 className="w-8 h-8 rounded-full border border-border object-cover" />
             )}
-            <span className="text-sm text-gray-400">{profile?.email}</span>
+            <span className="text-sm text-gray-400 hidden sm:block">{profile?.email}</span>
+            <button
+              onClick={async () => { await signOut(); router.replace('/') }}
+              className="text-xs text-gray-600 hover:text-gray-300 transition-colors border border-border
+                         hover:border-gray-600 px-3 py-1.5 rounded-lg"
+            >
+              Sign out
+            </button>
           </div>
         </div>
       </header>
