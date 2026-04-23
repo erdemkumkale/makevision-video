@@ -309,12 +309,9 @@ export default function Home() {
   }
 
   const scenes = [
-    { src: 'https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_txt2video_1080p_std_v16/6d77881e-bf3a-4cd1-8494-96765d89814a_raw_video.mp4?x-kcdn-pid=112372', theme: 'Peace' },
-    { src: 'https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_txt2video_1080p_std_v16/7d6433a1-4f72-49cc-8134-b6cc4c11fd64_raw_video.mp4?x-kcdn-pid=112372', theme: 'Success' },
-    { src: 'https://v15-kling.klingai.com/bs2/upload-ylab-stunt-sgp/se/ai_portal_sgp_m2v_txt2video_1080p_std_v16/e35c2b94-ec75-473a-89e1-91c36b2f26af_raw_video.mp4?x-kcdn-pid=112372', theme: 'Freedom' },
-    { src: '/videos/scene_4.mp4', theme: 'Wealth' },
-    { src: '/videos/scene_5.mp4', theme: 'Love' },
-    { src: '/videos/scene_6.mp4', theme: 'Travel' },
+    { src: 'https://storage.theapi.app/videos/308819191301892.mp4', theme: 'Peace' },
+    { src: 'https://storage.theapi.app/videos/308819177504361.mp4', theme: 'Success' },
+    { src: 'https://storage.theapi.app/videos/308819186312361.mp4', theme: 'Freedom' },
   ]
 
   const themes = ['Wealth', 'Health', 'Love', 'Travel', 'Creativity', 'Peace', 'Home', 'Success']
