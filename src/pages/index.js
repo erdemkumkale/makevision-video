@@ -10,10 +10,14 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { useAuth } from '../contexts/AuthContext'
 
+// 6 videos — alternate woman/man, loop continuously
 const VIDEOS = [
-  'https://storage.theapi.app/videos/308597552508001.mp4',
-  'https://storage.theapi.app/videos/308597549534950.mp4',
-  'https://storage.theapi.app/videos/308597551504809.mp4',
+  'https://storage.theapi.app/videos/308819191301892.mp4', // woman — peace
+  'https://storage.theapi.app/videos/308597552508001.mp4', // man
+  'https://storage.theapi.app/videos/308819177504361.mp4', // woman — success
+  'https://storage.theapi.app/videos/308597549534950.mp4', // man
+  'https://storage.theapi.app/videos/308819186312361.mp4', // woman — freedom
+  'https://storage.theapi.app/videos/308597551504809.mp4', // man
 ]
 
 // ─── Cycling hero video ───────────────────────────────────────────────────────
@@ -39,8 +43,12 @@ function HeroCycler() {
       playsInline
       preload="auto"
       style={{
-        position: 'absolute', inset: 0,
-        width: '100%', height: '100%',
+        position: 'absolute',
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        height: '100%',
+        width: 'auto',
+        maxWidth: 'none',
         objectFit: 'cover',
         opacity: 0.55,
       }}
@@ -234,7 +242,7 @@ export default function Home() {
             <p style={{ fontSize: 'clamp(1rem,2.2vw,1.15rem)', fontWeight: 300, color: '#8A857C', lineHeight: 1.75, maxWidth: '460px', margin: '0 auto 48px' }}>
               Write the vision in your own words. Receive a 60-second film of yourself, already inside it.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <button onClick={() => router.push('/login')} style={{
                 display: 'inline-block', padding: '14px 44px',
                 border: '1px solid #C9A961', background: 'transparent',
@@ -248,7 +256,6 @@ export default function Home() {
               >
                 Begin
               </button>
-              <span style={{ fontSize: '0.7rem', color: '#4A4640', letterSpacing: '0.06em' }}>One-time · $20 · Yours forever</span>
             </div>
           </div>
         </section>
@@ -263,48 +270,27 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Video grid */}
-        <section style={{ padding: '100px 32px' }}>
-          <div ref={r2} style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px', textAlign: 'center' }}>Example visions</span>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '16px' }}>
-              Six lives already in motion.
-            </h2>
-            <p style={{ textAlign: 'center', color: '#8A857C', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.7, marginBottom: '56px' }}>
-              Hover to watch. Each film is 60 seconds — a different person, a different intention.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-              {scenes.map(s => <VideoCard key={s.src} src={s.src} theme={s.theme} />)}
-            </div>
-          </div>
-        </section>
-
         {/* How it works */}
         <section style={{ background: '#0F0E0C', borderTop: '1px solid #1F1D1A', borderBottom: '1px solid #1F1D1A', padding: '100px 32px' }}>
           <div ref={r3} style={{ maxWidth: '1000px', margin: '0 auto' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px', textAlign: 'center' }}>The process</span>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '80px' }}>
-              Three steps. Ten minutes.
+              Five steps. Ten minutes.
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', alignItems: 'center' }} className="steps-grid">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '52px' }}>
                 {[
                   { n: '01', title: 'Upload your selfie', desc: "A clear, front-facing photo. No filters, no studio — just you as you are today." },
-                  { n: '02', title: 'Choose your themes', desc: 'Pick the chapters of the life you are writing. As few or as many as feel true.', chips: ['Wealth', 'Health', 'Love', 'Travel', 'Peace', 'Home'] },
-                  { n: '03', title: 'Receive your vision', desc: '60 seconds. 6 scenes. Your face. The life you are moving toward.' },
+                  { n: '02', title: 'Describe your vision', desc: 'Write where you are, how your life looks, how it feels. Your words become the scenes. The more specific, the more personal the film.' },
+                  { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Any scene that does not feel right can be redone once.' },
+                  { n: '04', title: 'Unlock your film', desc: 'A single $20 payment. One-time, no subscription.' },
+                  { n: '05', title: 'Receive your vision', desc: '60 seconds. 6 animated scenes. Your face. The life you are moving toward — waiting in your inbox.' },
                 ].map(step => (
                   <div key={step.n} style={{ display: 'flex', gap: '32px' }}>
                     <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#1F1D1A', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
                     <div>
                       <p style={{ color: '#F4F1EA', fontSize: '1rem', fontWeight: 400, marginBottom: '8px' }}>{step.title}</p>
                       <p style={{ color: '#8A857C', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.75 }}>{step.desc}</p>
-                      {step.chips && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
-                          {step.chips.map(c => (
-                            <span key={c} style={{ fontSize: '0.7rem', padding: '5px 12px', borderRadius: '4px', border: '1px solid #1F1D1A', color: '#8A857C' }}>{c}</span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
