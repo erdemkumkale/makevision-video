@@ -86,7 +86,7 @@ export default function Login() {
           {/* Heading */}
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>
-              Vision film
+              Your Vision Video
             </span>
             <h1 style={{
               fontFamily: "'Fraunces',serif",
@@ -122,7 +122,7 @@ export default function Login() {
                     fontSize: '0.72rem', fontWeight: 400, letterSpacing: '0.14em',
                     textTransform: 'uppercase', transition: 'background 300ms, color 300ms',
                     background: mode === m ? '#C9A961' : 'transparent',
-                    color: mode === m ? '#0A0908' : '#8A857C',
+                    color: mode === m ? '#0A0908' : '#C5BFB8',
                   }}
                 >
                   {m === 'signin' ? 'Sign In' : 'Sign Up'}
@@ -205,7 +205,7 @@ export default function Login() {
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
               <div style={{ flex: 1, height: '1px', background: '#1F1D1A' }} />
-              <span style={{ fontSize: '0.78rem', color: '#8A857C', letterSpacing: '0.1em' }}>or</span>
+              <span style={{ fontSize: '0.78rem', color: '#C5BFB8', letterSpacing: '0.1em' }}>or</span>
               <div style={{ flex: 1, height: '1px', background: '#1F1D1A' }} />
             </div>
 
@@ -216,12 +216,12 @@ export default function Login() {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
                   padding: '12px 20px', border: '1px solid #1F1D1A', borderRadius: '4px',
-                  background: 'transparent', color: '#8A857C',
+                  background: 'transparent', color: '#C5BFB8',
                   fontSize: '0.8rem', fontWeight: 400, letterSpacing: '0.06em',
                   cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 300ms, color 300ms',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#4A4640'; e.currentTarget.style.color = '#F4F1EA' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F1D1A'; e.currentTarget.style.color = '#8A857C' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F1D1A'; e.currentTarget.style.color = '#C5BFB8' }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -237,12 +237,12 @@ export default function Login() {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
                   padding: '12px 20px', border: '1px solid #1F1D1A', borderRadius: '4px',
-                  background: 'transparent', color: '#8A857C',
+                  background: 'transparent', color: '#C5BFB8',
                   fontSize: '0.8rem', fontWeight: 400, letterSpacing: '0.06em',
                   cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 300ms, color 300ms',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#4A4640'; e.currentTarget.style.color = '#F4F1EA' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F1D1A'; e.currentTarget.style.color = '#8A857C' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F1D1A'; e.currentTarget.style.color = '#C5BFB8' }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
@@ -251,18 +251,18 @@ export default function Login() {
               </button>
             </div>
 
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#8A857C', lineHeight: 1.6, marginTop: '24px' }}>
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#C5BFB8', lineHeight: 1.6, marginTop: '24px' }}>
               By continuing, you agree to our{' '}
-              <Link href="/terms" style={{ color: '#8A857C', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Terms</Link>
+              <Link href="/terms" style={{ color: '#C5BFB8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Terms</Link>
               {' '}and{' '}
-              <Link href="/privacy" style={{ color: '#8A857C', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Privacy Policy</Link>.
+              <Link href="/privacy" style={{ color: '#C5BFB8', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Privacy Policy</Link>.
             </p>
           </div>
         </div>
 
         {/* Footer */}
         <footer style={{ borderTop: '1px solid #1F1D1A', padding: '20px 40px', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.78rem', color: '#8A857C' }}>© {new Date().getFullYear()} YourVision</span>
+          <span style={{ fontSize: '0.78rem', color: '#C5BFB8' }}>© {new Date().getFullYear()} YourVision</span>
         </footer>
 
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

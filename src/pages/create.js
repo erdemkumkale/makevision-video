@@ -69,7 +69,7 @@ const goldButton = {
 
 const ghostButton = {
   padding: '13px 24px', border: '1px solid #1F1D1A', background: 'transparent',
-  color: '#8A857C', fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.12em',
+  color: '#C5BFB8', fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.12em',
   textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px',
   fontFamily: "'General Sans','Inter',-apple-system,sans-serif",
   transition: 'color 300ms, border-color 300ms',
@@ -87,7 +87,7 @@ const StepDots = ({ current }) => (
         transition: 'width 400ms, background 400ms',
       }} />
     ))}
-    <span style={{ fontSize: '0.78rem', color: '#8A857C', letterSpacing: '0.1em', marginLeft: '4px' }}>
+    <span style={{ fontSize: '0.78rem', color: '#C5BFB8', letterSpacing: '0.1em', marginLeft: '4px' }}>
       {current + 1} / {TOTAL_STEPS}
     </span>
   </div>
@@ -116,7 +116,7 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
       <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,4vw,2rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
         Your face, <em style={{ fontStyle: 'italic', color: '#C9A961' }}>your vision.</em>
       </h2>
-      <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, marginBottom: '32px' }}>
+      <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.7, marginBottom: '32px' }}>
         Upload a clear, front-facing photo. This anchors you as the hero of your story.
       </p>
 
@@ -138,19 +138,19 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
             <img src={preview} alt="selfie preview"
               style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '1px solid #C9A961' }} />
             <p style={{ fontSize: '0.82rem', color: '#C9A961', fontWeight: 400 }}>{file.name}</p>
-            <p style={{ fontSize: '0.82rem', color: '#8A857C' }}>Click to change</p>
+            <p style={{ fontSize: '0.82rem', color: '#C5BFB8' }}>Click to change</p>
           </>
         ) : (
           <>
             <div style={{ width: 56, height: 56, borderRadius: '50%', border: '1px solid #1F1D1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: 24, height: 24, color: '#8A857C' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg style={{ width: 24, height: 24, color: '#C5BFB8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '0.92rem', color: '#8A857C', fontWeight: 400, marginBottom: '6px' }}>Drop your photo here</p>
-              <p style={{ fontSize: '0.82rem', color: '#8A857C' }}>or click to browse — JPG, PNG, WEBP</p>
+              <p style={{ fontSize: '0.92rem', color: '#C5BFB8', fontWeight: 400, marginBottom: '6px' }}>Drop your photo here</p>
+              <p style={{ fontSize: '0.82rem', color: '#C5BFB8' }}>or click to browse — JPG, PNG, WEBP</p>
             </div>
           </>
         )}
@@ -173,7 +173,7 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
               </svg>
             )}
           </div>
-          <p style={{ fontSize: '0.82rem', color: '#8A857C', lineHeight: 1.7, fontWeight: 300 }}>
+          <p style={{ fontSize: '0.82rem', color: '#C5BFB8', lineHeight: 1.7, fontWeight: 300 }}>
             I confirm this photo is of me and I have the right to use it. I understand that using another person&apos;s likeness without consent may be illegal, and I take full responsibility.
           </p>
         </label>
@@ -187,13 +187,13 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
 const SubjectPicker = ({ gender, setGender, age, setAge }) => (
   <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
     <div>
-      <p style={{ fontSize: '0.75rem', color: '#8A857C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>I am a</p>
+      <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>I am a</p>
       <div style={{ display: 'flex', gap: '8px' }}>
         {GENDER_OPTIONS.map(opt => (
           <button key={opt.value} onClick={() => setGender(opt.value)} style={{
             flex: 1, padding: '10px', border: `1px solid ${gender === opt.value ? '#C9A961' : '#1F1D1A'}`,
             background: gender === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
-            color: gender === opt.value ? '#C9A961' : '#8A857C',
+            color: gender === opt.value ? '#C9A961' : '#C5BFB8',
             fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer', borderRadius: '4px',
             fontFamily: 'inherit', transition: 'all 200ms',
           }}>
@@ -203,13 +203,13 @@ const SubjectPicker = ({ gender, setGender, age, setAge }) => (
       </div>
     </div>
     <div>
-      <p style={{ fontSize: '0.75rem', color: '#8A857C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Age range</p>
+      <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Age range</p>
       <div style={{ display: 'flex', gap: '8px' }}>
         {AGE_OPTIONS.map(opt => (
           <button key={opt.value} onClick={() => setAge(opt.value)} style={{
             flex: 1, padding: '10px', border: `1px solid ${age === opt.value ? '#C9A961' : '#1F1D1A'}`,
             background: age === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
-            color: age === opt.value ? '#C9A961' : '#8A857C',
+            color: age === opt.value ? '#C9A961' : '#C5BFB8',
             fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer', borderRadius: '4px',
             fontFamily: 'inherit', transition: 'all 200ms',
           }}>
@@ -228,7 +228,7 @@ const DreamForm = ({ dream, setDream }) => (
     <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,4vw,2rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
       Describe your <em style={{ fontStyle: 'italic', color: '#C9A961' }}>dream life.</em>
     </h2>
-    <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, marginBottom: '28px' }}>
+    <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.7, marginBottom: '28px' }}>
       Write freely. Where are you, how does your life look and feel? The more vivid, the more personal the film.
     </p>
     <textarea
@@ -246,7 +246,7 @@ const DreamForm = ({ dream, setDream }) => (
       onFocus={e => e.target.style.borderColor = '#4A4640'}
       onBlur={e => e.target.style.borderColor = '#1F1D1A'}
     />
-    <p style={{ fontSize: '0.82rem', color: '#8A857C', marginTop: '8px' }}>
+    <p style={{ fontSize: '0.82rem', color: '#C5BFB8', marginTop: '8px' }}>
       {dream.length} characters — aim for 100+ for best results
     </p>
   </div>
@@ -261,7 +261,7 @@ const ReviewStep = ({ file, dream, submitting, submitStage }) => {
       <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,4vw,2rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
         Ready to <em style={{ fontStyle: 'italic', color: '#C9A961' }}>manifest.</em>
       </h2>
-      <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, marginBottom: '28px' }}>
+      <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.7, marginBottom: '28px' }}>
         Review your vision before we begin.
       </p>
 
@@ -271,7 +271,7 @@ const ReviewStep = ({ file, dream, submitting, submitStage }) => {
           {preview
             ? <img src={preview} alt="selfie" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #C9A961' }} />
             : <div style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid #1F1D1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg style={{ width: 18, height: 18, color: '#8A857C' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg style={{ width: 18, height: 18, color: '#C5BFB8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -279,23 +279,23 @@ const ReviewStep = ({ file, dream, submitting, submitStage }) => {
           }
           <div>
             <p style={{ fontSize: '0.82rem', color: '#F4F1EA', fontWeight: 400, marginBottom: '2px' }}>{file?.name ?? 'No photo uploaded'}</p>
-            <p style={{ fontSize: '0.78rem', color: '#8A857C' }}>Face reference</p>
+            <p style={{ fontSize: '0.78rem', color: '#C5BFB8' }}>Face reference</p>
           </div>
           {file && <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#7EC99A' }} />}
         </div>
 
         {/* Dream */}
         <div style={{ background: '#0F0E0C', border: '1px solid #1F1D1A', borderRadius: '4px', padding: '16px' }}>
-          <p style={{ fontSize: '0.75rem', color: '#8A857C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>Your Vision</p>
-          <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {dream || <span style={{ fontStyle: 'italic', color: '#8A857C' }}>No description entered.</span>}
+          <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>Your Vision</p>
+          <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.7, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {dream || <span style={{ fontStyle: 'italic', color: '#C5BFB8' }}>No description entered.</span>}
           </p>
         </div>
 
         {/* What happens next */}
         <div style={{ background: 'rgba(201,169,97,0.04)', border: '1px solid rgba(201,169,97,0.2)', borderRadius: '4px', padding: '16px' }}>
           <p style={{ fontSize: '0.75rem', color: '#C9A961', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>What happens next</p>
-          <p style={{ fontSize: '0.85rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.75 }}>
+          <p style={{ fontSize: '0.85rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.75 }}>
             Our AI creates <span style={{ color: '#F4F1EA', fontWeight: 400 }}>6 cinematic scenes</span> with your face composited into each one. Review the results — if you&apos;re happy, proceed to checkout and receive your <span style={{ color: '#F4F1EA', fontWeight: 400 }}>1-minute vision video</span>.
           </p>
         </div>
@@ -386,9 +386,9 @@ export default function CreateVision() {
         }}>
           <button
             onClick={() => router.push('/dashboard')}
-            style={{ background: 'none', border: 'none', color: '#8A857C', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'inherit', transition: 'color 200ms', padding: 0 }}
+            style={{ background: 'none', border: 'none', color: '#C5BFB8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'inherit', transition: 'color 200ms', padding: 0 }}
             onMouseEnter={e => e.currentTarget.style.color = '#F4F1EA'}
-            onMouseLeave={e => e.currentTarget.style.color = '#8A857C'}
+            onMouseLeave={e => e.currentTarget.style.color = '#C5BFB8'}
           >
             <svg style={{ width: 14, height: 14 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

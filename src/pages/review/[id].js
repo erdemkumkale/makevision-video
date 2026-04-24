@@ -487,7 +487,7 @@ export default function ReviewVision() {
         <div className="mb-8 px-5 py-4 rounded-xl bg-panel border border-border">
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">What happens after approval</p>
           <p className="text-sm text-gray-400 leading-relaxed">
-            After checkout, each scene will be animated into a <span className="text-gray-200">10-second cinematic video clip</span>. All clips are then edited together into your personal <span className="text-gray-200">1-minute vision film</span> — ready to watch and share.
+            After checkout, each scene will be animated into a <span className="text-gray-200">10-second cinematic video clip</span>. All clips are then edited together into your personal <span className="text-gray-200">1-minute vision video</span> — ready to watch and share.
           </p>
         </div>
 

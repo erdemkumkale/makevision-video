@@ -80,11 +80,11 @@ const ProjectCard = ({ project, onClick }) => {
         {/* No preview placeholder */}
         {!(project.status === 'Completed' && videoUrl) && !hasThumb && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: 0.25 }}>
-            <svg style={{ width: 28, height: 28, color: '#8A857C' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg style={{ width: 28, height: 28, color: '#C5BFB8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
             </svg>
-            <span style={{ fontSize: '0.75rem', color: '#8A857C' }}>No preview</span>
+            <span style={{ fontSize: '0.75rem', color: '#C5BFB8' }}>No preview</span>
           </div>
         )}
 
@@ -116,13 +116,13 @@ const ProjectCard = ({ project, onClick }) => {
           <p style={{ fontSize: '0.78rem', color: '#F4F1EA', fontWeight: 400, marginBottom: '2px' }}>
             Vision #{project.id.slice(-6).toUpperCase()}
           </p>
-          <p style={{ fontSize: '0.78rem', color: '#8A857C' }}>{date}</p>
+          <p style={{ fontSize: '0.78rem', color: '#C5BFB8' }}>{date}</p>
         </div>
         <StatusBadge status={project.status} />
       </div>
 
       {project.revision_count > 0 && (
-        <p style={{ fontSize: '0.78rem', color: '#8A857C', marginTop: '6px' }}>
+        <p style={{ fontSize: '0.78rem', color: '#C5BFB8', marginTop: '6px' }}>
           {project.revision_count} revision{project.revision_count > 1 ? 's' : ''}
         </p>
       )}
@@ -141,7 +141,7 @@ const EmptyState = ({ onCreate }) => (
     </div>
     <div style={{ textAlign: 'center' }}>
       <p style={{ fontFamily: "'Fraunces',serif", fontSize: '1.4rem', fontWeight: 300, letterSpacing: '0.04em', color: '#F4F1EA', marginBottom: '8px' }}>No visions yet</p>
-      <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300 }}>Your first creation is one click away.</p>
+      <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300 }}>Your first creation is one click away.</p>
     </div>
     <button onClick={onCreate} style={{
       padding: '12px 36px', border: '1px solid #C9A961', background: 'transparent',
@@ -227,7 +227,7 @@ export default function Dashboard() {
               <button onClick={() => router.push(`/result/${justCompleted}`)} style={{ background: 'none', border: 'none', color: '#7EC99A', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px', fontFamily: 'inherit' }}>
                 Watch now →
               </button>
-              <button onClick={() => setJustCompleted(null)} style={{ background: 'none', border: 'none', color: '#8A857C', cursor: 'pointer', fontFamily: 'inherit', marginLeft: '4px' }}>✕</button>
+              <button onClick={() => setJustCompleted(null)} style={{ background: 'none', border: 'none', color: '#C5BFB8', cursor: 'pointer', fontFamily: 'inherit', marginLeft: '4px' }}>✕</button>
             </div>
           </div>
         )}
@@ -246,17 +246,17 @@ export default function Dashboard() {
               <img src={profile.profile_picture} alt="avatar"
                 style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #1F1D1A', objectFit: 'cover' }} />
             )}
-            <span style={{ fontSize: '0.82rem', color: '#8A857C' }} className="hidden sm:block">{profile?.email}</span>
+            <span style={{ fontSize: '0.82rem', color: '#C5BFB8' }} className="hidden sm:block">{profile?.email}</span>
             <button
               onClick={async () => { await signOut(); router.replace('/') }}
               style={{
-                background: 'none', border: '1px solid #1F1D1A', color: '#8A857C',
+                background: 'none', border: '1px solid #1F1D1A', color: '#C5BFB8',
                 fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase',
                 padding: '7px 16px', borderRadius: '4px', cursor: 'pointer',
                 fontFamily: 'inherit', transition: 'color 300ms, border-color 300ms',
               }}
               onMouseEnter={e => { e.currentTarget.style.color = '#F4F1EA'; e.currentTarget.style.borderColor = '#4A4640' }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#8A857C'; e.currentTarget.style.borderColor = '#1F1D1A' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#C5BFB8'; e.currentTarget.style.borderColor = '#1F1D1A' }}
             >
               Sign out
             </button>
@@ -269,7 +269,7 @@ export default function Dashboard() {
             <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
               Welcome back, <em style={{ fontStyle: 'italic', color: '#C9A961' }}>{firstName}.</em>
             </h1>
-            <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300 }}>
+            <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300 }}>
               {projects.length > 0
                 ? `${projects.length} vision${projects.length > 1 ? 's' : ''} in the making.`
                 : 'Ready to manifest something extraordinary?'}
@@ -320,11 +320,11 @@ export default function Dashboard() {
         </main>
 
         <footer style={{ borderTop: '1px solid #1F1D1A', padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <span style={{ fontSize: '0.78rem', color: '#8A857C' }}>© {new Date().getFullYear()} YourVision</span>
+          <span style={{ fontSize: '0.78rem', color: '#C5BFB8' }}>© {new Date().getFullYear()} YourVision</span>
           <div style={{ display: 'flex', gap: '20px' }}>
-            <Link href="/terms" style={{ fontSize: '0.78rem', color: '#8A857C', textDecoration: 'none' }}>Terms</Link>
-            <Link href="/privacy" style={{ fontSize: '0.78rem', color: '#8A857C', textDecoration: 'none' }}>Privacy</Link>
-            <a href="mailto:hello@yourvision.video" style={{ fontSize: '0.78rem', color: '#8A857C', textDecoration: 'none' }}>Contact</a>
+            <Link href="/terms" style={{ fontSize: '0.78rem', color: '#C5BFB8', textDecoration: 'none' }}>Terms</Link>
+            <Link href="/privacy" style={{ fontSize: '0.78rem', color: '#C5BFB8', textDecoration: 'none' }}>Privacy</Link>
+            <a href="mailto:hello@yourvision.video" style={{ fontSize: '0.78rem', color: '#C5BFB8', textDecoration: 'none' }}>Contact</a>
           </div>
         </footer>
 

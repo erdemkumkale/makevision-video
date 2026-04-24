@@ -119,7 +119,7 @@ function FaqItem({ q, a, open, onToggle }) {
         }}>+</span>
       </div>
       <div style={{ maxHeight: open ? '320px' : '0', overflow: 'hidden', transition: 'max-height 400ms cubic-bezier(0.4,0,0.2,1)' }}>
-        <p style={{ color: '#8A857C', fontSize: '0.88rem', lineHeight: 1.85, fontWeight: 300, paddingBottom: '22px' }}>{a}</p>
+        <p style={{ color: '#C5BFB8', fontSize: '0.88rem', lineHeight: 1.85, fontWeight: 300, paddingBottom: '22px' }}>{a}</p>
       </div>
     </div>
   )
@@ -206,13 +206,13 @@ export default function Home() {
           <button
             onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
             style={{
-              background: 'none', border: '1px solid #1F1D1A', color: '#8A857C',
+              background: 'none', border: '1px solid #1F1D1A', color: '#C5BFB8',
               fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase',
               padding: '8px 20px', borderRadius: '4px', cursor: 'pointer',
               fontFamily: 'inherit', transition: 'color 300ms, border-color 300ms',
             }}
             onMouseEnter={e => { e.currentTarget.style.color = '#F4F1EA'; e.currentTarget.style.borderColor = '#4A4640' }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#8A857C'; e.currentTarget.style.borderColor = '#1F1D1A' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#C5BFB8'; e.currentTarget.style.borderColor = '#1F1D1A' }}
           >
             Begin — $20
           </button>
@@ -229,7 +229,7 @@ export default function Home() {
           {/* Content constrained to video width (~56vh on desktop = 9:16 aspect) */}
           <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 'min(420px, 56vh)', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '44px' }}>
-              Vision film
+              Your Vision Video
             </span>
             <h1 style={{
               fontFamily: "'Fraunces',serif",
@@ -240,7 +240,7 @@ export default function Home() {
               Name the life<br />
               <em style={{ fontStyle: 'italic', color: '#C9A961' }}>you&apos;re becoming.</em>
             </h1>
-            <p style={{ fontSize: 'clamp(1rem,2.2vw,1.15rem)', fontWeight: 300, color: '#8A857C', lineHeight: 1.75, maxWidth: '460px', margin: '0 auto 48px' }}>
+            <p style={{ fontSize: 'clamp(1rem,2.2vw,1.15rem)', fontWeight: 300, color: '#C5BFB8', lineHeight: 1.75, maxWidth: '460px', margin: '0 auto 48px' }}>
               Write the vision in your own words. Receive a 60-second film of yourself, already inside it.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -265,7 +265,7 @@ export default function Home() {
         <section style={{ borderTop: '1px solid #1F1D1A', borderBottom: '1px solid #1F1D1A' }}>
           <div ref={r1} style={{ maxWidth: '560px', margin: '0 auto', padding: '100px 32px', textAlign: 'center' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Why it works</span>
-            <p style={{ fontSize: 'clamp(1rem,2vw,1.1rem)', fontWeight: 300, color: '#8A857C', lineHeight: 1.9 }}>
+            <p style={{ fontSize: 'clamp(1rem,2vw,1.1rem)', fontWeight: 300, color: '#C5BFB8', lineHeight: 1.9 }}>
               The mind recognizes what it has already seen. Visualization primes perception — you begin noticing openings, moving toward what was once only imagined. This is old practice, made personal.
             </p>
           </div>
@@ -290,7 +290,7 @@ export default function Home() {
                   <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#1F1D1A', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
                   <div>
                     <p style={{ color: '#F4F1EA', fontSize: '1rem', fontWeight: 400, marginBottom: '8px' }}>{step.title}</p>
-                    <p style={{ color: '#8A857C', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.75 }}>{step.desc}</p>
+                    <p style={{ color: '#C5BFB8', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.75 }}>{step.desc}</p>
                   </div>
                 </div>
               ))}
@@ -303,10 +303,10 @@ export default function Home() {
           <div ref={r4} style={{ maxWidth: '420px', margin: '0 auto', textAlign: 'center' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Pricing</span>
             <div style={{ border: '1px solid #1F1D1A', borderRadius: '4px', padding: '56px 48px', marginBottom: '16px' }}>
-              <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#8A857C', marginBottom: '16px' }}>One ritual.</span>
+              <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '16px' }}>One ritual.</span>
               <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: 'clamp(4rem,14vw,6.5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '8px' }}>$20</span>
-              <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8A857C', marginBottom: '32px' }}>Yours forever.</span>
-              <p style={{ fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.8, color: '#8A857C', marginBottom: '40px' }}>
+              <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '32px' }}>Yours forever.</span>
+              <p style={{ fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.8, color: '#C5BFB8', marginBottom: '40px' }}>
                 A single 60-second vision, written by you, rendered with your face. Download in vertical format. Keep it on your lock screen, in your morning.
               </p>
               <button onClick={() => router.push('/login')} style={{
@@ -345,7 +345,7 @@ export default function Home() {
               The life is already<br />
               <em style={{ fontStyle: 'italic', color: '#C9A961' }}>waiting to be seen.</em>
             </h2>
-            <p style={{ color: '#8A857C', fontWeight: 300, lineHeight: 1.75, fontSize: '0.95rem', marginBottom: '48px', maxWidth: '480px', margin: '0 auto 48px' }}>
+            <p style={{ color: '#C5BFB8', fontWeight: 300, lineHeight: 1.75, fontSize: '0.95rem', marginBottom: '48px', maxWidth: '480px', margin: '0 auto 48px' }}>
               Ten minutes to set the intention. A lifetime to remember it.
             </p>
             <button onClick={() => router.push('/login')} style={{
