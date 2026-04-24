@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
@@ -35,121 +36,7 @@ function resizeImageFile(file, maxPx = 1536) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const REF_CATEGORIES = [
-  { key: 'home',      label: 'Dream Home',     emoji: '🏠' },
-  { key: 'car',       label: 'Dream Car',       emoji: '🚗' },
-  { key: 'travel',    label: 'Dream Location',  emoji: '🌍' },
-  { key: 'lifestyle', label: 'Lifestyle',       emoji: '✨' },
-]
-
-const SCENE_OPTIONS = [
-  { count: 6,  label: 'Short',     duration: '30s' },
-  { count: 9,  label: 'Standard',  duration: '45s' },
-  { count: 12, label: 'Full Film', duration: '1 min' },
-]
-
 const TOTAL_STEPS = 3
-
-// ─── Step indicator ───────────────────────────────────────────────────────────
-
-const StepDots = ({ current }) => (
-  <div className="flex items-center gap-2 mb-10">
-    {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-      <React.Fragment key={i}>
-        <div className={`h-1.5 rounded-full transition-all duration-500
-          ${i < current ? 'w-8 bg-glow' : i === current ? 'w-8 bg-glow-soft shadow-glow-sm' : 'w-4 bg-border'}`}
-        />
-      </React.Fragment>
-    ))}
-    <span className="text-xs text-gray-600 ml-2">{current + 1} / {TOTAL_STEPS}</span>
-  </div>
-)
-
-// ─── Step 1: Selfie Upload ────────────────────────────────────────────────────
-
-const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
-  const inputRef = useRef()
-  const [dragging, setDragging] = useState(false)
-  const preview = file ? URL.createObjectURL(file) : null
-
-  const handleDrop = useCallback((e) => {
-    e.preventDefault()
-    setDragging(false)
-    const dropped = e.dataTransfer.files[0]
-    if (dropped?.type.startsWith('image/')) setFile(dropped)
-  }, [setFile])
-
-  const handleFile = (e) => {
-    const picked = e.target.files[0]
-    if (picked?.type.startsWith('image/')) setFile(picked)
-  }
-
-  return (
-    <div className="animate-slide-up">
-      <h2 className="text-2xl font-semibold text-white mb-1">Your Face, Your Vision</h2>
-      <p className="text-gray-500 text-sm mb-8">
-        Upload a clear, front-facing photo. This anchors you as the hero of your story.
-      </p>
-      <div
-        onClick={() => inputRef.current.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        className={`relative cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300
-          flex flex-col items-center justify-center gap-4 p-10
-          ${dragging ? 'border-glow bg-glow/10 shadow-glow'
-            : file ? 'border-glow-dim bg-glow-dim/10'
-            : 'border-border bg-panel hover:border-muted hover:bg-surface'}`}
-        style={{ minHeight: 280 }}
-      >
-        {preview ? (
-          <>
-            <img src={preview} alt="selfie preview"
-              className="w-36 h-36 rounded-full object-cover border-2 border-glow shadow-glow" />
-            <p className="text-glow-soft text-sm font-medium">{file.name}</p>
-            <p className="text-gray-600 text-xs">Click to change</p>
-          </>
-        ) : (
-          <>
-            <div className="w-16 h-16 rounded-full bg-glow-dim/30 border border-glow-dim
-                            flex items-center justify-center shadow-glow-sm">
-              <svg className="w-7 h-7 text-glow-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-300 font-medium">Drop your photo here</p>
-              <p className="text-gray-600 text-sm mt-1">or click to browse — JPG, PNG, WEBP</p>
-            </div>
-          </>
-        )}
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
-      </div>
-
-      {file && (
-        <label className="flex items-start gap-3 mt-5 cursor-pointer group">
-          <div
-            onClick={() => setConsent(v => !v)}
-            className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
-              ${consent ? 'bg-glow border-glow' : 'border-border bg-panel group-hover:border-muted'}`}
-          >
-            {consent && (
-              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
-              </svg>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 leading-relaxed" onClick={() => setConsent(v => !v)}>
-            I confirm that this photo is of me and I have the right to use it. I understand that using another person&apos;s likeness without consent may be illegal in many jurisdictions, and I take full responsibility for the content I generate.
-          </p>
-        </label>
-      )}
-    </div>
-  )
-}
-
-// ─── Gender & Age Picker ──────────────────────────────────────────────────────
 
 const GENDER_OPTIONS = [
   { value: 'male',   label: 'Male'   },
@@ -163,31 +50,169 @@ const AGE_OPTIONS = [
   { value: '50s', label: '50s+' },
 ]
 
-const SubjectPicker = ({ gender, setGender, age, setAge }) => (
-  <div className="mt-6 space-y-4">
+const SUBMIT_STAGES = [
+  'Uploading your photo…',
+  'Saving your vision…',
+  'Crafting your scenes with AI…',
+  'Starting your vision…',
+]
+
+// ─── Shared styles ────────────────────────────────────────────────────────────
+
+const goldButton = {
+  padding: '13px 36px', border: '1px solid #C9A961', background: 'transparent',
+  color: '#C9A961', fontSize: '0.78rem', fontWeight: 400, letterSpacing: '0.14em',
+  textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px',
+  fontFamily: "'General Sans','Inter',-apple-system,sans-serif",
+  transition: 'color 300ms, border-color 300ms',
+}
+
+const ghostButton = {
+  padding: '13px 24px', border: '1px solid #1F1D1A', background: 'transparent',
+  color: '#4A4640', fontSize: '0.72rem', fontWeight: 400, letterSpacing: '0.12em',
+  textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px',
+  fontFamily: "'General Sans','Inter',-apple-system,sans-serif",
+  transition: 'color 300ms, border-color 300ms',
+}
+
+// ─── Step indicator ───────────────────────────────────────────────────────────
+
+const StepDots = ({ current }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '48px' }}>
+    {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+      <div key={i} style={{
+        height: '2px', borderRadius: '1px',
+        width: i === current ? '32px' : i < current ? '32px' : '16px',
+        background: i <= current ? '#C9A961' : '#1F1D1A',
+        transition: 'width 400ms, background 400ms',
+      }} />
+    ))}
+    <span style={{ fontSize: '0.68rem', color: '#4A4640', letterSpacing: '0.1em', marginLeft: '4px' }}>
+      {current + 1} / {TOTAL_STEPS}
+    </span>
+  </div>
+)
+
+// ─── Step 1: Selfie Upload ────────────────────────────────────────────────────
+
+const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
+  const inputRef = useRef()
+  const [dragging, setDragging] = useState(false)
+  const preview = file ? URL.createObjectURL(file) : null
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault(); setDragging(false)
+    const dropped = e.dataTransfer.files[0]
+    if (dropped?.type.startsWith('image/')) setFile(dropped)
+  }, [setFile])
+
+  const handleFile = (e) => {
+    const picked = e.target.files[0]
+    if (picked?.type.startsWith('image/')) setFile(picked)
+  }
+
+  return (
     <div>
-      <p className="text-sm font-medium text-gray-300 mb-2">I am a</p>
-      <div className="flex gap-3">
+      <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,4vw,2rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
+        Your face, <em style={{ fontStyle: 'italic', color: '#C9A961' }}>your vision.</em>
+      </h2>
+      <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, marginBottom: '32px' }}>
+        Upload a clear, front-facing photo. This anchors you as the hero of your story.
+      </p>
+
+      <div
+        onClick={() => inputRef.current.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        style={{
+          cursor: 'pointer', border: `1px dashed ${dragging ? '#C9A961' : file ? '#4A4640' : '#1F1D1A'}`,
+          borderRadius: '4px', background: dragging ? 'rgba(201,169,97,0.04)' : '#0F0E0C',
+          minHeight: '260px', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '40px',
+          transition: 'border-color 300ms, background 300ms',
+        }}
+      >
+        {preview ? (
+          <>
+            <img src={preview} alt="selfie preview"
+              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '1px solid #C9A961' }} />
+            <p style={{ fontSize: '0.82rem', color: '#C9A961', fontWeight: 400 }}>{file.name}</p>
+            <p style={{ fontSize: '0.72rem', color: '#4A4640' }}>Click to change</p>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', border: '1px solid #1F1D1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: 24, height: 24, color: '#4A4640' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 400, marginBottom: '4px' }}>Drop your photo here</p>
+              <p style={{ fontSize: '0.75rem', color: '#4A4640' }}>or click to browse — JPG, PNG, WEBP</p>
+            </div>
+          </>
+        )}
+        <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+      </div>
+
+      {file && (
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginTop: '20px', cursor: 'pointer' }}
+          onClick={() => setConsent(v => !v)}>
+          <div style={{
+            marginTop: '2px', flexShrink: 0, width: '18px', height: '18px',
+            border: `1px solid ${consent ? '#C9A961' : '#1F1D1A'}`,
+            borderRadius: '2px', background: consent ? 'rgba(201,169,97,0.15)' : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'border-color 200ms, background 200ms',
+          }}>
+            {consent && (
+              <svg style={{ width: 10, height: 10, color: '#C9A961' }} fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
+              </svg>
+            )}
+          </div>
+          <p style={{ fontSize: '0.75rem', color: '#4A4640', lineHeight: 1.7, fontWeight: 300 }}>
+            I confirm this photo is of me and I have the right to use it. I understand that using another person&apos;s likeness without consent may be illegal, and I take full responsibility.
+          </p>
+        </label>
+      )}
+    </div>
+  )
+}
+
+// ─── Gender & Age Picker ──────────────────────────────────────────────────────
+
+const SubjectPicker = ({ gender, setGender, age, setAge }) => (
+  <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div>
+      <p style={{ fontSize: '0.72rem', color: '#4A4640', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>I am a</p>
+      <div style={{ display: 'flex', gap: '8px' }}>
         {GENDER_OPTIONS.map(opt => (
-          <button key={opt.value} onClick={() => setGender(opt.value)}
-            className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all
-              ${gender === opt.value
-                ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
-                : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'}`}>
+          <button key={opt.value} onClick={() => setGender(opt.value)} style={{
+            flex: 1, padding: '10px', border: `1px solid ${gender === opt.value ? '#C9A961' : '#1F1D1A'}`,
+            background: gender === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
+            color: gender === opt.value ? '#C9A961' : '#4A4640',
+            fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer', borderRadius: '4px',
+            fontFamily: 'inherit', transition: 'all 200ms',
+          }}>
             {opt.label}
           </button>
         ))}
       </div>
     </div>
     <div>
-      <p className="text-sm font-medium text-gray-300 mb-2">Age range</p>
-      <div className="flex gap-3">
+      <p style={{ fontSize: '0.72rem', color: '#4A4640', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Age range</p>
+      <div style={{ display: 'flex', gap: '8px' }}>
         {AGE_OPTIONS.map(opt => (
-          <button key={opt.value} onClick={() => setAge(opt.value)}
-            className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all
-              ${age === opt.value
-                ? 'bg-glow/20 border-glow text-white shadow-glow-sm'
-                : 'bg-panel border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'}`}>
+          <button key={opt.value} onClick={() => setAge(opt.value)} style={{
+            flex: 1, padding: '10px', border: `1px solid ${age === opt.value ? '#C9A961' : '#1F1D1A'}`,
+            background: age === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
+            color: age === opt.value ? '#C9A961' : '#4A4640',
+            fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer', borderRadius: '4px',
+            fontFamily: 'inherit', transition: 'all 200ms',
+          }}>
             {opt.label}
           </button>
         ))}
@@ -196,25 +221,32 @@ const SubjectPicker = ({ gender, setGender, age, setAge }) => (
   </div>
 )
 
-
 // ─── Step 2: Dream Form ───────────────────────────────────────────────────────
 
 const DreamForm = ({ dream, setDream }) => (
-  <div className="animate-slide-up">
-    <h2 className="text-2xl font-semibold text-white mb-1">Describe Your Dream Life</h2>
-    <p className="text-gray-500 text-sm mb-6">
-      Write freely. What does your ideal life look, feel, and sound like? The more vivid, the better.
+  <div>
+    <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,4vw,2rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
+      Describe your <em style={{ fontStyle: 'italic', color: '#C9A961' }}>dream life.</em>
+    </h2>
+    <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, marginBottom: '28px' }}>
+      Write freely. Where are you, how does your life look and feel? The more vivid, the more personal the film.
     </p>
-
     <textarea
       value={dream}
       onChange={(e) => setDream(e.target.value)}
-      rows={8}
-      placeholder={`I wake up in a beautiful home overlooking the ocean. I run a company I love, surrounded by brilliant people. I travel every few weeks, I'm in the best shape of my life, financially free, and deeply at peace...`}
-      className="input-field resize-none text-sm w-full leading-relaxed"
+      rows={9}
+      placeholder={`I wake up in a beautiful home overlooking the ocean. I run a company I love, surrounded by brilliant people. I travel every few weeks, I'm in the best shape of my life, financially free, and deeply at peace…`}
       autoFocus
+      style={{
+        width: '100%', background: '#0F0E0C', border: '1px solid #1F1D1A',
+        borderRadius: '4px', color: '#F4F1EA', fontSize: '0.88rem', fontWeight: 300,
+        lineHeight: 1.8, padding: '16px', fontFamily: 'inherit', resize: 'none',
+        outline: 'none', transition: 'border-color 300ms',
+      }}
+      onFocus={e => e.target.style.borderColor = '#4A4640'}
+      onBlur={e => e.target.style.borderColor = '#1F1D1A'}
     />
-    <p className="text-xs text-gray-600 mt-2">
+    <p style={{ fontSize: '0.72rem', color: '#4A4640', marginTop: '8px' }}>
       {dream.length} characters — aim for 100+ for best results
     </p>
   </div>
@@ -222,56 +254,57 @@ const DreamForm = ({ dream, setDream }) => (
 
 // ─── Step 3: Review & Submit ──────────────────────────────────────────────────
 
-const ReviewStep = ({ file, dream, sceneCount, submitting, submitStage }) => {
+const ReviewStep = ({ file, dream, submitting, submitStage }) => {
   const preview = file ? URL.createObjectURL(file) : null
-  const selectedOption = SCENE_OPTIONS.find(o => o.count === sceneCount)
-
   return (
-    <div className="animate-slide-up">
-      <h2 className="text-2xl font-semibold text-white mb-1">Ready to Manifest</h2>
-      <p className="text-gray-500 text-sm mb-8">
-        Review your vision before we begin the transformation.
+    <div>
+      <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,4vw,2rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
+        Ready to <em style={{ fontStyle: 'italic', color: '#C9A961' }}>manifest.</em>
+      </h2>
+      <p style={{ fontSize: '0.88rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, marginBottom: '28px' }}>
+        Review your vision before we begin.
       </p>
-      <div className="space-y-4">
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {/* Selfie */}
-        <div className="flex items-center gap-4 bg-panel border border-border rounded-xl p-4">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: '#0F0E0C', border: '1px solid #1F1D1A', borderRadius: '4px', padding: '16px' }}>
           {preview
-            ? <img src={preview} alt="selfie" className="w-12 h-12 rounded-full object-cover border border-glow-dim" />
-            : <div className="w-12 h-12 rounded-full bg-muted/30 border border-border flex items-center justify-center">
-                <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            ? <img src={preview} alt="selfie" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #C9A961' }} />
+            : <div style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid #1F1D1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg style={{ width: 18, height: 18, color: '#4A4640' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
           }
           <div>
-            <p className="text-sm text-gray-200 font-medium">{file?.name ?? 'No photo uploaded'}</p>
-            <p className="text-xs text-gray-600">Face reference</p>
+            <p style={{ fontSize: '0.82rem', color: '#F4F1EA', fontWeight: 400, marginBottom: '2px' }}>{file?.name ?? 'No photo uploaded'}</p>
+            <p style={{ fontSize: '0.72rem', color: '#4A4640' }}>Face reference</p>
           </div>
-          {file && <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />}
+          {file && <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#7EC99A' }} />}
         </div>
 
         {/* Dream */}
-        <div className="bg-panel border border-border rounded-xl p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Your Vision</p>
-          <p className="text-sm text-gray-300 leading-relaxed line-clamp-4">
-            {dream || <span className="text-gray-600 italic">No description entered.</span>}
+        <div style={{ background: '#0F0E0C', border: '1px solid #1F1D1A', borderRadius: '4px', padding: '16px' }}>
+          <p style={{ fontSize: '0.68rem', color: '#4A4640', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>Your Vision</p>
+          <p style={{ fontSize: '0.85rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.7, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {dream || <span style={{ fontStyle: 'italic', color: '#4A4640' }}>No description entered.</span>}
           </p>
         </div>
 
         {/* What happens next */}
-        <div className="bg-glow-dim/10 border border-glow-dim/40 rounded-xl p-4">
-          <p className="text-xs text-glow-soft uppercase tracking-wider mb-2">What happens next</p>
-          <p className="text-sm text-gray-400 leading-relaxed">
-            Based on your vision, our AI will create <span className="text-gray-200 font-medium">6 cinematic scenes</span> with your face composited into each one. Review the results — if you&apos;re happy, proceed to checkout and receive your <span className="text-gray-200 font-medium">1-minute vision video</span>.
+        <div style={{ background: 'rgba(201,169,97,0.04)', border: '1px solid rgba(201,169,97,0.2)', borderRadius: '4px', padding: '16px' }}>
+          <p style={{ fontSize: '0.68rem', color: '#C9A961', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>What happens next</p>
+          <p style={{ fontSize: '0.85rem', color: '#8A857C', fontWeight: 300, lineHeight: 1.75 }}>
+            Our AI creates <span style={{ color: '#F4F1EA', fontWeight: 400 }}>6 cinematic scenes</span> with your face composited into each one. Review the results — if you&apos;re happy, proceed to checkout and receive your <span style={{ color: '#F4F1EA', fontWeight: 400 }}>1-minute vision video</span>.
           </p>
         </div>
       </div>
 
       {submitting && (
-        <div className="mt-6 flex items-center gap-3 text-glow-soft text-sm animate-fade-in">
-          <div className="w-4 h-4 border-2 border-glow-soft border-t-transparent rounded-full animate-spin flex-shrink-0" />
-          {SUBMIT_STAGES[submitStage] ?? 'Processing...'}
+        <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '12px', color: '#C9A961', fontSize: '0.82rem' }}>
+          <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid #C9A961', borderTopColor: 'transparent', animation: 'spin 1.2s linear infinite', flexShrink: 0 }} />
+          {SUBMIT_STAGES[submitStage] ?? 'Processing…'}
         </div>
       )}
     </div>
@@ -280,27 +313,19 @@ const ReviewStep = ({ file, dream, sceneCount, submitting, submitStage }) => {
 
 // ─── Main Wizard ──────────────────────────────────────────────────────────────
 
-const SUBMIT_STAGES = [
-  'Uploading your photo...',
-  'Saving your vision...',
-  'Crafting your scenes with AI...',
-  'Starting your vision...',
-]
-
 export default function CreateVision() {
   const { user } = useAuth()
   const router   = useRouter()
 
-  const [step, setStep]           = useState(0)
-  const [file, setFile]           = useState(null)
-  const [consent, setConsent]     = useState(false)
-  const [gender, setGender]       = useState('male')
-  const [age, setAge]             = useState('30s')
-  const [dream, setDream]         = useState('')
-  const [sceneCount, setSceneCount] = useState(6)
-  const [submitting, setSubmitting] = useState(false)
+  const [step, setStep]               = useState(0)
+  const [file, setFile]               = useState(null)
+  const [consent, setConsent]         = useState(false)
+  const [gender, setGender]           = useState('male')
+  const [age, setAge]                 = useState('30s')
+  const [dream, setDream]             = useState('')
+  const [submitting, setSubmitting]   = useState(false)
   const [submitStage, setSubmitStage] = useState(0)
-  const [error, setError]         = useState(null)
+  const [error, setError]             = useState(null)
 
   const canAdvance = () => {
     if (step === 0) return !!file && consent
@@ -308,50 +333,30 @@ export default function CreateVision() {
     return true
   }
 
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault()
+  const handleSubmit = async () => {
     if (!user) return
-    setSubmitting(true)
-    setSubmitStage(0)
-    setError(null)
-
+    setSubmitting(true); setSubmitStage(0); setError(null)
     try {
-      // 1. Upload selfie
       let selfieUrl = null
       if (file) {
         const resizedFile = await resizeImageFile(file, 1536)
         const path = `selfies/${user.id}/${Date.now()}.jpg`
         const { error: uploadError } = await supabase.storage
-          .from('vision-assets')
-          .upload(path, resizedFile, { upsert: false })
+          .from('vision-assets').upload(path, resizedFile, { upsert: false })
         if (uploadError) throw uploadError
         const { data: urlData } = supabase.storage.from('vision-assets').getPublicUrl(path)
         selfieUrl = urlData.publicUrl
       }
-
-      // 2. Insert project
       setSubmitStage(1)
       const { data: project, error: insertError } = await supabase
         .from('vision_projects')
-        .insert([{
-          user_id:      user.id,
-          status:       'Draft',
-          selfie_url:   selfieUrl,
-          story_inputs: { custom_story: dream.trim(), scene_count: sceneCount, gender, age },
-        }])
-        .select()
-        .single()
+        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age } }])
+        .select().single()
       if (insertError) throw insertError
-
-      // 3. Generate prompts
       setSubmitStage(2)
       await api.generatePrompts(project.id)
-
-      // 4. Start image generation in background — returns immediately
       setSubmitStage(3)
       await api.startGeneration(project.id)
-
-      // 5. Redirect immediately — review page polls DB until images appear
       router.push(`/review/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)
@@ -361,79 +366,102 @@ export default function CreateVision() {
   }
 
   return (
-    <div className="min-h-screen bg-void text-white flex flex-col">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm">
-        <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
-          <button onClick={() => router.push('/dashboard')}
-            className="text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-2 text-sm">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <>
+      <Head>
+        <title>YourVision — Create</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200..700;1,9..144,200..700&display=swap" rel="stylesheet" />
+        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500&display=swap" rel="stylesheet" />
+      </Head>
+
+      <div style={{ minHeight: '100vh', background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans','Inter',-apple-system,sans-serif", fontWeight: 300, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Nav */}
+        <header style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 40px', height: '64px',
+          background: 'rgba(10,9,8,0.92)', backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid #1F1D1A',
+        }}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{ background: 'none', border: 'none', color: '#4A4640', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'inherit', transition: 'color 200ms', padding: 0 }}
+            onMouseEnter={e => e.currentTarget.style.color = '#F4F1EA'}
+            onMouseLeave={e => e.currentTarget.style.color = '#4A4640'}
+          >
+            <svg style={{ width: 14, height: 14 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Dashboard
           </button>
-          <span className="text-glow-soft font-semibold tracking-wide text-sm">
-            YourVision<span className="text-gray-500">.video</span>
-          </span>
-        </div>
-      </header>
+          <span style={{ fontFamily: "'Fraunces',serif", fontSize: '17px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
+        </header>
 
-      <div className="flex-1 flex items-start justify-center px-6 py-12">
-        <div className="w-full max-w-2xl">
-          <StepDots current={step} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '56px 24px' }}>
+          <div style={{ width: '100%', maxWidth: '600px' }}>
+            <StepDots current={step} />
 
-          {step === 0 && (
-            <>
-              <SelfieUpload file={file} setFile={setFile} consent={consent} setConsent={setConsent} />
-              <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} />
-            </>
-          )}
-          {step === 1 && (
-            <DreamForm dream={dream} setDream={setDream} />
-          )}
-          {step === 2 && (
-            <ReviewStep
-              file={file} dream={dream} sceneCount={sceneCount}
-              submitting={submitting} submitStage={submitStage}
-            />
-          )}
-
-          {error && (
-            <p className="mt-4 text-sm text-red-400 bg-red-900/20 border border-red-800 rounded-lg px-4 py-3">
-              {error}
-            </p>
-          )}
-
-          <div className="flex items-center justify-between mt-10">
-            <button
-              onClick={() => setStep(s => s - 1)}
-              disabled={step === 0}
-              className="px-5 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white
-                         border border-border hover:border-muted transition-all
-                         disabled:opacity-0 disabled:pointer-events-none"
-            >
-              Back
-            </button>
-
-            {step < TOTAL_STEPS - 1 ? (
-              <button
-                onClick={() => setStep(s => s + 1)}
-                disabled={!canAdvance()}
-                className="btn-glow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-              >
-                Continue
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="btn-glow disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'Manifesting...' : 'Generate My Vision ✦'}
-              </button>
+            {step === 0 && (
+              <>
+                <SelfieUpload file={file} setFile={setFile} consent={consent} setConsent={setConsent} />
+                <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} />
+              </>
             )}
+            {step === 1 && <DreamForm dream={dream} setDream={setDream} />}
+            {step === 2 && (
+              <ReviewStep file={file} dream={dream} submitting={submitting} submitStage={submitStage} />
+            )}
+
+            {error && (
+              <p style={{ marginTop: '16px', fontSize: '0.82rem', color: '#E07070', background: 'rgba(224,112,112,0.08)', border: '1px solid rgba(224,112,112,0.2)', borderRadius: '4px', padding: '12px 16px', lineHeight: 1.5 }}>
+                {error}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '48px' }}>
+              <button
+                onClick={() => setStep(s => s - 1)}
+                disabled={step === 0}
+                style={{ ...ghostButton, opacity: step === 0 ? 0 : 1, pointerEvents: step === 0 ? 'none' : 'auto' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#F4F1EA'; e.currentTarget.style.borderColor = '#4A4640' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#4A4640'; e.currentTarget.style.borderColor = '#1F1D1A' }}
+              >
+                Back
+              </button>
+
+              {step < TOTAL_STEPS - 1 ? (
+                <button
+                  onClick={() => setStep(s => s + 1)}
+                  disabled={!canAdvance()}
+                  style={{ ...goldButton, opacity: canAdvance() ? 1 : 0.35, cursor: canAdvance() ? 'pointer' : 'not-allowed' }}
+                  onMouseEnter={e => { if (canAdvance()) { e.currentTarget.style.color = '#E0C285'; e.currentTarget.style.borderColor = '#E0C285' } }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#C9A961'; e.currentTarget.style.borderColor = '#C9A961' }}
+                >
+                  Continue
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  style={{ ...goldButton, opacity: submitting ? 0.5 : 1, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                  onMouseEnter={e => { if (!submitting) { e.currentTarget.style.color = '#E0C285'; e.currentTarget.style.borderColor = '#E0C285' } }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#C9A961'; e.currentTarget.style.borderColor = '#C9A961' }}
+                >
+                  {submitting ? (
+                    <>
+                      <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1px solid #C9A961', borderTopColor: 'transparent', animation: 'spin 1.2s linear infinite', display: 'inline-block' }} />
+                      Manifesting…
+                    </>
+                  ) : 'Generate My Vision ✦'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
-    </div>
+    </>
   )
 }
