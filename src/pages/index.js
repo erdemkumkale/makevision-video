@@ -11,9 +11,9 @@ import Head from 'next/head'
 import { useAuth } from '../contexts/AuthContext'
 
 const VIDEOS = [
-  'https://storage.theapi.app/videos/308819191301892.mp4',
-  'https://storage.theapi.app/videos/308819177504361.mp4',
-  'https://storage.theapi.app/videos/308819186312361.mp4',
+  'https://storage.theapi.app/videos/308597552508001.mp4',
+  'https://storage.theapi.app/videos/308597549534950.mp4',
+  'https://storage.theapi.app/videos/308597551504809.mp4',
 ]
 
 // ─── Cycling hero video ───────────────────────────────────────────────────────
