@@ -224,9 +224,10 @@ export default function Home() {
           {/* gradient overlay so text reads */}
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, rgba(10,9,8,0.2) 0%, rgba(10,9,8,0.65) 60%, #0A0908 100%)',
+            background: 'linear-gradient(to bottom, rgba(10,9,8,0.15) 0%, rgba(10,9,8,0.55) 55%, #0A0908 100%)',
           }} />
-          <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '760px', margin: '0 auto', padding: '80px 32px', textAlign: 'center' }}>
+          {/* Content constrained to video width (~56vh on desktop = 9:16 aspect) */}
+          <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 'min(420px, 56vh)', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '44px' }}>
               Vision film
             </span>
@@ -277,27 +278,22 @@ export default function Home() {
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '80px' }}>
               Five steps. Ten minutes.
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', alignItems: 'center' }} className="steps-grid">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '52px' }}>
-                {[
-                  { n: '01', title: 'Upload your selfie', desc: "A clear, front-facing photo. No filters, no studio — just you as you are today." },
-                  { n: '02', title: 'Describe your vision', desc: 'Write where you are, how your life looks, how it feels. Your words become the scenes. The more specific, the more personal the film.' },
-                  { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Any scene that does not feel right can be redone once.' },
-                  { n: '04', title: 'Unlock your film', desc: 'A single $20 payment. One-time, no subscription.' },
-                  { n: '05', title: 'Receive your vision', desc: '60 seconds. 6 animated scenes. Your face. The life you are moving toward — waiting in your inbox.' },
-                ].map(step => (
-                  <div key={step.n} style={{ display: 'flex', gap: '32px' }}>
-                    <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#1F1D1A', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
-                    <div>
-                      <p style={{ color: '#F4F1EA', fontSize: '1rem', fontWeight: 400, marginBottom: '8px' }}>{step.title}</p>
-                      <p style={{ color: '#8A857C', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.75 }}>{step.desc}</p>
-                    </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '52px', maxWidth: '560px', margin: '0 auto' }}>
+              {[
+                { n: '01', title: 'Upload your selfie', desc: "A clear, front-facing photo. No filters, no studio — just you as you are today." },
+                { n: '02', title: 'Describe your vision', desc: 'Write where you are, how your life looks, how it feels. Your words become the scenes. The more specific, the more personal the film.' },
+                { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Any scene that does not feel right can be redone once.' },
+                { n: '04', title: 'Unlock your film', desc: 'A single $20 payment. One-time, no subscription.' },
+                { n: '05', title: 'Receive your vision', desc: '60 seconds. 6 animated scenes. Your face. The life you are moving toward — waiting in your inbox.' },
+              ].map(step => (
+                <div key={step.n} style={{ display: 'flex', gap: '32px' }}>
+                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#1F1D1A', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
+                  <div>
+                    <p style={{ color: '#F4F1EA', fontSize: '1rem', fontWeight: 400, marginBottom: '8px' }}>{step.title}</p>
+                    <p style={{ color: '#8A857C', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.75 }}>{step.desc}</p>
                   </div>
-                ))}
-              </div>
-              <div style={{ aspectRatio: '9/16', maxHeight: '500px', maxWidth: '281px', margin: '0 auto', borderRadius: '4px', overflow: 'hidden', background: '#1A1208', border: '1px solid #1F1D1A' }}>
-                <video src="/videos/process.mp4" autoPlay muted loop playsInline preload="none" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -377,12 +373,6 @@ export default function Home() {
           </div>
         </footer>
 
-        <style>{`
-          @media (max-width: 700px) {
-            .steps-grid { grid-template-columns: 1fr !important; }
-            .steps-grid > div:last-child { display: none; }
-          }
-        `}</style>
       </div>
     </>
   )
