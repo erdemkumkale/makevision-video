@@ -122,7 +122,7 @@ export default function Login() {
                     fontSize: '0.72rem', fontWeight: 400, letterSpacing: '0.14em',
                     textTransform: 'uppercase', transition: 'background 300ms, color 300ms',
                     background: mode === m ? '#C9A961' : 'transparent',
-                    color: mode === m ? '#0A0908' : '#6B6560',
+                    color: mode === m ? '#0A0908' : '#8A857C',
                   }}
                 >
                   {m === 'signin' ? 'Sign In' : 'Sign Up'}
@@ -205,7 +205,7 @@ export default function Login() {
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
               <div style={{ flex: 1, height: '1px', background: '#1F1D1A' }} />
-              <span style={{ fontSize: '0.78rem', color: '#6B6560', letterSpacing: '0.1em' }}>or</span>
+              <span style={{ fontSize: '0.78rem', color: '#8A857C', letterSpacing: '0.1em' }}>or</span>
               <div style={{ flex: 1, height: '1px', background: '#1F1D1A' }} />
             </div>
 
@@ -251,7 +251,7 @@ export default function Login() {
               </button>
             </div>
 
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#6B6560', lineHeight: 1.6, marginTop: '24px' }}>
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#8A857C', lineHeight: 1.6, marginTop: '24px' }}>
               By continuing, you agree to our{' '}
               <Link href="/terms" style={{ color: '#8A857C', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Terms</Link>
               {' '}and{' '}
@@ -262,7 +262,7 @@ export default function Login() {
 
         {/* Footer */}
         <footer style={{ borderTop: '1px solid #1F1D1A', padding: '20px 40px', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.78rem', color: '#6B6560' }}>© {new Date().getFullYear()} YourVision</span>
+          <span style={{ fontSize: '0.78rem', color: '#8A857C' }}>© {new Date().getFullYear()} YourVision</span>
         </footer>
 
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
