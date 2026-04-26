@@ -1,21 +1,31 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
 import { api } from '../../lib/api'
 
-// ─── Single image card ────────────────────────────────────────────────────────
-// Each card represents ONE prompt slot (order_num 0-5).
-// versions[0] = original, versions[1] = redo (if exists).
-// V1/V2 buttons only appear on THIS card after a redo is done for THIS slot.
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+const Spinner = ({ size = 20, color = '#C9A961' }) => (
+  <div style={{
+    width: size, height: size, borderRadius: '50%',
+    border: `1px solid rgba(201,169,97,0.2)`,
+    borderTopColor: color,
+    animation: 'spin 1s linear infinite', flexShrink: 0,
+  }} />
+)
 
-const ImageCard = ({ versions, selectedId, onSelectVersion, onRedo, redoing, affirmation, onAffirmationChange, onAffirmationToggle }) => {
-  const [showFeedback, setShowFeedback]   = useState(false)
-  const [feedback, setFeedback]           = useState('')
-  const [localRedoing, setLocalRedoing]   = useState(false)
-  const [editingAff, setEditingAff]       = useState(false)
-  const [customAff, setCustomAff]         = useState('')
+// ─── Image card ───────────────────────────────────────────────────────────────
+const ImageCard = ({
+  versions, selectedId, onSelectVersion, onRedo, redoing,
+  affirmation, onAffirmationChange, onAffirmationToggle,
+}) => {
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedback, setFeedback]         = useState('')
+  const [localRedoing, setLocalRedoing] = useState(false)
+  const [editingAff, setEditingAff]     = useState(false)
+  const [customAff, setCustomAff]       = useState('')
 
   const active   = versions.find((v) => v.id === selectedId) ?? versions[0]
   const original = versions.find((v) => !v.is_redo) ?? versions[0]
@@ -33,53 +43,53 @@ const ImageCard = ({ versions, selectedId, onSelectVersion, onRedo, redoing, aff
   }
 
   return (
-    <div className="group relative bg-panel border border-border rounded-2xl overflow-hidden
-                    hover:border-glow-dim hover:shadow-glow-sm transition-all duration-300 animate-fade-in">
-      {/* Image area */}
-      <div className="relative aspect-[3/4] bg-void overflow-hidden">
+    <div style={{
+      background: '#0F0E0C', border: '1px solid #1F1D1A', borderRadius: '4px',
+      overflow: 'hidden', display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Image */}
+      <div style={{ position: 'relative', aspectRatio: '3/4', background: '#0A0908', overflow: 'hidden' }}>
         {active?.media_url ? (
           <img
             src={active.media_url}
             alt={`Vision ${(active.order_num ?? 0) + 1}`}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-glow-soft border-t-transparent rounded-full animate-spin" />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Spinner />
           </div>
         )}
-
-        {active?.media_url && (
-          <div className="absolute inset-0 bg-gradient-to-t from-void/80 via-transparent to-transparent
-                          opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        )}
-
         {busy && (
-          <div className="absolute inset-0 bg-void/70 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-2 border-glow-soft border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-glow-soft">Regenerating...</p>
+          <div style={{
+            position: 'absolute', inset: 0, background: 'rgba(10,9,8,0.75)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
+          }}>
+            <Spinner />
+            <p style={{ fontSize: '0.72rem', color: '#C9A961', letterSpacing: '0.1em' }}>Regenerating...</p>
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="p-3 space-y-2">
-        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-          {active?.prompt_text}
-        </p>
+      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-        {/* V1 / V2 — only shown on this card when THIS slot has a redo */}
+        {/* V1 / V2 toggle */}
         {hasRedo && (
-          <div className="flex gap-1.5">
+          <div style={{ display: 'flex', gap: '6px' }}>
             {versions.map((v, i) => (
               <button
                 key={v.id}
                 onClick={() => onSelectVersion(v.id)}
-                className={`flex-1 py-1 rounded-lg text-xs font-medium transition-all duration-200
-                  ${v.id === selectedId
-                    ? 'bg-glow text-white shadow-glow-sm'
-                    : 'bg-panel border border-border text-gray-500 hover:border-glow-dim hover:text-gray-300'
-                  }`}
+                style={{
+                  flex: 1, padding: '4px 0', fontSize: '0.72rem', fontWeight: 400,
+                  letterSpacing: '0.08em', border: '1px solid',
+                  borderColor: v.id === selectedId ? '#C9A961' : '#1F1D1A',
+                  color: v.id === selectedId ? '#C9A961' : '#4A4640',
+                  background: v.id === selectedId ? 'rgba(201,169,97,0.08)' : 'transparent',
+                  borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all 200ms',
+                }}
               >
                 V{i + 1}
               </button>
@@ -87,31 +97,45 @@ const ImageCard = ({ versions, selectedId, onSelectVersion, onRedo, redoing, aff
           </div>
         )}
 
-        {/* Redo / used */}
+        {/* Redo */}
         {canRedo ? (
           showFeedback ? (
-            <div className="space-y-2 animate-fade-in">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <textarea
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
-                placeholder="What would you change? e.g. &apos;Make it sunset, more vibrant&apos;"
+                placeholder="What to change? e.g. 'More sunset, warmer tones'"
                 rows={2}
-                className="input-field text-xs resize-none"
                 autoFocus
+                style={{
+                  background: '#0A0908', border: '1px solid #2A2520', borderRadius: '2px',
+                  color: '#F4F1EA', fontSize: '0.78rem', padding: '8px 10px', resize: 'none',
+                  fontFamily: 'inherit', outline: 'none', lineHeight: 1.5,
+                }}
+                onFocus={e => e.target.style.borderColor = '#C9A961'}
+                onBlur={e => e.target.style.borderColor = '#2A2520'}
               />
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: '6px' }}>
                 <button
                   onClick={handleRedo}
                   disabled={!feedback.trim() || busy}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-glow hover:bg-violet-500
-                             text-white transition-colors disabled:opacity-40"
+                  style={{
+                    flex: 1, padding: '6px 0', fontSize: '0.72rem',
+                    border: '1px solid #C9A961', color: '#C9A961', background: 'transparent',
+                    borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
+                    opacity: (!feedback.trim() || busy) ? 0.4 : 1,
+                    transition: 'opacity 200ms',
+                  }}
                 >
-                  {busy ? 'Regenerating...' : 'Regenerate'}
+                  {busy ? 'Working...' : 'Regenerate'}
                 </button>
                 <button
                   onClick={() => { setShowFeedback(false); setFeedback('') }}
-                  className="px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-300
-                             border border-border hover:border-muted transition-colors"
+                  style={{
+                    padding: '6px 10px', fontSize: '0.72rem',
+                    border: '1px solid #1F1D1A', color: '#4A4640', background: 'transparent',
+                    borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
                 >
                   Cancel
                 </button>
@@ -121,86 +145,97 @@ const ImageCard = ({ versions, selectedId, onSelectVersion, onRedo, redoing, aff
             <button
               onClick={() => setShowFeedback(true)}
               disabled={busy || !active?.media_url}
-              className="w-full py-1.5 rounded-lg text-xs font-medium text-gray-400
-                         border border-border hover:border-glow-dim hover:text-glow-soft
-                         transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{
+                width: '100%', padding: '6px 0', fontSize: '0.72rem',
+                border: '1px solid #1F1D1A', color: '#4A4640', background: 'transparent',
+                borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
+                opacity: (busy || !active?.media_url) ? 0.3 : 1,
+                transition: 'border-color 200ms, color 200ms',
+              }}
+              onMouseEnter={e => { if (!busy && active?.media_url) { e.currentTarget.style.borderColor = '#C9A961'; e.currentTarget.style.color = '#C9A961' } }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F1D1A'; e.currentTarget.style.color = '#4A4640' }}
             >
-              ↺ Redo <span className="text-gray-600">(1 left)</span>
+              ↺ Redo <span style={{ color: '#2A2520' }}>(1 left)</span>
             </button>
           )
         ) : hasRedo ? (
-          <div className="w-full py-1.5 rounded-lg text-xs text-center text-gray-700
-                          border border-border/50 cursor-not-allowed select-none">
-            Redo used
-          </div>
+          <p style={{ fontSize: '0.68rem', color: '#2A2520', textAlign: 'center', letterSpacing: '0.06em' }}>Redo used</p>
         ) : null}
 
-        {/* ── Affirmation section ────────────────────────────────────────────── */}
+        {/* Affirmation */}
         {active?.media_url && (
-          <div className="pt-2 border-t border-border/50 space-y-2">
-            {/* Header row */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-widest text-gray-600">Affirmation</span>
+          <div style={{ borderTop: '1px solid #1F1D1A', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#4A4640' }}>Affirmation</span>
               <button
                 onClick={() => onAffirmationToggle?.(!affirmation?.enabled)}
-                className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-                  affirmation?.enabled
-                    ? 'border-glow-dim text-glow-soft hover:bg-glow-dim/20'
-                    : 'border-border/50 text-gray-700 hover:border-border hover:text-gray-500'
-                }`}
+                style={{
+                  fontSize: '0.62rem', padding: '2px 8px', borderRadius: '2px',
+                  border: `1px solid ${affirmation?.enabled ? '#C9A961' : '#1F1D1A'}`,
+                  color: affirmation?.enabled ? '#C9A961' : '#4A4640',
+                  background: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
+                  letterSpacing: '0.06em', transition: 'all 200ms',
+                }}
               >
                 {affirmation?.enabled ? 'On' : 'Off'}
               </button>
             </div>
 
             {affirmation?.enabled && (
-              <>
-                {editingAff ? (
-                  <div className="space-y-1.5">
-                    <input
-                      type="text"
-                      value={customAff}
-                      onChange={(e) => setCustomAff(e.target.value)}
-                      maxLength={80}
-                      placeholder="Write your affirmation..."
-                      className="w-full bg-void border border-border rounded-lg px-2.5 py-1.5
-                                 text-xs text-white placeholder-gray-700 focus:outline-none
-                                 focus:border-glow-dim"
-                      autoFocus
-                    />
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => {
-                          if (customAff.trim()) onAffirmationChange?.(customAff.trim())
-                          setEditingAff(false)
-                        }}
-                        className="flex-1 py-1 rounded text-[10px] bg-glow/80 text-white hover:bg-glow transition-colors"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => { setEditingAff(false); setCustomAff('') }}
-                        className="px-2.5 py-1 rounded text-[10px] text-gray-500 border border-border
-                                   hover:text-gray-300 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="group/aff relative">
-                    <p className="text-xs text-gray-300 italic leading-relaxed">
-                      &ldquo;{affirmation?.text ?? 'No affirmation generated yet.'}&rdquo;
-                    </p>
+              editingAff ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <input
+                    type="text"
+                    value={customAff}
+                    onChange={(e) => setCustomAff(e.target.value)}
+                    maxLength={80}
+                    placeholder="Write your affirmation..."
+                    autoFocus
+                    style={{
+                      background: '#0A0908', border: '1px solid #2A2520', borderRadius: '2px',
+                      color: '#F4F1EA', fontSize: '0.78rem', padding: '6px 10px',
+                      fontFamily: 'inherit', outline: 'none',
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#C9A961'}
+                    onBlur={e => e.target.style.borderColor = '#2A2520'}
+                  />
+                  <div style={{ display: 'flex', gap: '6px' }}>
                     <button
-                      onClick={() => { setCustomAff(affirmation?.text ?? ''); setEditingAff(true) }}
-                      className="text-[10px] text-gray-700 hover:text-gray-400 transition-colors mt-0.5"
-                    >
-                      Edit
-                    </button>
+                      onClick={() => { if (customAff.trim()) onAffirmationChange?.(customAff.trim()); setEditingAff(false) }}
+                      style={{
+                        flex: 1, padding: '4px 0', fontSize: '0.68rem',
+                        border: '1px solid #C9A961', color: '#C9A961', background: 'transparent',
+                        borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >Save</button>
+                    <button
+                      onClick={() => { setEditingAff(false); setCustomAff('') }}
+                      style={{
+                        padding: '4px 8px', fontSize: '0.68rem',
+                        border: '1px solid #1F1D1A', color: '#4A4640', background: 'transparent',
+                        borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >Cancel</button>
                   </div>
-                )}
-              </>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ fontSize: '0.78rem', color: '#C5BFB8', fontStyle: 'italic', lineHeight: 1.6, marginBottom: '4px' }}>
+                    &ldquo;{affirmation?.text ?? '—'}&rdquo;
+                  </p>
+                  <button
+                    onClick={() => { setCustomAff(affirmation?.text ?? ''); setEditingAff(true) }}
+                    style={{
+                      fontSize: '0.62rem', color: '#4A4640', background: 'none',
+                      border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                      letterSpacing: '0.06em', padding: 0,
+                      transition: 'color 200ms',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#C5BFB8'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#4A4640'}
+                  >Edit</button>
+                </div>
+              )
             )}
           </div>
         )}
@@ -216,20 +251,18 @@ export default function ReviewVision() {
   const { id: projectId } = router.query
   const { user }          = useAuth()
 
-  const [generations, setGenerations] = useState([])
-  const [project, setProject]         = useState(null)
-  const [loading, setLoading]         = useState(true)
-  const [approving, setApproving]     = useState(false)
+  const [generations, setGenerations]   = useState([])
+  const [project, setProject]           = useState(null)
+  const [loading, setLoading]           = useState(true)
+  const [approving, setApproving]       = useState(false)
   const [devBypassing, setDevBypassing] = useState(false)
-  const [redoingId, setRedoingId]     = useState(null)
-  const [error, setError]             = useState(null)
-  const [genError, setGenError]       = useState(null)
-  const [retrying, setRetrying]       = useState(false)
-  const generationStartedRef          = React.useRef(false)
-  // { [order_num]: generation_id }
+  const [redoingId, setRedoingId]       = useState(null)
+  const [error, setError]               = useState(null)
+  const [genError, setGenError]         = useState(null)
+  const [retrying, setRetrying]         = useState(false)
+  const generationStartedRef            = React.useRef(false)
   const [selectedVersions, setSelectedVersions] = useState({})
-  // { [generationId]: { text: string|null, enabled: boolean } }
-  const [affirmations, setAffirmations] = useState({})
+  const [affirmations, setAffirmations]         = useState({})
 
   // ── Load data ───────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -253,19 +286,14 @@ export default function ReviewVision() {
     setProject(proj)
     const list = gens ?? []
 
-    // ── Fix legacy data: if all rows share order_num=0, assign by position ──
     const uniqueOrderNums = new Set(list.filter((g) => !g.is_redo).map((g) => g.order_num))
     const needsReindex = uniqueOrderNums.size === 1 && list.filter((g) => !g.is_redo).length > 1
     const normalized = needsReindex
-      ? (() => {
-          let idx = 0
-          return list.map((g) => g.is_redo ? g : { ...g, order_num: idx++ })
-        })()
+      ? (() => { let idx = 0; return list.map((g) => g.is_redo ? g : { ...g, order_num: idx++ }) })()
       : list
 
     setGenerations(normalized)
 
-    // Init affirmation state from DB (don't overwrite edits already made by user)
     setAffirmations((prev) => {
       const next = { ...prev }
       normalized.forEach((g) => {
@@ -276,32 +304,24 @@ export default function ReviewVision() {
       return next
     })
 
-    // Default: select original for each slot (redo auto-selects when added)
     setSelectedVersions((prev) => {
       const next = { ...prev }
       buildSlotMap(normalized).forEach((versions, orderNum) => {
-        if (next[orderNum] == null) {
-          next[orderNum] = versions[0].id
-        }
+        if (next[orderNum] == null) next[orderNum] = versions[0].id
       })
       return next
     })
 
-    // Eğer tüm görseller gelmişse genError'ı temizle
     const allNowReady = normalized.filter(g => !g.is_redo).every(g => g.media_url)
     if (allNowReady) {
       setGenError(null)
     } else {
-      // If any original slot is empty AND was created >5 min ago → stuck, show retry
       const STALE_MS = 5 * 60 * 1000
       const staleStuck = normalized.some(
         (g) => !g.is_redo && !g.media_url && (Date.now() - new Date(g.created_at).getTime()) > STALE_MS
       )
       if (staleStuck) {
-        setGenError(
-          'One or more images timed out during generation. ' +
-          'Click "Retry Generation" — only the missing ones will be regenerated (no extra credits used).'
-        )
+        setGenError('One or more images timed out. Click "Retry" — only the missing ones will be regenerated.')
       }
     }
 
@@ -310,50 +330,36 @@ export default function ReviewVision() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  // Auto-start generation if prompts exist but no images yet (came from create page)
   useEffect(() => {
     if (loading || generationStartedRef.current) return
     const originals = generations.filter(g => !g.is_redo)
-    const hasPrompts = originals.length > 0
-    const hasNoImages = originals.every(g => !g.media_url)
-    if (hasPrompts && hasNoImages) {
+    if (originals.length > 0 && originals.every(g => !g.media_url)) {
       generationStartedRef.current = true
       api.generateFlux(projectId)
         .then(({ flux_slots }) => api.generateFaceswap(projectId, flux_slots))
         .then(() => loadData())
         .catch(err => {
           console.error('Auto-generation failed:', err)
-          setGenError('Image generation failed. Click "Retry Generation" to try again.')
+          setGenError('Image generation failed. Click "Retry" to try again.')
         })
     }
   }, [generations, loading, projectId, loadData])
 
-  // Poll while any original is still pending — timeout after ~3 minutes
   useEffect(() => {
     const originals = generations.filter((g) => !g.is_redo)
-    const hasPending = originals.some((g) => !g.media_url)
-    if (!hasPending || loading) return
-
+    if (!originals.some((g) => !g.media_url) || loading) return
     let pollCount = 0
-    const MAX_POLLS = 30 // 30 × 6s = 3 minutes
-
     const interval = setInterval(() => {
-      pollCount += 1
-      if (pollCount >= MAX_POLLS) {
+      if (++pollCount >= 30) {
         clearInterval(interval)
-        setGenError(
-          'Image generation is taking too long — some visuals may have timed out. ' +
-          'Click "Retry" to regenerate only the missing ones (no credit is wasted on the ones already done).'
-        )
+        setGenError('Image generation timed out. Click "Retry" to regenerate missing ones.')
         return
       }
       loadData()
     }, 6000)
-
     return () => clearInterval(interval)
   }, [generations, loading, loadData, genError])
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
   function buildSlotMap(list) {
     const map = new Map()
     list.forEach((g) => {
@@ -363,27 +369,19 @@ export default function ReviewVision() {
     return map
   }
 
-  // ── Retry ───────────────────────────────────────────────────────────────────
   const handleRetry = async () => {
-    setRetrying(true)
-    setGenError(null)
+    setRetrying(true); setGenError(null)
     try {
       const { flux_slots } = await api.generateFlux(projectId)
       await api.generateFaceswap(projectId, flux_slots)
       await loadData()
     } catch (err) {
       setGenError(err.message ?? 'Image generation failed. Please try again.')
-    } finally {
-      setRetrying(false)
-    }
+    } finally { setRetrying(false) }
   }
 
-  // ── Redo ────────────────────────────────────────────────────────────────────
-  // generationId = the original row's ID for this slot
-  // feedback = user's text describing what to change
   const handleRedo = async (generationId, feedback) => {
-    setRedoingId(generationId)
-    setError(null)
+    setRedoingId(generationId); setError(null)
     try {
       const result = await api.redoImage(generationId, feedback)
       if (!result?.generation) throw new Error('Redo returned no generation data')
@@ -394,21 +392,14 @@ export default function ReviewVision() {
       ])
       setSelectedVersions((prev) => ({ ...prev, [newGen.order_num]: newGen.id }))
     } catch (err) {
-      console.error('[review] redo error:', err)
       setError(err.message ?? 'Redo failed. Please try again.')
-    } finally {
-      setRedoingId(null)
-    }
+    } finally { setRedoingId(null) }
   }
 
-  // ── Approve (real payment flow) ─────────────────────────────────────────────
   const handleApprove = async () => {
-    setApproving(true)
-    setError(null)
+    setApproving(true); setError(null)
     try {
       const selectedIds = Object.values(selectedVersions)
-
-      // Save affirmation choices for each selected generation
       await Promise.all(
         selectedIds.map((id) => {
           const aff = affirmations[id]
@@ -418,20 +409,10 @@ export default function ReviewVision() {
             .eq('id', id)
         })
       )
-
-      await supabase
-        .from('media_generations')
-        .update({ is_selected: true })
-        .in('id', selectedIds)
-
+      await supabase.from('media_generations').update({ is_selected: true }).in('id', selectedIds)
       const { error: updateError } = await supabase
-        .from('vision_projects')
-        .update({ status: 'Payment_Pending' })
-        .eq('id', projectId)
-
+        .from('vision_projects').update({ status: 'Payment_Pending' }).eq('id', projectId)
       if (updateError) throw updateError
-
-      // Redirect to LemonSqueezy checkout with project_id as custom data
       const checkoutUrl = new URL('https://yourvisionvideo.lemonsqueezy.com/checkout/buy/fe254877-7211-4f60-ab83-4f3f844afb17')
       checkoutUrl.searchParams.set('checkout[custom][project_id]', projectId)
       checkoutUrl.searchParams.set('checkout[custom][user_id]', user.id)
@@ -442,30 +423,16 @@ export default function ReviewVision() {
     }
   }
 
-  // ── DEV: skip payment, trigger Kling → Shotstack pipeline ───────────────────
   const handleDevBypass = async () => {
-    setDevBypassing(true)
-    setError(null)
+    setDevBypassing(true); setError(null)
     try {
       const selectedIds = Object.values(selectedVersions)
-
-      if (selectedIds.length !== totalSlots) {
-        throw new Error(`Expected ${totalSlots} selections but got ${selectedIds.length}. Make sure all slots are ready.`)
-      }
-
-      // Mark selections in DB
-      await supabase
-        .from('media_generations')
-        .update({ is_selected: true })
-        .in('id', selectedIds)
-
-      // generate-video: Kling ile 6 video üretir → biter bitmez Shotstack'i tetikler
-      // Fire-and-forget: hemen döner, arka planda çalışır
+      if (selectedIds.length !== totalSlots)
+        throw new Error(`Expected ${totalSlots} selections but got ${selectedIds.length}.`)
+      await supabase.from('media_generations').update({ is_selected: true }).in('id', selectedIds)
       await api.generateVideo(projectId, selectedIds)
-
       router.push(`/processing/${projectId}`)
     } catch (err) {
-      console.error('[review] dev bypass error:', err)
       setError(err.message ?? 'Video generation failed.')
       setDevBypassing(false)
     }
@@ -475,15 +442,18 @@ export default function ReviewVision() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-glow-soft border-t-transparent rounded-full animate-spin" />
-      </div>
+      <>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ minHeight: '100vh', background: '#0A0908', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spinner />
+        </div>
+      </>
     )
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center text-gray-500 text-sm">
+      <div style={{ minHeight: '100vh', background: '#0A0908', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C5BFB8', fontSize: '0.9rem' }}>
         Project not found.
       </div>
     )
@@ -492,166 +462,206 @@ export default function ReviewVision() {
   const slotMap   = buildSlotMap(generations)
   const originals = generations.filter((g) => !g.is_redo)
   const allReady  = originals.length > 0 && originals.every((g) => g.media_url)
-
-  // Gerçek sahne sayısını hesapla — hardcode 6 değil
-  const totalSlots = originals.length > 0
-    ? Math.max(...originals.map((g) => g.order_num)) + 1
-    : 6
+  const totalSlots = originals.length > 0 ? Math.max(...originals.map((g) => g.order_num)) + 1 : 6
   const slotEntries = Array.from({ length: totalSlots }, (_, i) => ({
     orderNum: i,
     versions: slotMap.get(i) ?? [],
   }))
 
   return (
-    <div className="min-h-screen bg-void text-white">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+    <>
+      <Head>
+        <title>Your Vision, Revealed — YourVision</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,200;0,300;1,200;1,300&display=swap" rel="stylesheet" />
+      </Head>
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fade{from{opacity:0}to{opacity:1}}`}</style>
+
+      <div style={{ minHeight: '100vh', background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans', system-ui, sans-serif" }}>
+
+        {/* Nav */}
+        <nav style={{
+          borderBottom: '1px solid #1F1D1A', padding: '0 40px', height: '64px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(10,9,8,0.92)', backdropFilter: 'blur(12px)',
+          position: 'sticky', top: 0, zIndex: 10,
+        }}>
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-2 text-sm"
+            style={{ background: 'none', border: 'none', color: '#C5BFB8', fontSize: '0.8rem', letterSpacing: '0.06em', cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Dashboard
+            ← Dashboard
           </button>
-          <span className="text-glow-soft font-semibold tracking-wide text-sm">
-            YourVision<span className="text-gray-500">.video</span>
-          </span>
-        </div>
-      </header>
+          <span style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
+        </nav>
 
-      <main className="max-w-5xl mx-auto px-6 py-12">
-        <div className="mb-10 animate-slide-up">
-          <h1 className="text-3xl font-semibold text-white">Your Vision, Revealed</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Review your 6 images. Redo any one — then pick V1 or V2 on that card before approving.
-          </p>
-        </div>
+        <main style={{ maxWidth: '1080px', margin: '0 auto', padding: '56px 24px 80px' }}>
 
-        {!allReady && !genError && (
-          <div className="mb-8 flex items-center gap-3 px-5 py-3.5 rounded-xl
-                          bg-glow-dim/20 border border-glow-dim text-sm text-glow-soft animate-fade-in">
-            <div className="w-4 h-4 border-2 border-glow-soft border-t-transparent rounded-full animate-spin flex-shrink-0" />
-            Images are being generated. This page updates automatically.
-          </div>
-        )}
-
-        {genError && (
-          <div className="mb-8 px-5 py-4 rounded-xl bg-red-900/20 border border-red-800 animate-fade-in">
-            <p className="text-sm text-red-400 mb-3">{genError}</p>
-            <button
-              onClick={handleRetry}
-              disabled={retrying}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                         bg-red-800/40 hover:bg-red-700/50 text-red-300 border border-red-700
-                         transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {retrying
-                ? <><div className="w-3.5 h-3.5 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />Retrying...</>
-                : '↺ Retry Generation'}
-            </button>
-          </div>
-        )}
-
-        {/* 6-card grid — one card per prompt slot */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-12">
-          {slotEntries.map(({ orderNum, versions }) =>
-            versions.length > 0 ? (
-              <ImageCard
-                key={orderNum}
-                versions={versions}
-                selectedId={selectedVersions[orderNum] ?? versions[0]?.id}
-                onSelectVersion={(id) => setSelectedVersions((prev) => ({ ...prev, [orderNum]: id }))}
-                onRedo={handleRedo}
-                redoing={versions.some((v) => redoingId === v.id)}
-                affirmation={affirmations[selectedVersions[orderNum] ?? versions[0]?.id]}
-                onAffirmationChange={(text) => {
-                  const id = selectedVersions[orderNum] ?? versions[0]?.id
-                  setAffirmations((prev) => ({ ...prev, [id]: { ...prev[id], text } }))
-                }}
-                onAffirmationToggle={(enabled) => {
-                  const id = selectedVersions[orderNum] ?? versions[0]?.id
-                  setAffirmations((prev) => ({ ...prev, [id]: { ...prev[id], enabled } }))
-                }}
-              />
-            ) : (
-              <div key={`sk-${orderNum}`}
-                className="bg-panel border border-border rounded-2xl overflow-hidden animate-pulse">
-                <div className="aspect-[3/4] bg-void" />
-                <div className="p-3 space-y-2">
-                  <div className="h-2 bg-border rounded w-3/4" />
-                  <div className="h-2 bg-border rounded w-1/2" />
-                </div>
-              </div>
-            )
-          )}
-        </div>
-
-        {error && (
-          <p className="mb-6 text-sm text-red-400 bg-red-900/20 border border-red-800 rounded-lg px-4 py-3">
-            {error}
-          </p>
-        )}
-
-        {/* What you get info */}
-        <div className="mb-8 px-5 py-4 rounded-xl bg-panel border border-border">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">What happens after approval</p>
-          <p className="text-sm text-gray-400 leading-relaxed">
-            After checkout, each scene will be animated into a <span className="text-gray-200">10-second cinematic video clip</span>. All clips are then edited together into your personal <span className="text-gray-200">1-minute vision video</span> — ready to watch and share.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between
-                        gap-4 pt-8 border-t border-border">
-          <div>
-            <p className="text-sm text-gray-300 font-medium">Happy with your vision?</p>
-            <p className="text-xs text-gray-600 mt-0.5">
-              Approving locks in your selected versions and moves you to checkout.
+          {/* Heading */}
+          <div style={{ marginBottom: '48px' }}>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '16px' }}>
+              Your Vision
+            </span>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.03em', marginBottom: '10px' }}>
+              Your vision, <em style={{ fontStyle: 'italic', color: '#C9A961' }}>revealed.</em>
+            </h1>
+            <p style={{ color: '#C5BFB8', fontSize: '0.9rem', fontWeight: 300, lineHeight: 1.7 }}>
+              Review each scene. Redo any one — then pick V1 or V2 before approving.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {/* DEV bypass — skip payment, go straight to video */}
-            <button
-              onClick={handleDevBypass}
-              disabled={!allReady || devBypassing || approving || !!redoingId}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-                         text-sm font-medium border border-amber-700/60 bg-amber-900/20
-                         text-amber-400 hover:bg-amber-900/40 hover:border-amber-600
-                         transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {devBypassing ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                  Generating video...
-                </>
-              ) : '🛠 [DEV] Skip Payment & Create Video'}
-            </button>
 
-            {/* Real approve button */}
-            <button
-              onClick={handleApprove}
-              disabled={!allReady || approving || devBypassing || !!redoingId}
-              className="group relative inline-flex items-center justify-center gap-3 px-8 py-3.5
-                         bg-glow hover:bg-violet-500 text-white font-medium rounded-xl
-                         shadow-glow hover:shadow-glow-lg transition-all duration-300
-                         disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-            >
-              {approving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Processing...
-                </>
+          {/* Generating banner */}
+          {!allReady && !genError && (
+            <div style={{
+              marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '14px 20px', border: '1px solid rgba(201,169,97,0.2)',
+              borderRadius: '4px', background: 'rgba(201,169,97,0.04)',
+              fontSize: '0.85rem', color: '#C9A961', animation: 'fade 0.4s ease',
+            }}>
+              <Spinner size={16} />
+              Images are being generated. This page updates automatically.
+            </div>
+          )}
+
+          {/* Error banner */}
+          {genError && (
+            <div style={{
+              marginBottom: '32px', padding: '16px 20px',
+              border: '1px solid rgba(224,112,112,0.25)', borderRadius: '4px',
+              background: 'rgba(224,112,112,0.06)', animation: 'fade 0.4s ease',
+            }}>
+              <p style={{ fontSize: '0.85rem', color: '#E07070', marginBottom: '12px', lineHeight: 1.6 }}>{genError}</p>
+              <button
+                onClick={handleRetry}
+                disabled={retrying}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '8px 20px', border: '1px solid rgba(224,112,112,0.4)',
+                  color: '#E07070', background: 'transparent', fontSize: '0.8rem',
+                  borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit',
+                  opacity: retrying ? 0.5 : 1,
+                }}
+              >
+                {retrying ? <><Spinner size={14} color="#E07070" />Retrying...</> : '↺ Retry Generation'}
+              </button>
+            </div>
+          )}
+
+          {/* Image grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '12px', marginBottom: '48px',
+          }}>
+            {slotEntries.map(({ orderNum, versions }) =>
+              versions.length > 0 ? (
+                <ImageCard
+                  key={orderNum}
+                  versions={versions}
+                  selectedId={selectedVersions[orderNum] ?? versions[0]?.id}
+                  onSelectVersion={(id) => setSelectedVersions((prev) => ({ ...prev, [orderNum]: id }))}
+                  onRedo={handleRedo}
+                  redoing={versions.some((v) => redoingId === v.id)}
+                  affirmation={affirmations[selectedVersions[orderNum] ?? versions[0]?.id]}
+                  onAffirmationChange={(text) => {
+                    const id = selectedVersions[orderNum] ?? versions[0]?.id
+                    setAffirmations((prev) => ({ ...prev, [id]: { ...prev[id], text } }))
+                  }}
+                  onAffirmationToggle={(enabled) => {
+                    const id = selectedVersions[orderNum] ?? versions[0]?.id
+                    setAffirmations((prev) => ({ ...prev, [id]: { ...prev[id], enabled } }))
+                  }}
+                />
               ) : (
-                <>
-                  Approve & Continue ✦
-                  <span className="absolute inset-0 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </>
-              )}
-            </button>
+                <div key={`sk-${orderNum}`} style={{
+                  background: '#0F0E0C', border: '1px solid #1F1D1A', borderRadius: '4px', overflow: 'hidden',
+                }}>
+                  <div style={{ aspectRatio: '3/4', background: '#0A0908', animation: 'pulse 2s ease-in-out infinite' }} />
+                  <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ height: '6px', background: '#1F1D1A', borderRadius: '2px', width: '70%' }} />
+                    <div style={{ height: '6px', background: '#1F1D1A', borderRadius: '2px', width: '50%' }} />
+                  </div>
+                </div>
+              )
+            )}
           </div>
-        </div>
-      </main>
-    </div>
+
+          {/* Error message */}
+          {error && (
+            <p style={{
+              marginBottom: '24px', fontSize: '0.85rem', color: '#E07070',
+              background: 'rgba(224,112,112,0.06)', border: '1px solid rgba(224,112,112,0.2)',
+              borderRadius: '4px', padding: '12px 16px', lineHeight: 1.5,
+            }}>{error}</p>
+          )}
+
+          {/* What happens next */}
+          <div style={{
+            marginBottom: '32px', padding: '20px 24px',
+            border: '1px solid #1F1D1A', borderRadius: '4px',
+            background: 'rgba(201,169,97,0.03)',
+          }}>
+            <p style={{ fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '8px' }}>
+              What happens after approval
+            </p>
+            <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.8 }}>
+              Each scene is animated into a <span style={{ color: '#F4F1EA' }}>5-second cinematic clip</span>. All clips — with your affirmations — are edited into your <span style={{ color: '#F4F1EA' }}>60-second vision film</span>.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderTop: '1px solid #1F1D1A', paddingTop: '32px' }}>
+            <div>
+              <p style={{ fontSize: '0.95rem', color: '#F4F1EA', fontWeight: 400, marginBottom: '4px' }}>Happy with your vision?</p>
+              <p style={{ fontSize: '0.82rem', color: '#C5BFB8', fontWeight: 300 }}>
+                Approving locks in your selections and moves you to checkout.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+              {/* DEV bypass */}
+              <button
+                onClick={handleDevBypass}
+                disabled={!allReady || devBypassing || approving || !!redoingId}
+                style={{
+                  padding: '10px 20px', border: '1px solid rgba(201,169,97,0.3)',
+                  color: '#C9A961', background: 'rgba(201,169,97,0.05)',
+                  fontSize: '0.75rem', borderRadius: '4px', cursor: 'pointer',
+                  fontFamily: 'inherit', opacity: (!allReady || devBypassing || approving || !!redoingId) ? 0.4 : 1,
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                }}
+              >
+                {devBypassing ? <><Spinner size={14} />Generating...</> : '🛠 [DEV] Skip Payment'}
+              </button>
+
+              {/* Approve */}
+              <button
+                onClick={handleApprove}
+                disabled={!allReady || approving || devBypassing || !!redoingId}
+                style={{
+                  padding: '12px 36px', border: '1px solid #C9A961',
+                  color: '#C9A961', background: 'transparent',
+                  fontSize: '0.85rem', fontWeight: 400, letterSpacing: '0.14em',
+                  textTransform: 'uppercase', borderRadius: '4px', cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  opacity: (!allReady || approving || devBypassing || !!redoingId) ? 0.4 : 1,
+                  display: 'inline-flex', alignItems: 'center', gap: '10px',
+                  transition: 'color 300ms, border-color 300ms',
+                }}
+                onMouseEnter={e => { if (allReady && !approving) { e.currentTarget.style.color = '#E0C285'; e.currentTarget.style.borderColor = '#E0C285' } }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#C9A961'; e.currentTarget.style.borderColor = '#C9A961' }}
+              >
+                {approving
+                  ? <><Spinner size={16} />Processing...</>
+                  : 'Approve & Continue ✦'
+                }
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
   )
 }
