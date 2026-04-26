@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@300&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="400" fill="#0A0908"/>
+
+  <!-- Wordmark -->
+  <text
+    x="200"
+    y="218"
+    font-family="'Fraunces', 'Georgia', serif"
+    font-size="52"
+    font-weight="300"
+    letter-spacing="2"
+    fill="#C9A961"
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >YourVision</text>
+</svg>

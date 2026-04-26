@@ -10,10 +10,12 @@ import { api } from '../../lib/api'
 // versions[0] = original, versions[1] = redo (if exists).
 // V1/V2 buttons only appear on THIS card after a redo is done for THIS slot.
 
-const ImageCard = ({ versions, selectedId, onSelectVersion, onRedo, redoing }) => {
-  const [showFeedback, setShowFeedback] = useState(false)
-  const [feedback, setFeedback]         = useState('')
-  const [localRedoing, setLocalRedoing] = useState(false)
+const ImageCard = ({ versions, selectedId, onSelectVersion, onRedo, redoing, affirmation, onAffirmationChange, onAffirmationToggle }) => {
+  const [showFeedback, setShowFeedback]   = useState(false)
+  const [feedback, setFeedback]           = useState('')
+  const [localRedoing, setLocalRedoing]   = useState(false)
+  const [editingAff, setEditingAff]       = useState(false)
+  const [customAff, setCustomAff]         = useState('')
 
   const active   = versions.find((v) => v.id === selectedId) ?? versions[0]
   const original = versions.find((v) => !v.is_redo) ?? versions[0]
@@ -132,6 +134,76 @@ const ImageCard = ({ versions, selectedId, onSelectVersion, onRedo, redoing }) =
             Redo used
           </div>
         ) : null}
+
+        {/* ── Affirmation section ────────────────────────────────────────────── */}
+        {active?.media_url && (
+          <div className="pt-2 border-t border-border/50 space-y-2">
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-widest text-gray-600">Affirmation</span>
+              <button
+                onClick={() => onAffirmationToggle?.(!affirmation?.enabled)}
+                className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                  affirmation?.enabled
+                    ? 'border-glow-dim text-glow-soft hover:bg-glow-dim/20'
+                    : 'border-border/50 text-gray-700 hover:border-border hover:text-gray-500'
+                }`}
+              >
+                {affirmation?.enabled ? 'On' : 'Off'}
+              </button>
+            </div>
+
+            {affirmation?.enabled && (
+              <>
+                {editingAff ? (
+                  <div className="space-y-1.5">
+                    <input
+                      type="text"
+                      value={customAff}
+                      onChange={(e) => setCustomAff(e.target.value)}
+                      maxLength={80}
+                      placeholder="Write your affirmation..."
+                      className="w-full bg-void border border-border rounded-lg px-2.5 py-1.5
+                                 text-xs text-white placeholder-gray-700 focus:outline-none
+                                 focus:border-glow-dim"
+                      autoFocus
+                    />
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => {
+                          if (customAff.trim()) onAffirmationChange?.(customAff.trim())
+                          setEditingAff(false)
+                        }}
+                        className="flex-1 py-1 rounded text-[10px] bg-glow/80 text-white hover:bg-glow transition-colors"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => { setEditingAff(false); setCustomAff('') }}
+                        className="px-2.5 py-1 rounded text-[10px] text-gray-500 border border-border
+                                   hover:text-gray-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="group/aff relative">
+                    <p className="text-xs text-gray-300 italic leading-relaxed">
+                      &ldquo;{affirmation?.text ?? 'No affirmation generated yet.'}&rdquo;
+                    </p>
+                    <button
+                      onClick={() => { setCustomAff(affirmation?.text ?? ''); setEditingAff(true) }}
+                      className="text-[10px] text-gray-700 hover:text-gray-400 transition-colors mt-0.5"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -156,6 +228,8 @@ export default function ReviewVision() {
   const generationStartedRef          = React.useRef(false)
   // { [order_num]: generation_id }
   const [selectedVersions, setSelectedVersions] = useState({})
+  // { [generationId]: { text: string|null, enabled: boolean } }
+  const [affirmations, setAffirmations] = useState({})
 
   // ── Load data ───────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -170,7 +244,7 @@ export default function ReviewVision() {
         .single(),
       supabase
         .from('media_generations')
-        .select('id, prompt_text, media_url, is_selected, revision_count, order_num, is_redo, created_at')
+        .select('id, prompt_text, media_url, is_selected, revision_count, order_num, is_redo, created_at, affirmation, affirmation_enabled')
         .eq('vision_project_id', projectId)
         .order('order_num', { ascending: true })
         .order('created_at', { ascending: true }),
@@ -190,6 +264,17 @@ export default function ReviewVision() {
       : list
 
     setGenerations(normalized)
+
+    // Init affirmation state from DB (don't overwrite edits already made by user)
+    setAffirmations((prev) => {
+      const next = { ...prev }
+      normalized.forEach((g) => {
+        if (next[g.id] === undefined) {
+          next[g.id] = { text: g.affirmation ?? null, enabled: g.affirmation_enabled !== false }
+        }
+      })
+      return next
+    })
 
     // Default: select original for each slot (redo auto-selects when added)
     setSelectedVersions((prev) => {
@@ -322,6 +407,18 @@ export default function ReviewVision() {
     setError(null)
     try {
       const selectedIds = Object.values(selectedVersions)
+
+      // Save affirmation choices for each selected generation
+      await Promise.all(
+        selectedIds.map((id) => {
+          const aff = affirmations[id]
+          if (!aff) return Promise.resolve()
+          return supabase.from('media_generations')
+            .update({ affirmation: aff.text, affirmation_enabled: aff.enabled })
+            .eq('id', id)
+        })
+      )
+
       await supabase
         .from('media_generations')
         .update({ is_selected: true })
@@ -333,7 +430,12 @@ export default function ReviewVision() {
         .eq('id', projectId)
 
       if (updateError) throw updateError
-      router.push(`/checkout/${projectId}`)
+
+      // Redirect to LemonSqueezy checkout with project_id as custom data
+      const checkoutUrl = new URL('https://yourvisionvideo.lemonsqueezy.com/checkout/buy/fe254877-7211-4f60-ab83-4f3f844afb17')
+      checkoutUrl.searchParams.set('checkout[custom][project_id]', projectId)
+      checkoutUrl.searchParams.set('checkout[custom][user_id]', user.id)
+      window.location.href = checkoutUrl.toString()
     } catch (err) {
       setError(err.message)
       setApproving(false)
@@ -463,6 +565,15 @@ export default function ReviewVision() {
                 onSelectVersion={(id) => setSelectedVersions((prev) => ({ ...prev, [orderNum]: id }))}
                 onRedo={handleRedo}
                 redoing={versions.some((v) => redoingId === v.id)}
+                affirmation={affirmations[selectedVersions[orderNum] ?? versions[0]?.id]}
+                onAffirmationChange={(text) => {
+                  const id = selectedVersions[orderNum] ?? versions[0]?.id
+                  setAffirmations((prev) => ({ ...prev, [id]: { ...prev[id], text } }))
+                }}
+                onAffirmationToggle={(enabled) => {
+                  const id = selectedVersions[orderNum] ?? versions[0]?.id
+                  setAffirmations((prev) => ({ ...prev, [id]: { ...prev[id], enabled } }))
+                }}
               />
             ) : (
               <div key={`sk-${orderNum}`}

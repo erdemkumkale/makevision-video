@@ -161,6 +161,8 @@ serve(async (req: Request) => {
       media_type:        'Image',
       prompt_text:       slot.image_prompt + CINEMATIC_SUFFIX,
       video_prompt:      slot.video_prompt,
+      affirmation:       slot.affirmation ?? null,
+      affirmation_enabled: true,
       negative_prompt:   NEGATIVE_PROMPT,
       media_url:         '',
       is_selected:       false,
@@ -372,8 +374,9 @@ FORBIDDEN
 - desk / office / conference / boardroom / cubicle / meeting
 - furniture blocking the subject's torso
 - back-to-camera / silhouette / face not visible ← this breaks face-swap
-- walking or running
+- walking or running (subject must be stationary — standing, sitting, leaning)
 - close-up face portrait (keep waist-up minimum)
+- describing only the environment without the subject in the video prompt
 - teenage or child figure — the subject is an adult ${genderWord}
 - multiple visible people
 - wrong gender: must be a ${genderWord}, never a ${gender === 'female' ? 'man' : 'woman'} or child
@@ -393,18 +396,32 @@ Include ALL of these:
 Good: "Shirt fabric moves in coastal wind, waves crash below frame, golden light warms across his chest, shoulders open with quiet pride — sovereign"
 Bad: "slow push-in" / "cinematic pan" / "camera drifts left" / "gentle movement"
 
-Max 150 characters.
+Max 200 characters. The subject (the man/woman) MUST be present and named as acting in the video prompt — never describe only environment without the subject.
+
+════════════════════════════════════════
+AFFIRMATION
+════════════════════════════════════════
+For each scene, write one short affirmation that captures the emotional truth of that moment.
+- First person, present tense ("I am", "I have", "I feel", "I lead")
+- Max 60 characters
+- Specific to THIS scene, not generic
+- Powerful but not cliché — avoid "I am enough", "I am blessed", "I am worthy"
+- Match the scene's mood: sovereign, tender, electric, expansive, still
+
+Good: "I move through the world with quiet authority."
+Good: "My home is a sanctuary I built from nothing."
+Bad: "I am enough." / "I am grateful." / "I am blessed."
 
 ════════════════════════════════════════
 OUTPUT
 ════════════════════════════════════════
 Return ONLY a valid JSON array of exactly ${sceneCount} objects. No markdown, no backticks.
 [
-  { "image_prompt": "...", "video_prompt": "..." }
+  { "image_prompt": "...", "video_prompt": "...", "affirmation": "..." }
 ]`
 }
 
-type Slot = { image_prompt: string; video_prompt: string }
+type Slot = { image_prompt: string; video_prompt: string; affirmation?: string }
 
 function parseSlots(raw: string, sceneCount = 6): Slot[] {
   let cleaned = raw
@@ -421,6 +438,7 @@ function parseSlots(raw: string, sceneCount = 6): Slot[] {
       return parsed.slice(0, sceneCount).map((s: unknown) => ({
         image_prompt: (s as Slot).image_prompt ?? String(s),
         video_prompt: (s as Slot).video_prompt ?? '',
+        affirmation:  (s as Slot).affirmation  ?? undefined,
       }))
     }
   } catch (e) {

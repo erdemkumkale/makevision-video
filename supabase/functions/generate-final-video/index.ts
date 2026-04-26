@@ -167,9 +167,26 @@ async function runPipeline(ctx: {
       console.warn(`Job ${jobId}: music setup error — proceeding without music:`, musicErr)
     }
 
-    // ── 3. Shotstack payload ──────────────────────────────────────────────────
-    // fit / aspectRatio KULLANILMIYOR — orijinal video formatı korunur
-    // Her klip 5s, sıralı, klipler arası fade geçişi (toplam 30s)
+    // ── 3. Affirmation'ları DB'den çek ───────────────────────────────────────
+    // Seçili media_generations'ların affirmation bilgisini order_num sırasıyla al
+    const { data: selectedMedia } = await supabase
+      .from('media_generations')
+      .select('order_num, affirmation, affirmation_enabled')
+      .eq('vision_project_id', project_id)
+      .eq('is_selected', true)
+      .order('order_num', { ascending: true })
+
+    const affirmationMap: Record<number, string | null> = {}
+    if (selectedMedia) {
+      selectedMedia.forEach((row: { order_num: number; affirmation: string | null; affirmation_enabled: boolean }) => {
+        if (row.affirmation_enabled && row.affirmation) {
+          affirmationMap[row.order_num] = row.affirmation
+        }
+      })
+    }
+    console.log(`Job ${jobId}: affirmation map →`, JSON.stringify(affirmationMap))
+
+    // ── 4. Shotstack payload ──────────────────────────────────────────────────
     const CLIP_LENGTH = 5
     const videoClips = videoSignedUrls.map((src, i) => ({
       asset: { type: 'video', src },
@@ -181,25 +198,51 @@ async function runPipeline(ctx: {
       },
     }))
 
+    // Text overlay clips — one per clip that has an enabled affirmation
+    // Uses order_num index from affirmationMap (key = clip index in videoSignedUrls array)
+    const textClips = videoSignedUrls.flatMap((_, i) => {
+      // Try by index first, then by actual order_num from selectedMedia
+      const orderNum = selectedMedia?.[i]?.order_num ?? i
+      const text = affirmationMap[orderNum]
+      if (!text) return []
+      return [{
+        asset: {
+          type: 'title',
+          text,
+          style: 'minimal',
+          color: '#FFFFFF',
+          size: 'small',
+        },
+        start: i * CLIP_LENGTH + 0.8,
+        length: CLIP_LENGTH - 1.2,
+        position: 'bottom',
+        offset: { y: 0.12 },
+        transition: { in: 'fade', out: 'fade' },
+      }]
+    })
+
+    const tracks = textClips.length > 0
+      ? [{ clips: textClips }, { clips: videoClips }]
+      : [{ clips: videoClips }]
+
     const shotstackPayload = {
       timeline: {
-        // Müzik varsa ekle, yoksa soundtrack olmadan devam et
         ...(musicSignedUrl ? {
           soundtrack: { src: musicSignedUrl, effect: 'fadeOut' },
         } : {}),
         background: '#000000',
-        tracks: [{ clips: videoClips }],
+        tracks,
       },
       output: {
         format: 'mp4',
         resolution: 'sd',
-        aspectRatio: '9:16',   // dikey format — Kling videoları 9:16
+        aspectRatio: '9:16',
       },
     }
 
-    console.log(`Job ${jobId}: submitting to Shotstack`)
+    console.log(`Job ${jobId}: submitting to Shotstack (${textClips.length} affirmation overlays)`)
 
-    // ── 4. Shotstack render başlat ────────────────────────────────────────────
+    // ── 5. Shotstack render başlat ────────────────────────────────────────────
     const renderRes = await fetch(SHOTSTACK_RENDER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': shotstackKey },
