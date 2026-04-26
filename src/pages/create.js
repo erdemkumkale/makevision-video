@@ -173,7 +173,7 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
               </svg>
             )}
           </div>
-          <p style={{ fontSize: '0.82rem', color: '#C5BFB8', lineHeight: 1.7, fontWeight: 300 }}>
+          <p style={{ fontSize: '0.92rem', color: '#F4F1EA', lineHeight: 1.7, fontWeight: 300 }}>
             I confirm this photo is of me and I have the right to use it. I understand that using another person&apos;s likeness without consent may be illegal, and I take full responsibility.
           </p>
         </label>
@@ -246,7 +246,7 @@ const DreamForm = ({ dream, setDream }) => (
       onFocus={e => e.target.style.borderColor = '#4A4640'}
       onBlur={e => e.target.style.borderColor = '#1F1D1A'}
     />
-    <p style={{ fontSize: '0.82rem', color: '#C5BFB8', marginTop: '8px' }}>
+    <p style={{ fontSize: '0.88rem', color: '#C5BFB8', marginTop: '8px' }}>
       {dream.length} characters — aim for 100+ for best results
     </p>
   </div>
@@ -279,7 +279,7 @@ const ReviewStep = ({ file, dream, submitting, submitStage }) => {
           }
           <div>
             <p style={{ fontSize: '0.82rem', color: '#F4F1EA', fontWeight: 400, marginBottom: '2px' }}>{file?.name ?? 'No photo uploaded'}</p>
-            <p style={{ fontSize: '0.78rem', color: '#C5BFB8' }}>Face reference</p>
+            <p style={{ fontSize: '0.82rem', color: '#C5BFB8' }}>Face reference</p>
           </div>
           {file && <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#7EC99A' }} />}
         </div>
@@ -287,7 +287,7 @@ const ReviewStep = ({ file, dream, submitting, submitStage }) => {
         {/* Dream */}
         <div style={{ background: '#0F0E0C', border: '1px solid #1F1D1A', borderRadius: '4px', padding: '16px' }}>
           <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>Your Vision</p>
-          <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.7, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <p style={{ fontSize: '0.88rem', color: '#F4F1EA', fontWeight: 300, lineHeight: 1.7, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {dream || <span style={{ fontStyle: 'italic', color: '#C5BFB8' }}>No description entered.</span>}
           </p>
         </div>

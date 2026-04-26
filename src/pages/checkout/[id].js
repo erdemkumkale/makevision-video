@@ -121,10 +121,11 @@ export default function Checkout() {
               <div style={{ padding: '28px 32px', borderBottom: '1px solid #1F1D1A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <p style={{ fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '4px' }}>Your Vision Video</p>
-                  <p style={{ fontSize: '0.82rem', color: '#F4F1EA' }}>One-time · Early Access</p>
+                  <p style={{ fontSize: '0.82rem', color: '#C9A961', letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: '0.72rem' }}>Early Access</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontFamily: "'Fraunces', serif", fontSize: '2.8rem', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>${PRICE}</p>
+                  <p style={{ fontFamily: "'Fraunces', serif", fontSize: '1rem', fontWeight: 200, color: '#4A4640', textDecoration: 'line-through', marginTop: '2px' }}>$20</p>
                 </div>
               </div>
 
@@ -163,7 +164,7 @@ export default function Checkout() {
             </button>
 
             <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#4A4640', marginTop: '16px', letterSpacing: '0.04em' }}>
-              Secure checkout via Lemon Squeezy. No subscription.
+              Secure checkout via Lemon Squeezy.
             </p>
           </div>
         </div>
