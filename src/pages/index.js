@@ -214,7 +214,7 @@ export default function Home() {
             onMouseEnter={e => { e.currentTarget.style.color = '#F4F1EA'; e.currentTarget.style.borderColor = '#4A4640' }}
             onMouseLeave={e => { e.currentTarget.style.color = '#C5BFB8'; e.currentTarget.style.borderColor = '#1F1D1A' }}
           >
-            Begin — $20
+            Begin — $12
           </button>
         </nav>
 
@@ -283,7 +283,7 @@ export default function Home() {
                 { n: '01', title: 'Upload your selfie', desc: "A clear, front-facing photo. No filters, no studio — just you as you are today." },
                 { n: '02', title: 'Describe your vision', desc: 'Write where you are, how your life looks, how it feels. Your words become the scenes. The more specific, the more personal the film.' },
                 { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Any scene that does not feel right can be redone once.' },
-                { n: '04', title: 'Unlock your film', desc: 'A single $20 payment. One-time, no subscription.' },
+                { n: '04', title: 'Unlock your film', desc: 'A single $12 payment. Early access pricing — one-time, no subscription.' },
                 { n: '05', title: 'Receive your vision', desc: '60 seconds. 6 animated scenes. Your face. The life you are moving toward — waiting in your inbox.' },
               ].map(step => (
                 <div key={step.n} style={{ display: 'flex', gap: '32px' }}>
@@ -304,8 +304,8 @@ export default function Home() {
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Pricing</span>
             <div style={{ border: '1px solid #1F1D1A', borderRadius: '4px', padding: '56px 48px', marginBottom: '16px' }}>
               <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '16px' }}>One ritual.</span>
-              <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: 'clamp(4rem,14vw,6.5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '8px' }}>$20</span>
-              <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '32px' }}>Yours forever.</span>
+              <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: 'clamp(4rem,14vw,6.5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '8px' }}>$12</span>
+              <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '32px' }}>Early Access</span>
               <p style={{ fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.8, color: '#C5BFB8', marginBottom: '40px' }}>
                 A single 60-second vision, written by you, rendered with your face. Download in vertical format. Keep it on your lock screen, in your morning.
               </p>

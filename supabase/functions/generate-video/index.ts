@@ -36,29 +36,45 @@ serve(async (req: Request) => {
     const anonKey        = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth:   { persistSession: false },
-    })
-    const { data: { user }, error: authError } = await userClient.auth.getUser()
-    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
-
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     })
 
-    // ── Input ─────────────────────────────────────────────────────────────────
+    // ── Input (read before auth branch so body is consumed once) ─────────────
     const body = await req.json()
     const project_id: string             = body?.project_id
     const selected_ids: string[] | undefined = body?.selected_ids
 
     if (!project_id) return json({ error: 'project_id is required' }, 400)
 
+    // ── Internal service-role call (from lemonsqueezy-webhook) ───────────────
+    const isInternalCall =
+      req.headers.get('X-Internal-Service') === 'lemonsqueezy-webhook' &&
+      authHeader === `Bearer ${serviceRoleKey}`
+
+    let resolvedUserId: string
+
+    if (isInternalCall) {
+      // Trusted internal call — get user_id from body (webhook passes it)
+      const bodyUserId = body?.user_id as string | undefined
+      if (!bodyUserId) return json({ error: 'user_id required for internal call' }, 400)
+      resolvedUserId = bodyUserId
+    } else {
+      // Normal user call — validate JWT
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+        auth:   { persistSession: false },
+      })
+      const { data: { user }, error: authError } = await userClient.auth.getUser()
+      if (authError || !user) return json({ error: 'Unauthorized' }, 401)
+      resolvedUserId = user.id
+    }
+
     const { data: project, error: projectError } = await supabase
       .from('vision_projects')
       .select('id, user_id')
       .eq('id', project_id)
-      .eq('user_id', user.id)
+      .eq('user_id', resolvedUserId)
       .single()
 
     if (projectError || !project) return json({ error: 'Project not found' }, 404)
@@ -103,7 +119,7 @@ serve(async (req: Request) => {
       supabase,
       piApiKey,
       project_id,
-      userId: user.id,
+      userId: resolvedUserId,
       slots:  imageOnlySlots,
       totalExpected: images.length,
     })
