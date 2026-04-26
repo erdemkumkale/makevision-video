@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
 
 const STORAGE = 'https://ibcxaytaewufzluxnjbc.supabase.co/storage/v1/object/public/vision-assets'
 
 export default function Result() {
-  const router              = useRouter()
+  const router               = useRouter()
   const { projectId, video } = router.query
-  const { user }            = useAuth()
+  const { user }             = useAuth()
 
   const [videoUrl, setVideoUrl] = useState(null)
   const [loading, setLoading]   = useState(true)
   const [images, setImages]     = useState([])
+  const [copied, setCopied]     = useState(false)
 
   const loadImages = (pid) => {
-    const imgs = [0,1,2,3,4,5,6,7,8,9,10,11].map(i =>
+    const imgs = [0,1,2,3,4,5].map(i =>
       `${STORAGE}/projects/${pid}/images/${i}.jpg`
     )
     setImages(imgs)
@@ -25,8 +27,6 @@ export default function Result() {
     if (!projectId || !user) return
 
     const load = async () => {
-      // video URL comes from query param (set by processing page)
-      // Fallback: fetch directly from DB in case user lands here directly
       if (video) {
         setVideoUrl(decodeURIComponent(video))
         loadImages(projectId)
@@ -41,17 +41,13 @@ export default function Result() {
         .eq('user_id', user.id)
         .single()
 
-      if (error || !data) {
-        router.replace('/dashboard')
-        return
-      }
+      if (error || !data) { router.replace('/dashboard'); return }
 
       if (data.final_video_url) {
         setVideoUrl(data.final_video_url)
         loadImages(projectId)
         setLoading(false)
       } else if (data.status === 'Completed') {
-        // final_video_url DB'de yok — video_jobs'tan fallback olarak dene
         const { data: job } = await supabase
           .from('video_jobs')
           .select('video_url')
@@ -77,145 +73,165 @@ export default function Result() {
     load()
   }, [projectId, video, user, router])
 
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/result/${projectId}`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'My Vision Video', text: 'I just created a cinematic video of my dream life ✦', url: shareUrl })
+      } catch (_) {}
+    } else {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-glow-soft border-t-transparent rounded-full animate-spin" />
+      <div style={{ minHeight: '100vh', background: '#0A0908', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid #1F1D1A', borderTopColor: '#C9A961', animation: 'spin 1.2s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-void text-white flex flex-col">
-      {/* Nav */}
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
+    <>
+      <Head>
+        <title>Your Vision — YourVision</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,200;0,300;1,200;1,300&display=swap" rel="stylesheet" />
+      </Head>
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+      <div style={{ minHeight: '100vh', background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
+
+        {/* Nav */}
+        <nav style={{ borderBottom: '1px solid #1F1D1A', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(10,9,8,0.92)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 10 }}>
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-2 text-sm"
+            style={{ background: 'none', border: 'none', color: '#C5BFB8', fontSize: '0.8rem', letterSpacing: '0.06em', cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Dashboard
+            ← Dashboard
           </button>
-          <span className="text-glow-soft font-semibold tracking-wide text-sm">
-            YourVision<span className="text-gray-500">.video</span>
-          </span>
-        </div>
-      </header>
+          <span style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
+        </nav>
 
-      {/* Body */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 animate-fade-in">
-        {/* Heading */}
-        <div className="text-center mb-10 animate-slide-up">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full
-                          bg-glow-dim/30 border border-glow-dim shadow-glow mb-6">
-            <span className="text-2xl">✦</span>
+        {/* Body */}
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 24px', animation: 'fade 0.8s ease' }}>
+
+          {/* Heading */}
+          <div style={{ textAlign: 'center', marginBottom: '52px' }}>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>
+              Your Vision Video
+            </span>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.03em', marginBottom: '12px' }}>
+              The life you named<br />
+              <em style={{ fontStyle: 'italic', color: '#C9A961' }}>is alive.</em>
+            </h1>
+            <p style={{ color: '#C5BFB8', fontSize: '0.9rem', fontWeight: 300, lineHeight: 1.75 }}>
+              A cinematic portrait of the life you&apos;re stepping into.
+            </p>
           </div>
-          <h1 className="text-3xl font-semibold text-white leading-tight">
-            Your Vision Is <span className="text-glow-soft">Alive</span>
-          </h1>
-          <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
-            A cinematic portrait of the life you&apos;re stepping into.
-          </p>
-        </div>
 
-        {/* Video player */}
-        {videoUrl && (
-          <div className="w-full max-w-xs mx-auto mb-8 animate-slide-up rounded-2xl overflow-hidden
-                          border border-border shadow-glow bg-black">
-            <video
-              src={videoUrl}
-              controls
-              autoPlay
-              loop
-              playsInline
-              className="w-full"
-            />
-          </div>
-        )}
-
-        {/* 6 Görsel grid */}
-        {images.length > 0 && (
-          <div className="w-full max-w-lg mx-auto mb-10 animate-slide-up">
-            <p className="text-xs text-gray-600 text-center mb-3 uppercase tracking-widest">Scenes</p>
-            <div className="grid grid-cols-3 gap-2">
-              {images.map((src, i) => (
-                <div key={i} className="aspect-[9/16] rounded-lg overflow-hidden bg-void border border-border">
-                  <img
-                    src={src}
-                    alt={`Scene ${i + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.parentElement.style.display = 'none' }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 animate-slide-up">
+          {/* Video player */}
           {videoUrl && (
-            <>
-              {/* İndir */}
+            <div style={{
+              width: '100%', maxWidth: '320px', marginBottom: '40px',
+              border: '1px solid #1F1D1A', borderRadius: '4px', overflow: 'hidden',
+              background: '#000',
+            }}>
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                loop
+                playsInline
+                style={{ width: '100%', display: 'block' }}
+              />
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginBottom: '60px' }}>
+            {videoUrl && (
               <a
                 href={videoUrl}
                 download="my-vision.mp4"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative inline-flex items-center gap-3 px-7 py-3.5
-                           bg-glow hover:bg-violet-500 text-white font-medium rounded-xl
-                           shadow-glow hover:shadow-glow-lg transition-all duration-300"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download
-                <span className="absolute inset-0 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </a>
-
-              {/* Paylaş */}
-              <button
-                onClick={async () => {
-                  const shareUrl = `${window.location.origin}/result/${projectId}`
-                  if (navigator.share) {
-                    try {
-                      await navigator.share({
-                        title: 'My Vision Video — YourVision',
-                        text: 'I just created a cinematic video of my dream life ✨',
-                        url: shareUrl,
-                      })
-                    } catch (_) {}
-                  } else {
-                    await navigator.clipboard.writeText(shareUrl)
-                    alert('Link copied to clipboard!')
-                  }
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '12px 32px', border: '1px solid #C9A961',
+                  color: '#C9A961', fontSize: '0.85rem', fontWeight: 400,
+                  letterSpacing: '0.14em', textTransform: 'uppercase',
+                  borderRadius: '4px', textDecoration: 'none', fontFamily: 'inherit',
+                  transition: 'color 300ms, border-color 300ms',
                 }}
-                className="inline-flex items-center gap-3 px-7 py-3.5 rounded-xl font-medium
-                           text-gray-300 border border-border hover:border-glow-dim hover:text-white
-                           transition-all duration-300"
+                onMouseEnter={e => { e.currentTarget.style.color = '#E0C285'; e.currentTarget.style.borderColor = '#E0C285' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#C9A961'; e.currentTarget.style.borderColor = '#C9A961' }}
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-                Share
-              </button>
-            </>
-          )}
+                Download
+              </a>
+            )}
 
-          <button
-            onClick={() => router.push('/create')}
-            className="px-7 py-3.5 rounded-xl font-medium text-gray-500 border border-border
-                       hover:border-glow-dim hover:text-white transition-all duration-300 text-sm"
-          >
-            + Create Another Vision
-          </button>
-        </div>
-      </main>
-    </div>
+            <button
+              onClick={handleShare}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                padding: '12px 32px', border: '1px solid #1F1D1A',
+                color: '#C5BFB8', fontSize: '0.85rem', fontWeight: 400,
+                letterSpacing: '0.14em', textTransform: 'uppercase',
+                borderRadius: '4px', cursor: 'pointer', background: 'none', fontFamily: 'inherit',
+                transition: 'border-color 300ms, color 300ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#4A4640'; e.currentTarget.style.color = '#F4F1EA' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F1D1A'; e.currentTarget.style.color = '#C5BFB8' }}
+            >
+              {copied ? 'Copied ✦' : 'Share'}
+            </button>
+
+            <button
+              onClick={() => router.push('/create')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                padding: '12px 32px', border: '1px solid #1F1D1A',
+                color: '#4A4640', fontSize: '0.85rem', fontWeight: 400,
+                letterSpacing: '0.14em', textTransform: 'uppercase',
+                borderRadius: '4px', cursor: 'pointer', background: 'none', fontFamily: 'inherit',
+                transition: 'border-color 300ms, color 300ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#4A4640'; e.currentTarget.style.color = '#C5BFB8' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1F1D1A'; e.currentTarget.style.color = '#4A4640' }}
+            >
+              + New Vision
+            </button>
+          </div>
+
+          {/* Scenes grid */}
+          {images.length > 0 && (
+            <div style={{ width: '100%', maxWidth: '560px' }}>
+              <p style={{ fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#4A4640', textAlign: 'center', marginBottom: '16px' }}>
+                Scenes
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {images.map((src, i) => (
+                  <div key={i} style={{ aspectRatio: '9/16', borderRadius: '2px', overflow: 'hidden', border: '1px solid #1F1D1A', background: '#0F0E0C' }}>
+                    <img
+                      src={src}
+                      alt={`Scene ${i + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { e.currentTarget.parentElement.style.display = 'none' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   )
 }
