@@ -1,4 +1,6 @@
 import { useRouter } from 'next/router'
+import Head from 'next/head'
+import Link from 'next/link'
 
 const Section = ({ title, children }) => (
   <section className="mb-10">
@@ -11,21 +13,36 @@ export default function TermsOfService() {
   const router = useRouter()
 
   return (
+    <>
+      <Head>
+        <title>Terms of Service — YourVision</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,200;0,300;1,200;1,300&display=swap" rel="stylesheet" />
+      </Head>
     <div className="min-h-screen bg-void text-white">
       {/* Nav */}
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
-          <button onClick={() => router.push('/')}
-            className="text-glow-soft font-semibold tracking-wide text-sm">
-            YourVision<span className="text-gray-500">.video</span>
-          </button>
-          <span className="text-xs text-gray-500">Legal</span>
+      <nav style={{
+        borderBottom: '1px solid #1F1D1A', padding: '0 40px', height: '64px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'rgba(10,9,8,0.92)', backdropFilter: 'blur(12px)',
+        position: 'sticky', top: 0, zIndex: 10,
+        fontFamily: "'General Sans', system-ui, sans-serif",
+      }}>
+        <button onClick={() => router.push('/')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 300, letterSpacing: '0.06em', color: '#F4F1EA' }}>
+          YourVision
+        </button>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <Link href="/privacy" style={{ fontSize: '0.78rem', color: '#C5BFB8', textDecoration: 'none', letterSpacing: '0.06em' }}>Privacy</Link>
+          <span style={{ fontSize: '0.75rem', color: '#4A4640', letterSpacing: '0.08em' }}>Terms</span>
         </div>
-      </header>
+      </nav>
 
       <main className="max-w-3xl mx-auto px-6 py-14">
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-white mb-2">Terms of Service</h1>
+          <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '16px', fontFamily: "'General Sans', system-ui, sans-serif" }}>Legal</span>
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.03em', marginBottom: '8px' }}>Terms of Service</h1>
           <p className="text-sm text-gray-500">Last updated: April 20, 2025</p>
         </div>
 
@@ -191,5 +208,6 @@ export default function TermsOfService() {
         <p className="mt-4">© {new Date().getFullYear()} YourVision. All rights reserved.</p>
       </footer>
     </div>
+    </>
   )
 }

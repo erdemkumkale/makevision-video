@@ -369,8 +369,8 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
             {[{ label: 'Terms', href: '/terms', isLink: true }, { label: 'Privacy', href: '/privacy', isLink: true }, { label: 'Contact', href: 'mailto:hello@yourvision.video', isLink: false }].map(item =>
               item.isLink
-                ? <Link key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#4A4640', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</Link>
-                : <a key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#4A4640', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</a>
+                ? <Link key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</Link>
+                : <a key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</a>
             )}
             <span style={{ fontSize: '0.75rem', color: '#4A4640' }}>© {new Date().getFullYear()} YourVision</span>
           </div>
