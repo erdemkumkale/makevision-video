@@ -66,13 +66,13 @@ const ImageCard = ({
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
           }}>
             <Spinner />
-            <p style={{ fontSize: '0.72rem', color: '#C9A961', letterSpacing: '0.1em' }}>Regenerating...</p>
+            <p style={{ fontSize: '0.82rem', color: '#C9A961', letterSpacing: '0.1em' }}>Regenerating...</p>
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
         {/* V1 / V2 toggle */}
         {hasRedo && (
@@ -82,7 +82,7 @@ const ImageCard = ({
                 key={v.id}
                 onClick={() => onSelectVersion(v.id)}
                 style={{
-                  flex: 1, padding: '4px 0', fontSize: '0.72rem', fontWeight: 400,
+                  flex: 1, padding: '4px 0', fontSize: '0.82rem', fontWeight: 400,
                   letterSpacing: '0.08em', border: '1px solid',
                   borderColor: v.id === selectedId ? '#C9A961' : '#1F1D1A',
                   color: v.id === selectedId ? '#C9A961' : '#4A4640',
@@ -109,7 +109,7 @@ const ImageCard = ({
                 autoFocus
                 style={{
                   background: '#0A0908', border: '1px solid #2A2520', borderRadius: '2px',
-                  color: '#F4F1EA', fontSize: '0.78rem', padding: '8px 10px', resize: 'none',
+                  color: '#F4F1EA', fontSize: '0.88rem', padding: '8px 10px', resize: 'none',
                   fontFamily: 'inherit', outline: 'none', lineHeight: 1.5,
                 }}
                 onFocus={e => e.target.style.borderColor = '#C9A961'}
@@ -120,7 +120,7 @@ const ImageCard = ({
                   onClick={handleRedo}
                   disabled={!feedback.trim() || busy}
                   style={{
-                    flex: 1, padding: '6px 0', fontSize: '0.72rem',
+                    flex: 1, padding: '6px 0', fontSize: '0.82rem',
                     border: '1px solid #C9A961', color: '#C9A961', background: 'transparent',
                     borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
                     opacity: (!feedback.trim() || busy) ? 0.4 : 1,
@@ -132,7 +132,7 @@ const ImageCard = ({
                 <button
                   onClick={() => { setShowFeedback(false); setFeedback('') }}
                   style={{
-                    padding: '6px 10px', fontSize: '0.72rem',
+                    padding: '6px 10px', fontSize: '0.82rem',
                     border: '1px solid #1F1D1A', color: '#4A4640', background: 'transparent',
                     borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
                   }}
@@ -146,7 +146,7 @@ const ImageCard = ({
               onClick={() => setShowFeedback(true)}
               disabled={busy || !active?.media_url}
               style={{
-                width: '100%', padding: '6px 0', fontSize: '0.72rem',
+                width: '100%', padding: '6px 0', fontSize: '0.82rem',
                 border: '1px solid #1F1D1A', color: '#4A4640', background: 'transparent',
                 borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
                 opacity: (busy || !active?.media_url) ? 0.3 : 1,
@@ -159,18 +159,18 @@ const ImageCard = ({
             </button>
           )
         ) : hasRedo ? (
-          <p style={{ fontSize: '0.68rem', color: '#2A2520', textAlign: 'center', letterSpacing: '0.06em' }}>Redo used</p>
+          <p style={{ fontSize: '0.88rem', color: '#2A2520', textAlign: 'center', letterSpacing: '0.06em' }}>Redo used</p>
         ) : null}
 
         {/* Affirmation */}
         {active?.media_url && (
           <div style={{ borderTop: '1px solid #1F1D1A', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#4A4640' }}>Affirmation</span>
+              <span style={{ fontSize: '0.82rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#4A4640' }}>Affirmation</span>
               <button
                 onClick={() => onAffirmationToggle?.(!affirmation?.enabled)}
                 style={{
-                  fontSize: '0.62rem', padding: '2px 8px', borderRadius: '2px',
+                  fontSize: '0.82rem', padding: '2px 8px', borderRadius: '2px',
                   border: `1px solid ${affirmation?.enabled ? '#C9A961' : '#1F1D1A'}`,
                   color: affirmation?.enabled ? '#C9A961' : '#4A4640',
                   background: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
@@ -193,7 +193,7 @@ const ImageCard = ({
                     autoFocus
                     style={{
                       background: '#0A0908', border: '1px solid #2A2520', borderRadius: '2px',
-                      color: '#F4F1EA', fontSize: '0.78rem', padding: '6px 10px',
+                      color: '#F4F1EA', fontSize: '0.88rem', padding: '6px 10px',
                       fontFamily: 'inherit', outline: 'none',
                     }}
                     onFocus={e => e.target.style.borderColor = '#C9A961'}
@@ -203,7 +203,7 @@ const ImageCard = ({
                     <button
                       onClick={() => { if (customAff.trim()) onAffirmationChange?.(customAff.trim()); setEditingAff(false) }}
                       style={{
-                        flex: 1, padding: '4px 0', fontSize: '0.68rem',
+                        flex: 1, padding: '4px 0', fontSize: '0.88rem',
                         border: '1px solid #C9A961', color: '#C9A961', background: 'transparent',
                         borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
                       }}
@@ -211,7 +211,7 @@ const ImageCard = ({
                     <button
                       onClick={() => { setEditingAff(false); setCustomAff('') }}
                       style={{
-                        padding: '4px 8px', fontSize: '0.68rem',
+                        padding: '4px 8px', fontSize: '0.88rem',
                         border: '1px solid #1F1D1A', color: '#4A4640', background: 'transparent',
                         borderRadius: '2px', cursor: 'pointer', fontFamily: 'inherit',
                       }}
@@ -220,13 +220,13 @@ const ImageCard = ({
                 </div>
               ) : (
                 <div>
-                  <p style={{ fontSize: '0.78rem', color: '#C5BFB8', fontStyle: 'italic', lineHeight: 1.6, marginBottom: '4px' }}>
+                  <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontStyle: 'italic', lineHeight: 1.6, marginBottom: '4px' }}>
                     &ldquo;{affirmation?.text ?? '—'}&rdquo;
                   </p>
                   <button
                     onClick={() => { setCustomAff(affirmation?.text ?? ''); setEditingAff(true) }}
                     style={{
-                      fontSize: '0.62rem', color: '#4A4640', background: 'none',
+                      fontSize: '0.82rem', color: '#4A4640', background: 'none',
                       border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                       letterSpacing: '0.06em', padding: 0,
                       transition: 'color 200ms',
@@ -497,11 +497,11 @@ export default function ReviewVision() {
           <span style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
         </nav>
 
-        <main style={{ maxWidth: '1080px', margin: '0 auto', padding: '56px 24px 80px' }}>
+        <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '56px 40px 80px' }}>
 
           {/* Heading */}
           <div style={{ marginBottom: '48px' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '16px' }}>
+            <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '16px' }}>
               Your Vision
             </span>
             <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.03em', marginBottom: '10px' }}>
@@ -552,8 +552,8 @@ export default function ReviewVision() {
           {/* Image grid */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: '12px', marginBottom: '48px',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '16px', marginBottom: '48px',
           }}>
             {slotEntries.map(({ orderNum, versions }) =>
               versions.length > 0 ? (
@@ -603,7 +603,7 @@ export default function ReviewVision() {
             border: '1px solid #1F1D1A', borderRadius: '4px',
             background: 'rgba(201,169,97,0.03)',
           }}>
-            <p style={{ fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '8px' }}>
+            <p style={{ fontSize: '0.88rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '8px' }}>
               What happens after approval
             </p>
             <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.8 }}>
