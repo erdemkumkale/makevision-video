@@ -259,10 +259,16 @@ async function runFaceswapPhase(
       } catch (e) {
         lastErr = String(e)
         console.warn(`Slot ${slot.order_num} faceswap attempt ${attempt + 1}/3 failed:`, lastErr)
+        // Error 10003 = invalid request (e.g. wrong gender in image) — retrying won't help
+        if (lastErr.includes('10003')) {
+          console.warn(`Slot ${slot.order_num}: error 10003 — skipping faceswap, using Flux image directly`)
+          return { slot, finalUrl: slot.flux_url!, error: null }
+        }
       }
     }
-    console.error(`Slot ${slot.order_num} faceswap all 3 attempts failed`)
-    return { slot, finalUrl: null, error: lastErr }
+    console.error(`Slot ${slot.order_num} faceswap all 3 attempts failed — falling back to Flux image`)
+    // Fallback: use Flux image so the user sees something rather than an empty slot
+    return { slot, finalUrl: slot.flux_url!, error: null }
   }))
 
   // DB güncelle
