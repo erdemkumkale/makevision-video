@@ -149,7 +149,7 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
               </svg>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '0.92rem', color: '#C5BFB8', fontWeight: 400, marginBottom: '6px' }}>Drop your photo here</p>
+              <p style={{ fontSize: '0.92rem', color: '#C5BFB8', fontWeight: 400, marginBottom: '6px' }}>Select your photo</p>
               <p style={{ fontSize: '0.82rem', color: '#C5BFB8' }}>or click to browse — JPG, PNG, WEBP</p>
             </div>
           </>
@@ -353,10 +353,10 @@ export default function CreateVision() {
         .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age } }])
         .select().single()
       if (insertError) throw insertError
-      setSubmitStage(2)
-      await api.generatePrompts(project.id)
-      setSubmitStage(3)
-      await api.startGeneration(project.id)
+      // Fire-and-forget — review page polls until prompts + images are ready
+      api.generatePrompts(project.id).catch(err =>
+        console.error('generatePrompts background error:', err)
+      )
       router.push(`/review/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)

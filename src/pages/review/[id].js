@@ -333,7 +333,14 @@ export default function ReviewVision() {
   useEffect(() => {
     if (loading || generationStartedRef.current) return
     const originals = generations.filter(g => !g.is_redo)
-    if (originals.length > 0 && originals.every(g => !g.media_url)) {
+
+    // Prompts not ready yet — poll until generatePrompts completes in background
+    if (originals.length === 0) {
+      const t = setTimeout(() => loadData(), 4000)
+      return () => clearTimeout(t)
+    }
+
+    if (originals.every(g => !g.media_url)) {
       generationStartedRef.current = true
       api.generateFlux(projectId)
         .then(({ flux_slots }) => api.generateFaceswap(projectId, flux_slots))
@@ -459,6 +466,19 @@ export default function ReviewVision() {
     )
   }
 
+  const originsExist = generations.filter(g => !g.is_redo).length > 0
+  if (!originsExist) {
+    return (
+      <>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ minHeight: '100vh', background: '#0A0908', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+          <Spinner />
+          <p style={{ color: '#C5BFB8', fontSize: '0.88rem', fontWeight: 300, letterSpacing: '0.04em' }}>Preparing your scenes…</p>
+        </div>
+      </>
+    )
+  }
+
   const slotMap   = buildSlotMap(generations)
   const originals = generations.filter((g) => !g.is_redo)
   const allReady  = originals.length > 0 && originals.every((g) => g.media_url)
@@ -552,7 +572,7 @@ export default function ReviewVision() {
           {/* Image grid */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '16px', marginBottom: '48px',
           }}>
             {slotEntries.map(({ orderNum, versions }) =>

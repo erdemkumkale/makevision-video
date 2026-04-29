@@ -4,7 +4,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const NEGATIVE_PROMPT =
-  'multiple people, crowd, group, second face, background person, stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
+  'sharp in-focus second face, second visible face, multiple faces in foreground, stock photo, amateur photography, flat lighting, overexposed, underexposed, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
 
 const CINEMATIC_SUFFIX =
   ', face clearly visible and in focus, medium shot minimum, shot on ARRI Alexa, anamorphic lens, shallow depth of field, rich color grading, luxury lifestyle campaign, editorial photography, award-winning cinematography'
@@ -342,6 +342,22 @@ PROMPT STRUCTURE — follow every time
 [MOOD] one word: sovereign / electric / tender / untamed / luminous / magnetic
 
 ════════════════════════════════════════
+SPECIFIC OBJECTS — CRITICAL RULE
+════════════════════════════════════════
+If the person's dream life mentions a SPECIFIC brand, model, or named object — you MUST include the exact name in the image prompt. This is non-negotiable.
+
+Examples:
+- "BMW R 1200 GS" → write "BMW R 1200 GS adventure motorcycle" — never just "motorcycle"
+- "Porsche 911" → write "Porsche 911 Carrera" — never just "sports car"
+- "VW Beetle" → write "Volkswagen Beetle" — never just "car"
+- "Sunseeker yacht" → write "Sunseeker yacht" — never just "boat"
+- "a villa in Bodrum" → write "white stone Bodrum villa with Aegean sea view"
+- "a log cabin" → write "hand-hewn log cabin with stone fireplace"
+
+The more specific you are about the object, the better the AI renders it.
+Generic substitutions destroy the user's vision — they want THEIR specific dream, not a generic version.
+
+════════════════════════════════════════
 SCENE VARIETY
 ════════════════════════════════════════
 PRIORITY: Each scene must come directly from the person's dream life above. If they mentioned the sea, show the sea. If they mentioned family, show an intimate home. If they mentioned forests, show nature. Do NOT invent things they didn't ask for.
@@ -369,6 +385,21 @@ Every scene must be physically possible and make visual sense:
 - Camera framing must show the subject in their actual environment, not disjointed elements
 
 ════════════════════════════════════════
+PEOPLE IN BACKGROUND — CONDITIONAL RULE
+════════════════════════════════════════
+Read the person's dream life carefully. If their story mentions family, children, a partner, friends, a team, colleagues, "we", "our", or any relationship — you MUST include other people in the background of at least 2 scenes.
+
+HOW to do this correctly:
+- Background people must be BLURRED (shallow depth of field / bokeh) — they are atmosphere, not subjects
+- The main ${genderWord} stays sharp and face-forward in the foreground
+- Write it explicitly in the image_prompt: "blurred figures in background, bokeh"
+- This preserves face-swap while representing the relational life they described
+
+Example: "a ${genderWord} standing at the head of a table, face forward with quiet confidence, blurred colleagues in background, warm interior light, bokeh"
+
+If their story is solo / individual (no family, no team, no relationships mentioned) — keep all scenes solo. Do NOT add background people arbitrarily.
+
+════════════════════════════════════════
 FORBIDDEN
 ════════════════════════════════════════
 - desk / office / conference / boardroom / cubicle / meeting
@@ -378,7 +409,7 @@ FORBIDDEN
 - close-up face portrait (keep waist-up minimum)
 - describing only the environment without the subject in the video prompt
 - teenage or child figure — the subject is an adult ${genderWord}
-- multiple visible people
+- sharp / in-focus background people (except blurred bokeh figures as described above)
 - wrong gender: must be a ${genderWord}, never a ${gender === 'female' ? 'man' : 'woman'} or child
 - physically impossible compositions: objects inside other objects, misplaced props
 

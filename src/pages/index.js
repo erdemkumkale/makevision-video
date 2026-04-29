@@ -10,34 +10,35 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { useAuth } from '../contexts/AuthContext'
 
-// 6 videos — alternate woman/man, loop continuously
+// 3 videos — peace / success / freedom
 const VIDEOS = [
-  'https://storage.theapi.app/videos/308819191301892.mp4', // woman — peace
-  'https://storage.theapi.app/videos/308597552508001.mp4', // man
-  'https://storage.theapi.app/videos/308819177504361.mp4', // woman — success
-  'https://storage.theapi.app/videos/308597549534950.mp4', // man
-  'https://storage.theapi.app/videos/308819186312361.mp4', // woman — freedom
-  'https://storage.theapi.app/videos/308597551504809.mp4', // man
+  'https://storage.theapi.app/videos/308819191301892.mp4', // peace
+  'https://storage.theapi.app/videos/308819177504361.mp4', // success
+  'https://storage.theapi.app/videos/308819186312361.mp4', // freedom
 ]
 
 // ─── Cycling hero video ───────────────────────────────────────────────────────
 function HeroCycler() {
-  const [idx, setIdx] = useState(0)
   const videoRef = useRef(null)
+  const idxRef = useRef(0)
 
   useEffect(() => {
     const el = videoRef.current
     if (!el) return
-    const onEnded = () => setIdx(i => (i + 1) % VIDEOS.length)
-    el.addEventListener('ended', onEnded)
-    return () => el.removeEventListener('ended', onEnded)
-  }, [idx])
+    const next = () => {
+      idxRef.current = (idxRef.current + 1) % VIDEOS.length
+      el.src = VIDEOS[idxRef.current]
+      el.play().catch(() => {})
+    }
+    el.addEventListener('ended', next)
+    el.addEventListener('error', next)
+    return () => { el.removeEventListener('ended', next); el.removeEventListener('error', next) }
+  }, [])
 
   return (
     <video
       ref={videoRef}
-      key={idx}
-      src={VIDEOS[idx]}
+      src={VIDEOS[0]}
       autoPlay
       muted
       playsInline
@@ -132,7 +133,7 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState(null)
 
   const r1 = useReveal(), r2 = useReveal(), r3 = useReveal()
-  const r4 = useReveal(), r5 = useReveal(), r6 = useReveal()
+  const r4 = useReveal(), r5 = useReveal()
 
   useEffect(() => {
     if (!loading && user) router.replace('/dashboard')
@@ -152,9 +153,9 @@ export default function Home() {
   ]
 
   const faqs = [
-    { q: 'How long does it take?', a: 'About 10 minutes after you upload your photo. The process runs automatically — scenes are composed, your face placed in each, the film assembled. You receive an email when it is ready.' },
-    { q: 'Can I create another one?', a: 'Each video is $20. You can return at any new chapter — different themes, a different version of the life you are growing into. Many people make one with each season.' },
-    { q: 'Is my photo stored?', a: 'Your photo is used only to create your film. It is held securely for up to 90 days so you can access your video, then permanently deleted. It is never shared, sold, or used for anything else.' },
+    { q: 'How long does it take?', a: 'Just a few minutes. Once you press generate, the process runs automatically — scenes are composed, your face placed in each, the film assembled. You receive an email when it is ready.' },
+    { q: 'Can I create another one?', a: 'Yes. You can create a new one at any time — a different chapter, a different version of the life you are stepping into.' },
+    { q: 'Is my photo stored?', a: 'Your photo is used only to create your film. It may be held briefly while your video is processed, then deleted. It is never shared, sold, or used for anything else.' },
     { q: 'What if I want something changed?', a: 'Before your film is assembled, you review every scene individually. Any scene that does not feel right can be redone. We want the final film to be something you will actually use.' },
     { q: 'Does this actually work?', a: 'Sustained visualization — specific, emotionally present, repeated — has a measurable effect on where attention goes and what the mind registers as possible. The video does not create your future. It trains your attention toward it.' },
   ]
@@ -241,7 +242,7 @@ export default function Home() {
               <em style={{ fontStyle: 'italic', color: '#C9A961' }}>you&apos;re becoming.</em>
             </h1>
             <p style={{ fontSize: 'clamp(1rem,2.2vw,1.15rem)', fontWeight: 300, color: '#C5BFB8', lineHeight: 1.75, maxWidth: '460px', margin: '0 auto 48px' }}>
-              Write the vision in your own words. Receive a 60-second film of yourself, already inside it.
+              Write your story. Then live it.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <button onClick={() => router.push('/login')} style={{
@@ -266,7 +267,7 @@ export default function Home() {
           <div ref={r1} style={{ maxWidth: '560px', margin: '0 auto', padding: '100px 32px', textAlign: 'center' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Why it works</span>
             <p style={{ fontSize: 'clamp(1rem,2vw,1.1rem)', fontWeight: 300, color: '#C5BFB8', lineHeight: 1.9 }}>
-              The mind recognizes what it has already seen. Visualization primes perception — you begin noticing openings, moving toward what was once only imagined. This is old practice, made personal.
+              The stories we tell ourselves become the lives we live. When you write your story — name the rooms, the light, the feeling — the mind begins to move toward it. Ancient practice. Made personal.
             </p>
           </div>
         </section>
@@ -281,10 +282,9 @@ export default function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '52px', maxWidth: '560px', margin: '0 auto' }}>
               {[
                 { n: '01', title: 'Upload your selfie', desc: "A clear, front-facing photo. No filters, no studio — just you as you are today." },
-                { n: '02', title: 'Describe your vision', desc: 'Write where you are, how your life looks, how it feels. Your words become the scenes. The more specific, the more personal the film.' },
-                { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Any scene that does not feel right can be redone once.' },
-                { n: '04', title: 'Unlock your film', desc: 'Early access: $12 instead of $20. Pay once, receive your film.' },
-                { n: '05', title: 'Receive your vision', desc: '60 seconds. 6 animated scenes. Your face. The life you are moving toward — waiting in your inbox.' },
+                { n: '02', title: 'Write your story', desc: 'Write where you are. Write where you want to be. Your words become the scenes. The more specific, the more yours.' },
+                { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Choose the ones that feel right.' },
+                { n: '04', title: 'Receive your vision', desc: 'Unlock your film — $12 early access. 60 seconds. 6 animated scenes. Your face. The life you are stepping into — waiting in your inbox.' },
               ].map(step => (
                 <div key={step.n} style={{ display: 'flex', gap: '32px' }}>
                   <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#1F1D1A', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
@@ -301,11 +301,11 @@ export default function Home() {
         {/* Pricing */}
         <section id="pricing" style={{ padding: '100px 32px' }}>
           <div ref={r4} style={{ maxWidth: '420px', margin: '0 auto', textAlign: 'center' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Pricing</span>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Receive your vision</span>
             <div style={{ border: '1px solid #1F1D1A', borderRadius: '4px', padding: '56px 48px', marginBottom: '16px' }}>
-              <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '16px' }}>One ritual.</span>
+              <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '16px' }}>Unlock your film.</span>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '16px', marginBottom: '8px' }}>
-                <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.5rem,5vw,2.2rem)', fontWeight: 200, color: '#4A4640', textDecoration: 'line-through', marginTop: '1rem' }}>$20</span>
+                <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.5rem,5vw,2.2rem)', fontWeight: 200, color: '#6B6560', textDecoration: 'line-through', marginTop: '1rem' }}>$20</span>
                 <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(4rem,14vw,6.5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>$12</span>
               </div>
               <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '32px' }}>Early Access</span>
@@ -322,7 +322,7 @@ export default function Home() {
                 Begin
               </button>
             </div>
-            <p style={{ fontSize: '0.72rem', color: '#4A4640', letterSpacing: '0.06em' }}>Just the film.</p>
+            <p style={{ fontSize: '0.72rem', color: '#8A847E', letterSpacing: '0.06em' }}>Just the film.</p>
           </div>
         </section>
 
@@ -341,28 +341,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section style={{ borderTop: '1px solid #1F1D1A', padding: '120px 32px', textAlign: 'center' }}>
-          <div ref={r6}>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(2.2rem,6vw,4rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '20px' }}>
-              The life is already<br />
-              <em style={{ fontStyle: 'italic', color: '#C9A961' }}>waiting to be seen.</em>
-            </h2>
-            <p style={{ color: '#C5BFB8', fontWeight: 300, lineHeight: 1.75, fontSize: '0.95rem', marginBottom: '48px', maxWidth: '480px', margin: '0 auto 48px' }}>
-              Ten minutes to set the intention. A lifetime to remember it.
-            </p>
-            <button onClick={() => router.push('/login')} style={{
-              display: 'inline-block', padding: '14px 44px',
-              border: '1px solid #C9A961', background: 'transparent',
-              color: '#C9A961', fontSize: '0.85rem', fontWeight: 400,
-              letterSpacing: '0.14em', textTransform: 'uppercase',
-              cursor: 'pointer', borderRadius: '4px', fontFamily: 'inherit',
-            }}>
-              Begin
-            </button>
-          </div>
-        </section>
-
         {/* Footer */}
         <footer style={{ borderTop: '1px solid #1F1D1A', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <span style={{ fontFamily: "'Fraunces',serif", fontSize: '15px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
@@ -372,7 +350,7 @@ export default function Home() {
                 ? <Link key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</Link>
                 : <a key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</a>
             )}
-            <span style={{ fontSize: '0.75rem', color: '#4A4640' }}>© {new Date().getFullYear()} YourVision</span>
+            <span style={{ fontSize: '0.75rem', color: '#8A847E' }}>© {new Date().getFullYear()} YourVision</span>
           </div>
         </footer>
 
