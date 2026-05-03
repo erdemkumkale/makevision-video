@@ -8,7 +8,7 @@ export default function Login() {
   const { user, loading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth()
   const router = useRouter()
 
-  const [mode, setMode]         = useState('signin')
+  const [mode, setMode]         = useState('signup')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy]         = useState(false)
