@@ -523,7 +523,7 @@ export default function ReviewVision() {
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,200;0,300;1,200;1,300&display=swap" rel="stylesheet" />
       </Head>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fade{from{opacity:0}to{opacity:1}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fade{from{opacity:0}to{opacity:1}} @media(max-width:640px){.scene-grid{grid-template-columns:1fr!important}}`}</style>
 
       <div style={{ minHeight: '100vh', background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans', system-ui, sans-serif" }}>
 
@@ -596,9 +596,9 @@ export default function ReviewVision() {
           )}
 
           {/* Image grid */}
-          <div style={{
+          <div className="scene-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '16px', marginBottom: '48px',
           }}>
             {slotEntries.map(({ orderNum, versions }) =>
