@@ -44,7 +44,7 @@ const ProjectCard = ({ project, onClick }) => {
     .sort((a, b) => a.order_num - b.order_num)[0]
   const thumbUrl = firstImage?.media_url ?? null
   const videoUrl = project.final_video_url ?? null
-  const hasThumb = !!thumbUrl && ['Images_Ready', 'Processing', 'Videos_Ready', 'Completed'].includes(project.status)
+  const hasThumb = !!thumbUrl
 
   return (
     <div
