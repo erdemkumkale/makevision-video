@@ -44,6 +44,7 @@ serve(async (req: Request) => {
     const body = await req.json()
     const project_id: string             = body?.project_id
     const selected_ids: string[] | undefined = body?.selected_ids
+    const planFromBody: string           = body?.plan ?? 'starter'
 
     if (!project_id) return json({ error: 'project_id is required' }, 400)
 
@@ -72,12 +73,19 @@ serve(async (req: Request) => {
 
     const { data: project, error: projectError } = await supabase
       .from('vision_projects')
-      .select('id, user_id')
+      .select('id, user_id, story_inputs')
       .eq('id', project_id)
       .eq('user_id', resolvedUserId)
       .single()
 
     if (projectError || !project) return json({ error: 'Project not found' }, 404)
+
+    // Plan: body takes precedence (DEV bypass), then story_inputs, then default
+    const plan = planFromBody !== 'starter'
+      ? planFromBody
+      : ((project as any).story_inputs?.plan ?? 'starter')
+    const videoDuration = plan === 'premium' ? 10 : 5
+    console.log(`Plan: ${plan} | Video duration: ${videoDuration}s`)
 
     // ── Fetch selected images ─────────────────────────────────────────────────
     let query = supabase
@@ -122,6 +130,7 @@ serve(async (req: Request) => {
       userId: resolvedUserId,
       slots:  imageOnlySlots,
       totalExpected: images.length,
+      videoDuration,
     })
 
     // @ts-ignore
@@ -148,24 +157,25 @@ async function runVideosPipeline(ctx: {
   piApiKey: string
   project_id: string
   userId: string
+  videoDuration: number
   slots: Array<{ id: string; media_url: string; prompt_text: string; video_prompt?: string; order_num: number }>
   totalExpected: number
 }) {
-  const { supabase, piApiKey, project_id, userId, slots, totalExpected } = ctx
+  const { supabase, piApiKey, project_id, userId, slots, totalExpected, videoDuration } = ctx
 
   // Her slot bağımsız — tamamlanır tamamlanmaz DB'ye yazar
   const videoResults = await Promise.allSettled(
     slots.map(async (img) => {
       try {
-        const klingUrl = await generateKlingVideo(piApiKey, img)
+        const klingUrl = await generateKlingVideo(piApiKey, supabase, img, videoDuration)
 
         // Güvenlik: URL gerçekten video mu?
         if (!isVideoUrl(klingUrl)) {
           throw new Error(`Kling returned a non-video URL: ${klingUrl}`)
         }
 
-        // Kling CDN URL'leri expire olur — Supabase Storage'a yükle, signed URL al
-        // Upload başarısız olursa Kling URL'ini direkt kullan (fallback)
+        // Kling CDN URL'leri expire olur — Supabase Storage'a yükle, public URL al
+        // media_url'yi DEĞİŞTİRME — görsel URL'i korunmalı, video URL ayrı aktarılır
         const storagePath = `projects/${project_id}/videos/${img.order_num}.mp4`
         let stableUrl = klingUrl
         try {
@@ -174,11 +184,6 @@ async function runVideosPipeline(ctx: {
         } catch (uploadErr) {
           console.warn(`Slot ${img.order_num} storage upload failed, using Kling URL directly:`, uploadErr)
         }
-
-        await supabase
-          .from('media_generations')
-          .update({ media_url: stableUrl })
-          .eq('id', img.id)
 
         console.log(`Slot ${img.order_num} video done: ${stableUrl}`)
         return { id: img.id, url: stableUrl, order_num: img.order_num }
@@ -228,12 +233,12 @@ async function runVideosPipeline(ctx: {
 
     console.log(`Shotstack started for ${videoUrls.length} videos`)
   } else {
-    // Bazı videolar başarısız — kısmi tamamlama
+    // Bazı videolar başarısız — kullanıcı review'a dönüp tekrar tetikleyebilsin
     await supabase
       .from('vision_projects')
-      .update({ status: 'Completed' })
+      .update({ status: 'Images_Ready' })
       .eq('id', project_id)
-    console.warn(`Only ${videoUrls.length}/${totalExpected} videos succeeded — skipping Shotstack`)
+    console.warn(`Only ${videoUrls.length}/${totalExpected} videos succeeded — reset to Images_Ready for retry`)
   }
 }
 
@@ -283,10 +288,31 @@ function isVideoUrl(url: string): boolean {
 
 async function generateKlingVideo(
   apiKey: string,
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
   img: { id: string; media_url: string; prompt_text: string; video_prompt?: string },
+  videoDuration = 5,
 ): Promise<string> {
   const motionPrompt = img.video_prompt?.trim()
     || 'Slow cinematic push-in, shallow depth of field, subtle atmospheric light, gentle camera drift'
+
+  // Kling fetches the image from its own servers — public Supabase URLs can fail.
+  // Convert to a signed URL (2h TTL) so Kling can reliably access it.
+  let imageUrl = img.media_url
+  const publicPrefix = '/object/public/vision-assets/'
+  const publicIdx = img.media_url.indexOf(publicPrefix)
+  if (publicIdx !== -1) {
+    const storagePath = img.media_url.slice(publicIdx + publicPrefix.length).split('?')[0]
+    const { data: signed } = await supabase.storage
+      .from('vision-assets')
+      .createSignedUrl(storagePath, 7200)
+    if (signed?.signedUrl) {
+      imageUrl = signed.signedUrl
+      console.log(`Using signed URL for Kling: ${storagePath}`)
+    } else {
+      console.warn(`Could not create signed URL for ${storagePath}, using public URL`)
+    }
+  }
 
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',
@@ -297,8 +323,8 @@ async function generateKlingVideo(
       input: {
         prompt:          motionPrompt,
         negative_prompt: 'blurry, low quality, distorted, shaky, fast motion, jump cut, zoomed in too close',
-        image_url:       img.media_url,
-        duration:        5,
+        image_url:       imageUrl,
+        duration:        videoDuration,
         aspect_ratio:    '9:16',
         mode:            'std',
         version:         '2.1',

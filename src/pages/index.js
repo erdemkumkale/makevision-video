@@ -10,11 +10,12 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { useAuth } from '../contexts/AuthContext'
 
-// 3 videos — peace / success / freedom
+// 4 hero videos — served from /public/videos (permanent, no expiry)
 const VIDEOS = [
-  'https://storage.theapi.app/videos/308819191301892.mp4', // peace
-  'https://storage.theapi.app/videos/308819177504361.mp4', // success
-  'https://storage.theapi.app/videos/308819186312361.mp4', // freedom
+  '/videos/hero-woman-1.mp4',
+  '/videos/hero-man-1.mp4',
+  '/videos/hero-woman-2.mp4',
+  '/videos/hero-man-2.mp4',
 ]
 
 // ─── Cycling hero video ───────────────────────────────────────────────────────
@@ -300,29 +301,59 @@ export default function Home() {
 
         {/* Pricing */}
         <section id="pricing" style={{ padding: '100px 32px' }}>
-          <div ref={r4} style={{ maxWidth: '420px', margin: '0 auto', textAlign: 'center' }}>
+          <div ref={r4} style={{ maxWidth: '760px', margin: '0 auto', textAlign: 'center' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Receive your vision</span>
-            <div style={{ border: '1px solid #1F1D1A', borderRadius: '4px', padding: '56px 48px', marginBottom: '16px' }}>
-              <span style={{ display: 'block', fontFamily: "'Fraunces',serif", fontSize: '0.75rem', fontWeight: 400, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '16px' }}>Unlock your film.</span>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '16px', marginBottom: '8px' }}>
-                <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.5rem,5vw,2.2rem)', fontWeight: 200, color: '#6B6560', textDecoration: 'line-through', marginTop: '1rem' }}>$20</span>
-                <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(4rem,14vw,6.5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>$12</span>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,3.5vw,2.4rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '52px' }}>
+              Choose your film.
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              {/* Starter */}
+              <div style={{ border: '1px solid #1F1D1A', borderRadius: '4px', padding: '40px 36px', textAlign: 'left' }}>
+                <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '20px' }}>Starter</span>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(3rem,10vw,5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>$12</span>
+                </div>
+                <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '28px' }}>Early Access</span>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {['6 cinematic scenes', '5 seconds each', '30-second film', 'Your face in every scene', 'Delivered to your inbox'].map(f => (
+                    <li key={f} style={{ display: 'flex', gap: '10px', fontSize: '0.85rem', color: '#C5BFB8', fontWeight: 300 }}>
+                      <span style={{ color: '#C9A961', flexShrink: 0 }}>✦</span>{f}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={() => router.push('/login')} style={{
+                  width: '100%', padding: '13px 0', border: '1px solid #C9A961', background: 'transparent',
+                  color: '#C9A961', fontSize: '0.82rem', fontWeight: 400, letterSpacing: '0.14em',
+                  textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', fontFamily: 'inherit',
+                }}>
+                  Begin — $12
+                </button>
               </div>
-              <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '32px' }}>Early Access</span>
-              <p style={{ fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.8, color: '#C5BFB8', marginBottom: '40px' }}>
-                A single 60-second vision, written by you, rendered with your face. Download in vertical format. Keep it on your lock screen, in your morning.
-              </p>
-              <button onClick={() => router.push('/login')} style={{
-                display: 'inline-block', padding: '14px 44px',
-                border: '1px solid #C9A961', background: 'transparent',
-                color: '#C9A961', fontSize: '0.85rem', fontWeight: 400,
-                letterSpacing: '0.14em', textTransform: 'uppercase',
-                cursor: 'pointer', borderRadius: '4px', fontFamily: 'inherit',
-              }}>
-                Begin
-              </button>
+
+              {/* Premium */}
+              <div style={{ border: '1px solid #C9A961', borderRadius: '4px', padding: '40px 36px', textAlign: 'left', background: 'rgba(201,169,97,0.03)' }}>
+                <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Premium</span>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(3rem,10vw,5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>$20</span>
+                </div>
+                <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '28px' }}>Full Experience</span>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {['6 cinematic scenes', '10 seconds each', '60-second film', 'Your face in every scene', 'Delivered to your inbox'].map(f => (
+                    <li key={f} style={{ display: 'flex', gap: '10px', fontSize: '0.85rem', color: '#C5BFB8', fontWeight: 300 }}>
+                      <span style={{ color: '#C9A961', flexShrink: 0 }}>✦</span>{f}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={() => router.push('/login')} style={{
+                  width: '100%', padding: '13px 0', border: '1px solid #C9A961', background: 'rgba(201,169,97,0.08)',
+                  color: '#C9A961', fontSize: '0.82rem', fontWeight: 400, letterSpacing: '0.14em',
+                  textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', fontFamily: 'inherit',
+                }}>
+                  Begin — $20
+                </button>
+              </div>
             </div>
-            <p style={{ fontSize: '0.72rem', color: '#8A847E', letterSpacing: '0.06em' }}>Just the film.</p>
+            <p style={{ fontSize: '0.72rem', color: '#8A847E', letterSpacing: '0.06em' }}>Just the film. No subscription.</p>
           </div>
         </section>
 

@@ -244,6 +244,26 @@ const ImageCard = ({
   )
 }
 
+// ─── Plan config ──────────────────────────────────────────────────────────────
+const PLANS = {
+  starter: {
+    label: 'Starter',
+    price: 12,
+    duration: 5,
+    seconds: 30,
+    description: '6 scenes · 30-second film',
+    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/fe254877-7211-4f60-ab83-4f3f844afb17',
+  },
+  premium: {
+    label: 'Premium',
+    price: 20,
+    duration: 10,
+    seconds: 60,
+    description: '6 scenes · 60-second film',
+    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/PREMIUM_PRODUCT_ID_HERE',
+  },
+}
+
 // ─── Review page ──────────────────────────────────────────────────────────────
 
 export default function ReviewVision() {
@@ -260,6 +280,7 @@ export default function ReviewVision() {
   const [error, setError]               = useState(null)
   const [genError, setGenError]         = useState(null)
   const [retrying, setRetrying]         = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState('starter')
   const generationStartedRef            = React.useRef(false)
   const [selectedVersions, setSelectedVersions] = useState({})
   const [affirmations, setAffirmations]         = useState({})
@@ -271,7 +292,7 @@ export default function ReviewVision() {
     const [{ data: proj }, { data: gens }] = await Promise.all([
       supabase
         .from('vision_projects')
-        .select('id, status, user_id')
+        .select('id, status, user_id, story_inputs')
         .eq('id', projectId)
         .eq('user_id', user.id)
         .single(),
@@ -406,6 +427,7 @@ export default function ReviewVision() {
   const handleApprove = async () => {
     setApproving(true); setError(null)
     try {
+      const plan = PLANS[selectedPlan]
       const selectedIds = Object.values(selectedVersions)
       await Promise.all(
         selectedIds.map((id) => {
@@ -417,10 +439,14 @@ export default function ReviewVision() {
         })
       )
       await supabase.from('media_generations').update({ is_selected: true }).in('id', selectedIds)
+      // Save plan into story_inputs and update status
+      const newStoryInputs = { ...(project?.story_inputs ?? {}), plan: selectedPlan }
       const { error: updateError } = await supabase
-        .from('vision_projects').update({ status: 'Payment_Pending' }).eq('id', projectId)
+        .from('vision_projects')
+        .update({ status: 'Payment_Pending', story_inputs: newStoryInputs })
+        .eq('id', projectId)
       if (updateError) throw updateError
-      const checkoutUrl = new URL('https://yourvisionvideo.lemonsqueezy.com/checkout/buy/fe254877-7211-4f60-ab83-4f3f844afb17')
+      const checkoutUrl = new URL(plan.lsUrl)
       checkoutUrl.searchParams.set('checkout[custom][project_id]', projectId)
       checkoutUrl.searchParams.set('checkout[custom][user_id]', user.id)
       window.location.href = checkoutUrl.toString()
@@ -437,7 +463,7 @@ export default function ReviewVision() {
       if (selectedIds.length !== totalSlots)
         throw new Error(`Expected ${totalSlots} selections but got ${selectedIds.length}.`)
       await supabase.from('media_generations').update({ is_selected: true }).in('id', selectedIds)
-      await api.generateVideo(projectId, selectedIds)
+      await api.generateVideo(projectId, selectedIds, selectedPlan)
       router.push(`/processing/${projectId}`)
     } catch (err) {
       setError(err.message ?? 'Video generation failed.')
@@ -608,6 +634,46 @@ export default function ReviewVision() {
             )}
           </div>
 
+          {/* Plan picker */}
+          <div style={{ marginBottom: '32px', borderTop: '1px solid #1F1D1A', paddingTop: '40px' }}>
+            <p style={{ fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>
+              Choose your film
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+              {Object.entries(PLANS).map(([key, plan]) => {
+                const active = selectedPlan === key
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedPlan(key)}
+                    style={{
+                      border: `1px solid ${active ? '#C9A961' : '#1F1D1A'}`,
+                      background: active ? 'rgba(201,169,97,0.06)' : '#0F0E0C',
+                      borderRadius: '4px', padding: '24px 28px', cursor: 'pointer',
+                      fontFamily: 'inherit', textAlign: 'left',
+                      transition: 'border-color 200ms, background 200ms',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: active ? '#C9A961' : '#C5BFB8' }}>
+                        {plan.label}
+                      </span>
+                      <span style={{ fontFamily: "'Fraunces', serif", fontSize: '1.6rem', fontWeight: 200, color: active ? '#F4F1EA' : '#C5BFB8', lineHeight: 1 }}>
+                        ${plan.price}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: active ? '#C5BFB8' : '#4A4640', fontWeight: 300, lineHeight: 1.6, margin: 0 }}>
+                      {plan.description}
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: active ? '#8A847E' : '#2A2520', marginTop: '6px', margin: 0 }}>
+                      Each scene: {plan.duration}s · Total: {plan.seconds}s
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Error message */}
           {error && (
             <p style={{
@@ -617,26 +683,12 @@ export default function ReviewVision() {
             }}>{error}</p>
           )}
 
-          {/* What happens next */}
-          <div style={{
-            marginBottom: '32px', padding: '20px 24px',
-            border: '1px solid #1F1D1A', borderRadius: '4px',
-            background: 'rgba(201,169,97,0.03)',
-          }}>
-            <p style={{ fontSize: '0.88rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '8px' }}>
-              What happens after approval
-            </p>
-            <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300, lineHeight: 1.8 }}>
-              Each scene is animated into a <span style={{ color: '#F4F1EA' }}>5-second cinematic clip</span>. All clips — with your affirmations — are edited into your <span style={{ color: '#F4F1EA' }}>60-second vision film</span>.
-            </p>
-          </div>
-
           {/* Actions */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderTop: '1px solid #1F1D1A', paddingTop: '32px' }}>
             <div>
               <p style={{ fontSize: '0.95rem', color: '#F4F1EA', fontWeight: 400, marginBottom: '4px' }}>Happy with your vision?</p>
               <p style={{ fontSize: '0.82rem', color: '#C5BFB8', fontWeight: 300 }}>
-                Approving locks in your selections and moves you to checkout.
+                Approving locks in your scenes and takes you to checkout.
               </p>
             </div>
 
@@ -675,7 +727,7 @@ export default function ReviewVision() {
               >
                 {approving
                   ? <><Spinner size={16} />Processing...</>
-                  : 'Approve & Continue ✦'
+                  : `Continue — $${PLANS[selectedPlan].price} ✦`
                 }
               </button>
             </div>

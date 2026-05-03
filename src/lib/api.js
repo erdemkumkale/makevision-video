@@ -51,8 +51,8 @@ export const api = {
     invokeFunction('redo-image', { generation_id: generationId, feedback }),
 
   // selected_ids: array of generation IDs (the V1/V2 choices per slot)
-  generateVideo: (projectId, selectedIds) =>
-    invokeFunction('generate-video', { project_id: projectId, selected_ids: selectedIds }),
+  generateVideo: (projectId, selectedIds, plan = 'starter') =>
+    invokeFunction('generate-video', { project_id: projectId, selected_ids: selectedIds, plan }),
 
   // Async full pipeline — returns { job_id } immediately, pipeline runs in background.
   // Frontend polls video_jobs table by job_id or vision_project_id.
