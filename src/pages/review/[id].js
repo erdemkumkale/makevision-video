@@ -260,7 +260,7 @@ const PLANS = {
     duration: 10,
     seconds: 60,
     description: '6 scenes · 60-second film',
-    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/PREMIUM_PRODUCT_ID_HERE',
+    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/6c401b6d-acfb-4a7e-893d-11338e7829dc',
   },
 }
 
