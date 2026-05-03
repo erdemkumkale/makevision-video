@@ -203,15 +203,19 @@ async function runPipeline(ctx: {
     const textClips = videoSignedUrls.flatMap((_, i) => {
       // Try by index first, then by actual order_num from selectedMedia
       const orderNum = selectedMedia?.[i]?.order_num ?? i
-      const text = affirmationMap[orderNum]
-      if (!text) return []
+      const rawText = affirmationMap[orderNum]
+      if (!rawText) return []
+      // Truncate to 40 chars to fit the vertical frame
+      const text = rawText.length > 40 ? rawText.slice(0, 37) + '...' : rawText
+      // Use HTML asset for semi-transparent background (readable on bright & dark videos)
       return [{
         asset: {
-          type: 'title',
-          text,
-          style: 'minimal',
-          color: '#FFFFFF',
-          size: 'small',
+          type: 'html',
+          html: `<p style="font-family:-apple-system,sans-serif;font-size:21px;color:#FFFFFF;text-align:center;background:rgba(0,0,0,0.55);padding:10px 20px;border-radius:6px;margin:0;line-height:1.4">${text}</p>`,
+          width: 500,
+          height: 80,
+          background: 'transparent',
+          position: 'center',
         },
         start: i * CLIP_LENGTH + 0.8,
         length: CLIP_LENGTH - 1.2,
@@ -344,7 +348,7 @@ async function runPipeline(ctx: {
       .catch((e: unknown) => console.warn('Storage cleanup error (non-fatal):', e))
 
     // ── 9. E-posta bildirimi ──────────────────────────────────────────────────
-    await sendReadyEmail(supabase, userId, project_id, permanentVideoUrl)
+    await sendReadyEmail(supabase, userId, project_id, permanentVideoUrl, affirmationMap)
 
   } catch (err) {
     await fail(String(err))
@@ -354,7 +358,7 @@ async function runPipeline(ctx: {
 // ─── E-posta bildirimi ────────────────────────────────────────────────────────
 
 // deno-lint-ignore no-explicit-any
-async function sendReadyEmail(supabase: any, userId: string, projectId: string, videoUrl: string) {
+async function sendReadyEmail(supabase: any, userId: string, projectId: string, videoUrl: string, affirmationMap: Record<number, string | null> = {}) {
   const resendKey = Deno.env.get('RESEND_API_KEY')
   if (!resendKey) { console.warn('RESEND_API_KEY not set — skipping email'); return }
 
@@ -368,6 +372,21 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
     const email = userData.user.email
     const resultUrl = `https://yourvision.video/result/${projectId}`
 
+    // Enabled affirmations — up to 6, ordered
+    const affirmations = Object.values(affirmationMap).filter(Boolean) as string[]
+
+    const affirmationsSection = affirmations.length > 0 ? `
+          <!-- Divider -->
+          <div style="border-top:1px solid #1F1D1A;margin:36px 0 28px"></div>
+
+          <!-- Affirmations -->
+          <p style="margin:0 0 16px;font-size:11px;font-weight:500;letter-spacing:0.18em;color:#C9A961">YOUR AFFIRMATIONS</p>
+          <table cellpadding="0" cellspacing="0" width="100%">
+            ${affirmations.map(a => `<tr><td style="padding:6px 0;font-size:14px;color:#C5BFB8;font-weight:300;font-style:italic;line-height:1.5">
+              <span style="color:#C9A961;margin-right:10px">✦</span>${a}
+            </td></tr>`).join('\n            ')}
+          </table>` : ''
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -375,7 +394,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'YourVision <hello@yourvision.video>',
+        from: 'YourVisionVideo <hello@yourvision.video>',
         to: [email],
         subject: 'Your vision is ready ✦',
         html: `<!DOCTYPE html>
@@ -387,50 +406,46 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
 
         <!-- Logo -->
-        <tr><td style="padding-bottom:48px">
-          <span style="font-size:18px;font-weight:300;letter-spacing:0.06em;color:#F4F1EA">
-            YourVision
-          </span>
+        <tr><td style="padding-bottom:40px">
+          <span style="font-size:18px;font-weight:300;letter-spacing:0.06em;color:#F4F1EA">YourVision</span>
         </td></tr>
 
         <!-- Hero card -->
         <tr><td style="background:#0F0E0C;border:1px solid #2A2520;border-radius:4px;padding:48px 40px">
 
-          <p style="margin:0 0 32px;font-size:11px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:#C9A961">
-            Your Vision Video
-          </p>
+          <!-- Label — hardcoded uppercase to avoid Turkish i→İ from text-transform -->
+          <p style="margin:0 0 28px;font-size:11px;font-weight:500;letter-spacing:0.18em;color:#C9A961">YOUR VISION VIDEO</p>
 
-          <h1 style="margin:0 0 20px;font-size:28px;font-weight:300;color:#F4F1EA;line-height:1.2;letter-spacing:0.02em">
+          <h1 style="margin:0 0 20px;font-size:28px;font-weight:300;color:#F4F1EA;line-height:1.25;letter-spacing:0.02em">
             The life you named<br>is waiting to be seen.
           </h1>
 
-          <p style="margin:0 0 40px;font-size:15px;line-height:1.8;color:#C5BFB8;font-weight:300">
+          <p style="margin:0 0 36px;font-size:15px;line-height:1.8;color:#C5BFB8;font-weight:300">
             Your 60-second vision video is ready — six cinematic scenes,
             your face, the life you are moving toward.
           </p>
 
-          <!-- CTA -->
+          <!-- CTA — hardcoded uppercase -->
           <a href="${resultUrl}"
-             style="display:inline-block;padding:14px 40px;
-                    border:1px solid #C9A961;color:#C9A961;
-                    text-decoration:none;font-size:12px;font-weight:400;
-                    letter-spacing:0.14em;text-transform:uppercase;border-radius:4px">
-            Watch Your Vision
+             style="display:inline-block;padding:14px 40px;border:1px solid #C9A961;color:#C9A961;text-decoration:none;font-size:12px;font-weight:400;letter-spacing:0.14em;border-radius:4px">
+            WATCH YOUR VISION
           </a>
 
+          ${affirmationsSection}
+
           <!-- Divider -->
-          <div style="border-top:1px solid #1F1D1A;margin:40px 0"></div>
+          <div style="border-top:1px solid #1F1D1A;margin:36px 0 28px"></div>
 
           <!-- Details -->
           <table cellpadding="0" cellspacing="0" width="100%">
-            <tr><td style="padding:7px 0;font-size:13px;color:#C5BFB8;font-weight:300">
-              <span style="color:#C9A961;margin-right:12px">✦</span>6 cinematic scenes — your face, your story
+            <tr><td style="padding:6px 0;font-size:13px;color:#C5BFB8;font-weight:300">
+              <span style="color:#C9A961;margin-right:10px">✦</span>6 cinematic scenes — your face, your story
             </td></tr>
-            <tr><td style="padding:7px 0;font-size:13px;color:#C5BFB8;font-weight:300">
-              <span style="color:#C9A961;margin-right:12px">✦</span>60 seconds with ambient soundtrack
+            <tr><td style="padding:6px 0;font-size:13px;color:#C5BFB8;font-weight:300">
+              <span style="color:#C9A961;margin-right:10px">✦</span>60 seconds with ambient soundtrack
             </td></tr>
-            <tr><td style="padding:7px 0;font-size:13px;color:#C5BFB8;font-weight:300">
-              <span style="color:#C9A961;margin-right:12px">✦</span>Download in vertical format — yours to keep
+            <tr><td style="padding:6px 0;font-size:13px;color:#C5BFB8;font-weight:300">
+              <span style="color:#C9A961;margin-right:10px">✦</span>Download in vertical format — yours to keep
             </td></tr>
           </table>
 
