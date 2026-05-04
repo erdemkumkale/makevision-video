@@ -11,6 +11,13 @@ export default function Document() {
           rel="stylesheet"
         />
         <meta name="description" content="YourVision.video — Manifest your future self in cinematic AI video." />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-YXR7G37GJ2" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-YXR7G37GJ2');
+        `}} />
       </Head>
       <body className="bg-void text-white antialiased">
         <Main />
