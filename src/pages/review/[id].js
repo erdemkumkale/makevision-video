@@ -337,7 +337,7 @@ export default function ReviewVision() {
     if (allNowReady) {
       setGenError(null)
     } else {
-      const STALE_MS = 5 * 60 * 1000
+      const STALE_MS = 12 * 60 * 1000
       const staleStuck = normalized.some(
         (g) => !g.is_redo && !g.media_url && (Date.now() - new Date(g.created_at).getTime()) > STALE_MS
       )
@@ -378,7 +378,7 @@ export default function ReviewVision() {
     if (!originals.some((g) => !g.media_url) || loading) return
     let pollCount = 0
     const interval = setInterval(() => {
-      if (++pollCount >= 30) {
+      if (++pollCount >= 60) {
         clearInterval(interval)
         setGenError('Image generation timed out. Click "Retry" to regenerate missing ones.')
         return
