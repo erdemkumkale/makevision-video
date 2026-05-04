@@ -45,14 +45,13 @@ function HeroCycler() {
       playsInline
       preload="auto"
       style={{
-        position: 'absolute',
-        top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
+        position: 'fixed',
+        top: 0, left: '50%',
+        transform: 'translateX(-50%)',
         height: '100%',
         width: 'auto',
-        maxWidth: 'none',
-        objectFit: 'cover',
-        opacity: 0.55,
+        zIndex: 0,
+        opacity: 0.52,
       }}
     />
   )
@@ -193,8 +192,12 @@ export default function Home() {
       </svg>
       <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999, filter: 'url(#grain-filter)', opacity: 0.032, mixBlendMode: 'overlay' }} />
       <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9998, background: 'radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.28) 100%)' }} />
+      {/* Fixed video background — outside the z-index:2 wrapper so cards paint over it */}
+      <HeroCycler />
+      {/* Global dark overlay over the fixed video */}
+      <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1, background: 'rgba(10,9,8,0.62)' }} />
 
-      <div style={{ background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans','Inter',-apple-system,sans-serif", fontWeight: 300 }}>
+      <div style={{ position: 'relative', zIndex: 2, background: 'transparent', color: '#F4F1EA', fontFamily: "'General Sans','Inter',-apple-system,sans-serif", fontWeight: 300 }}>
 
         {/* Nav */}
         <nav style={{
@@ -220,17 +223,17 @@ export default function Home() {
           </button>
         </nav>
 
-        {/* Hero — fullscreen cycling video */}
-        <section style={{ position: 'relative', minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          <HeroCycler />
-          {/* gradient overlay so text reads */}
+        {/* Hero */}
+        <section style={{ position: 'relative', minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* bottom fade into next section */}
           <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, rgba(10,9,8,0.15) 0%, rgba(10,9,8,0.55) 55%, #0A0908 100%)',
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'linear-gradient(to bottom, transparent 50%, rgba(10,9,8,0.9) 100%)',
+            zIndex: 1,
           }} />
           {/* Content constrained to video width (~56vh on desktop = 9:16 aspect) */}
-          <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 'min(420px, 56vh)', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '44px' }}>
+          <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: 'min(420px, 56vh)', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E2C97A', marginBottom: '44px', textShadow: '0 1px 12px rgba(0,0,0,0.9)' }}>
               Your Vision Video
             </span>
             <h1 style={{
@@ -238,11 +241,13 @@ export default function Home() {
               fontSize: 'clamp(2.8rem,9vw,6.5rem)',
               fontWeight: 300, lineHeight: 1.08,
               letterSpacing: '0.04em', marginBottom: '28px',
+              color: '#FFFFFF',
+              textShadow: '0 2px 24px rgba(0,0,0,0.85)',
             }}>
               Name the life<br />
-              <em style={{ fontStyle: 'italic', color: '#C9A961' }}>you&apos;re becoming.</em>
+              <em style={{ fontStyle: 'italic', color: '#E2C97A' }}>you&apos;re becoming.</em>
             </h1>
-            <p style={{ fontSize: 'clamp(1rem,2.2vw,1.15rem)', fontWeight: 300, color: '#C5BFB8', lineHeight: 1.75, maxWidth: '460px', margin: '0 auto 48px' }}>
+            <p style={{ fontSize: 'clamp(1rem,2.2vw,1.15rem)', fontWeight: 300, color: '#E8E3DA', lineHeight: 1.75, maxWidth: '460px', margin: '0 auto 48px', textShadow: '0 1px 12px rgba(0,0,0,0.85)' }}>
               Write your story. Then live it.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -264,20 +269,20 @@ export default function Home() {
         </section>
 
         {/* Why it works */}
-        <section style={{ borderTop: '1px solid #1F1D1A', borderBottom: '1px solid #1F1D1A' }}>
+        <section style={{ borderTop: '1px solid #1F1D1A', borderBottom: '1px solid #1F1D1A', background: 'rgba(10,9,8,0.88)' }}>
           <div ref={r1} style={{ maxWidth: '560px', margin: '0 auto', padding: '100px 32px', textAlign: 'center' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Why it works</span>
-            <p style={{ fontSize: 'clamp(1rem,2vw,1.1rem)', fontWeight: 300, color: '#C5BFB8', lineHeight: 1.9 }}>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E2C97A', marginBottom: '20px' }}>Why it works</span>
+            <p style={{ fontSize: 'clamp(1rem,2vw,1.1rem)', fontWeight: 300, color: '#DDD8CF', lineHeight: 1.9 }}>
               The stories we tell ourselves become the lives we live. When you write your story — name the rooms, the light, the feeling — the mind begins to move toward it. Ancient practice. Made personal.
             </p>
           </div>
         </section>
 
         {/* How it works */}
-        <section style={{ background: '#0F0E0C', borderTop: '1px solid #1F1D1A', borderBottom: '1px solid #1F1D1A', padding: '100px 32px' }}>
+        <section style={{ background: 'rgba(15,14,12,0.90)', borderTop: '1px solid #1F1D1A', borderBottom: '1px solid #1F1D1A', padding: '100px 32px' }}>
           <div ref={r3} style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px', textAlign: 'center' }}>The process</span>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '80px' }}>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E2C97A', marginBottom: '20px', textAlign: 'center' }}>The process</span>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '80px', color: '#FFFFFF' }}>
               Five steps. Ten minutes.
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '52px', maxWidth: '560px', margin: '0 auto' }}>
@@ -288,10 +293,10 @@ export default function Home() {
                 { n: '04', title: 'Receive your vision', desc: 'Unlock your film — 6 animated scenes, your face. Choose 30 or 60 seconds. The life you are stepping into — waiting in your inbox.' },
               ].map(step => (
                 <div key={step.n} style={{ display: 'flex', gap: '32px' }}>
-                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#1F1D1A', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
+                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#2A2724', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
                   <div>
-                    <p style={{ color: '#F4F1EA', fontSize: '1rem', fontWeight: 400, marginBottom: '8px' }}>{step.title}</p>
-                    <p style={{ color: '#C5BFB8', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.75 }}>{step.desc}</p>
+                    <p style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 400, marginBottom: '8px' }}>{step.title}</p>
+                    <p style={{ color: '#DDD8CF', fontSize: '0.88rem', fontWeight: 300, lineHeight: 1.75 }}>{step.desc}</p>
                   </div>
                 </div>
               ))}
@@ -300,15 +305,15 @@ export default function Home() {
         </section>
 
         {/* Pricing */}
-        <section id="pricing" style={{ padding: '100px 32px' }}>
+        <section id="pricing" style={{ padding: '100px 32px', background: 'rgba(10,9,8,0.88)' }}>
           <div ref={r4} style={{ maxWidth: '760px', margin: '0 auto', textAlign: 'center' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Receive your vision</span>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,3.5vw,2.4rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '52px' }}>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E2C97A', marginBottom: '20px' }}>Receive your vision</span>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.6rem,3.5vw,2.4rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '52px', color: '#FFFFFF' }}>
               Choose your film.
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
               {/* Starter */}
-              <div style={{ border: '1px solid #1F1D1A', borderRadius: '4px', padding: '40px 36px', textAlign: 'left' }}>
+              <div style={{ border: '1px solid #2A2724', borderRadius: '4px', padding: '40px 36px', textAlign: 'left', background: '#0A0908' }}>
                 <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C5BFB8', marginBottom: '20px' }}>Starter</span>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '6px' }}>
                   <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(3rem,10vw,5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>$12</span>
@@ -316,8 +321,8 @@ export default function Home() {
                 <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '28px' }}>Early Access</span>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {['6 cinematic scenes', '5 seconds each', '30-second film', 'Your face in every scene', 'Delivered to your inbox'].map(f => (
-                    <li key={f} style={{ display: 'flex', gap: '10px', fontSize: '0.85rem', color: '#C5BFB8', fontWeight: 300 }}>
-                      <span style={{ color: '#C9A961', flexShrink: 0 }}>✦</span>{f}
+                    <li key={f} style={{ display: 'flex', gap: '10px', fontSize: '0.85rem', color: '#DDD8CF', fontWeight: 300 }}>
+                      <span style={{ color: '#E2C97A', flexShrink: 0 }}>✦</span>{f}
                     </li>
                   ))}
                 </ul>
@@ -331,7 +336,7 @@ export default function Home() {
               </div>
 
               {/* Premium */}
-              <div style={{ border: '1px solid #C9A961', borderRadius: '4px', padding: '40px 36px', textAlign: 'left', background: 'rgba(201,169,97,0.03)' }}>
+              <div style={{ border: '1px solid #C9A961', borderRadius: '4px', padding: '40px 36px', textAlign: 'left', background: '#0D0C0A' }}>
                 <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px' }}>Premium</span>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '6px' }}>
                   <span style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(3rem,10vw,5rem)', fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>$20</span>
@@ -339,8 +344,8 @@ export default function Home() {
                 <span style={{ display: 'block', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '28px' }}>Full Experience</span>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {['6 cinematic scenes', '10 seconds each', '60-second film', 'Your face in every scene', 'Delivered to your inbox'].map(f => (
-                    <li key={f} style={{ display: 'flex', gap: '10px', fontSize: '0.85rem', color: '#C5BFB8', fontWeight: 300 }}>
-                      <span style={{ color: '#C9A961', flexShrink: 0 }}>✦</span>{f}
+                    <li key={f} style={{ display: 'flex', gap: '10px', fontSize: '0.85rem', color: '#DDD8CF', fontWeight: 300 }}>
+                      <span style={{ color: '#E2C97A', flexShrink: 0 }}>✦</span>{f}
                     </li>
                   ))}
                 </ul>
@@ -358,10 +363,10 @@ export default function Home() {
         </section>
 
         {/* FAQ */}
-        <section style={{ borderTop: '1px solid #1F1D1A', padding: '100px 32px' }}>
+        <section style={{ borderTop: '1px solid #1F1D1A', padding: '100px 32px', background: 'rgba(10,9,8,0.88)' }}>
           <div ref={r5} style={{ maxWidth: '640px', margin: '0 auto' }}>
-            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '20px', textAlign: 'center' }}>Questions</span>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '52px' }}>
+            <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E2C97A', marginBottom: '20px', textAlign: 'center' }}>Questions</span>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '52px', color: '#FFFFFF' }}>
               Everything you want to know.
             </h2>
             <div style={{ borderTop: '1px solid #1F1D1A' }}>
@@ -373,7 +378,7 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer style={{ borderTop: '1px solid #1F1D1A', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        <footer style={{ borderTop: '1px solid #1F1D1A', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', background: 'rgba(10,9,8,0.92)' }}>
           <span style={{ fontFamily: "'Fraunces',serif", fontSize: '15px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
             {[{ label: 'Terms', href: '/terms', isLink: true }, { label: 'Privacy', href: '/privacy', isLink: true }, { label: 'Contact', href: 'mailto:hello@yourvision.video', isLink: false }].map(item =>
