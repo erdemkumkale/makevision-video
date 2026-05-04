@@ -442,7 +442,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
               <span style="color:#C9A961;margin-right:10px">✦</span>6 cinematic scenes — your face, your story
             </td></tr>
             <tr><td style="padding:6px 0;font-size:13px;color:#C5BFB8;font-weight:300">
-              <span style="color:#C9A961;margin-right:10px">✦</span>60 seconds with ambient soundtrack
+              <span style="color:#C9A961;margin-right:10px">✦</span>30/60 seconds with ambient soundtrack
             </td></tr>
             <tr><td style="padding:6px 0;font-size:13px;color:#C5BFB8;font-weight:300">
               <span style="color:#C9A961;margin-right:10px">✦</span>Download in vertical format — yours to keep

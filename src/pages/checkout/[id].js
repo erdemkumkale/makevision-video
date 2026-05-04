@@ -10,7 +10,7 @@ const LS_CHECKOUT_URL = 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/f
 const FEATURES = [
   '6 AI-generated images of your future self',
   'Each image animated into a cinematic 10-second clip',
-  'All 6 scenes edited into a 60-second vision film',
+  'All 6 scenes edited into your vision film',
   'Delivered to your inbox — yours to keep forever',
 ]
 

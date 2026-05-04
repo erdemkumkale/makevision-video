@@ -165,9 +165,9 @@ export default function Home() {
     <>
       <Head>
         <title>YourVision — Name the life you&apos;re becoming.</title>
-        <meta name="description" content="Write the vision in your own words. Receive a 60-second film of yourself, already inside it." />
+        <meta name="description" content="Write the vision in your own words. Receive a 30 or 60-second film of yourself, already inside it." />
         <meta property="og:title" content="YourVision — Name the life you're becoming." />
-        <meta property="og:description" content="Write the vision in your own words. Receive a 60-second film of yourself, already inside it." />
+        <meta property="og:description" content="Write the vision in your own words. Receive a 30 or 60-second film of yourself, already inside it." />
         <meta property="og:image" content="https://yourvision.video/og-image.jpg" />
         <meta property="og:url" content="https://yourvision.video" />
         <meta name="twitter:card" content="summary_large_image" />
@@ -285,7 +285,7 @@ export default function Home() {
                 { n: '01', title: 'Upload your selfie', desc: "A clear, front-facing photo. No filters, no studio — just you as you are today." },
                 { n: '02', title: 'Write your story', desc: 'Write where you are. Write where you want to be. Your words become the scenes. The more specific, the more yours.' },
                 { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Choose the ones that feel right.' },
-                { n: '04', title: 'Receive your vision', desc: 'Unlock your film — $12 early access. 60 seconds. 6 animated scenes. Your face. The life you are stepping into — waiting in your inbox.' },
+                { n: '04', title: 'Receive your vision', desc: 'Unlock your film — 6 animated scenes, your face. Choose 30 or 60 seconds. The life you are stepping into — waiting in your inbox.' },
               ].map(step => (
                 <div key={step.n} style={{ display: 'flex', gap: '32px' }}>
                   <span style={{ fontFamily: "'Fraunces',serif", fontSize: '2rem', fontWeight: 200, color: '#1F1D1A', lineHeight: 1, flexShrink: 0, width: '44px' }}>{step.n}</span>
