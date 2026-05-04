@@ -394,9 +394,9 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'YourVisionVideo <hello@yourvision.video>',
+        from: 'YourVision <hello@yourvision.video>',
         to: [email],
-        subject: 'Your vision is ready ✦',
+        subject: 'Your film is ready',
         html: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
