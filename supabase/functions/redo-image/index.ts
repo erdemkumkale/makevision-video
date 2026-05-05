@@ -14,7 +14,7 @@ const PIAPI_BASE  = 'https://api.piapi.ai/api/v1/task'
 const PIAPI_FETCH = (id: string) => `https://api.piapi.ai/api/v1/task/${id}`
 
 const NEGATIVE_PROMPT =
-  'multiple people, crowd, group, second face, background person, stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
+  'stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
