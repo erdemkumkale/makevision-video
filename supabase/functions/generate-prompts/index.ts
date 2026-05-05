@@ -4,7 +4,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const NEGATIVE_PROMPT =
-  'sharp in-focus second face, second visible face, multiple faces in foreground, stock photo, amateur photography, flat lighting, overexposed, underexposed, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
+  'multiple people, crowd, group, second face, background person, stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
 
 const CINEMATIC_SUFFIX =
   ', face clearly visible and in focus, medium shot minimum, shot on ARRI Alexa, anamorphic lens, shallow depth of field, rich color grading, luxury lifestyle campaign, editorial photography, award-winning cinematography'

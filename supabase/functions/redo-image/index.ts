@@ -14,7 +14,7 @@ const PIAPI_BASE  = 'https://api.piapi.ai/api/v1/task'
 const PIAPI_FETCH = (id: string) => `https://api.piapi.ai/api/v1/task/${id}`
 
 const NEGATIVE_PROMPT =
-  'Multiple people, complex hand movements, walking, talking, distorted face, extra limbs, blurry, low quality'
+  'multiple people, crowd, group, second face, background person, stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
@@ -48,7 +48,7 @@ serve(async (req: Request) => {
     // ── Fetch generation + parent project ─────────────────────────────────────
     const { data: gen, error: genError } = await supabase
       .from('media_generations')
-      .select('id, prompt_text, revision_count, vision_project_id, order_num')
+      .select('id, prompt_text, revision_count, vision_project_id, order_num, affirmation')
       .eq('id', generation_id)
       .single()
 
@@ -98,6 +98,8 @@ serve(async (req: Request) => {
           revision_count:    0,
           order_num:         gen.order_num,
           is_redo:           true,
+          affirmation:       gen.affirmation ?? null,
+          affirmation_enabled: true,
         })
         .select()
         .single(),
@@ -140,7 +142,15 @@ Original image prompt: "${originalPrompt}"
 User feedback: "${feedback}"
 
 Revise the image prompt based on the feedback. Keep it cinematic, photorealistic, single subject.
-Also write a short video prompt (1-2 sentences, ~100 chars) for animating this scene — describe camera movement and subtle motion only, not what's in the image.
+
+CRITICAL — SPECIFIC OBJECTS:
+If the user's feedback mentions a specific brand, model, or named object, include the EXACT name in the prompt.
+- "BMW R 1200 GS" → write "BMW R 1200 GS adventure motorcycle" — never just "motorcycle"
+- "Porsche 911" → write "Porsche 911 Carrera" — never just "sports car"
+- "Sunseeker yacht" → write "Sunseeker yacht" — never just "boat"
+Generic substitutions destroy the user's vision. Use the exact name they provided.
+
+Also write a short video prompt (1-2 sentences, ~100 chars) for animating this scene — describe what physically moves (fabric, water, light, smoke) and the subject's emotional state. Never just describe camera movement.
 
 Return ONLY a JSON object: { "image_prompt": "...", "video_prompt": "..." }`,
           }],
