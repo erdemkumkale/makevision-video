@@ -386,10 +386,12 @@ DO NOT default to penthouses, private jets, sports cars, yachts, gala events, or
 ════════════════════════════════════════
 PHYSICAL REALISM
 ════════════════════════════════════════
-Every scene must be physically possible:
+Every scene must be physically possible and spatially logical:
 - Subject stands on solid ground, deck, floor — not floating
-- Objects and environment are spatially coherent
-- Camera framing shows the subject naturally placed in their environment
+- Objects are where they belong: a steering wheel is mounted to a console, not floating in the air. A guitar rests on a knee, not hovering beside the body.
+- Subject interacts with objects naturally: hands grip a railing that is attached to something, feet stand on a surface that supports weight
+- If on a boat: subject stands in the cockpit or on deck, hands on a MOUNTED helm/wheel, not holding a detached wheel in open air
+- Camera framing shows the subject naturally placed IN their environment, not composited on top of it
 
 ════════════════════════════════════════
 FORBIDDEN
