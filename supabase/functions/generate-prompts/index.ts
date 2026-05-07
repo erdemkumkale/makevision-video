@@ -6,8 +6,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const NEGATIVE_PROMPT =
   'stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
 
-const CINEMATIC_SUFFIX =
-  ', face clearly visible and in focus, medium shot minimum, shot on ARRI Alexa, anamorphic lens, shallow depth of field, rich color grading, luxury lifestyle campaign, editorial photography, award-winning cinematography'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
