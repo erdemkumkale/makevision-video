@@ -50,6 +50,24 @@ const AGE_OPTIONS = [
   { value: '50s', label: '50s+' },
 ]
 
+const HAIR_LENGTH_OPTIONS = [
+  { value: 'short',      label: 'Short'      },
+  { value: 'medium',     label: 'Medium'     },
+  { value: 'long',       label: 'Long'       },
+  { value: 'very short', label: 'Very short / Bald' },
+]
+
+const HAIR_TYPE_OPTIONS = [
+  { value: 'straight', label: 'Straight' },
+  { value: 'wavy',     label: 'Wavy'     },
+  { value: 'curly',    label: 'Curly'    },
+]
+
+function buildHairDescription(length, type) {
+  if (length === 'very short') return 'very short hair'
+  return `${length} ${type} hair`
+}
+
 const SUBMIT_STAGES = [
   'Uploading your photo…',
   'Saving your vision…',
@@ -182,10 +200,10 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
   )
 }
 
-// ─── Gender & Age Picker ──────────────────────────────────────────────────────
+// ─── Gender, Age & Hair Picker ───────────────────────────────────────────────
 
-const SubjectPicker = ({ gender, setGender, age, setAge }) => (
-  <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLength, hairType, setHairType }) => (
+  <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
     <div>
       <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>I am a</p>
       <div style={{ display: 'flex', gap: '8px' }}>
@@ -216,6 +234,52 @@ const SubjectPicker = ({ gender, setGender, age, setAge }) => (
             {opt.label}
           </button>
         ))}
+      </div>
+    </div>
+
+    {/* Hair */}
+    <div style={{ borderTop: '1px solid #1F1D1A', paddingTop: '20px' }}>
+      <p style={{ fontSize: '0.88rem', color: '#F4F1EA', fontWeight: 300, lineHeight: 1.6, marginBottom: '16px' }}>
+        So your hair looks natural in the videos — two quick questions:
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div>
+          <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Hair length</p>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {HAIR_LENGTH_OPTIONS.map(opt => (
+              <button key={opt.value} onClick={() => setHairLength(opt.value)} style={{
+                padding: '9px 14px', border: `1px solid ${hairLength === opt.value ? '#C9A961' : '#1F1D1A'}`,
+                background: hairLength === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
+                color: hairLength === opt.value ? '#C9A961' : '#C5BFB8',
+                fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer', borderRadius: '4px',
+                fontFamily: 'inherit', transition: 'all 200ms', whiteSpace: 'nowrap',
+              }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {hairLength !== 'very short' && (
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Hair type</p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {HAIR_TYPE_OPTIONS.map(opt => (
+                <button key={opt.value} onClick={() => setHairType(opt.value)} style={{
+                  flex: 1, padding: '10px', border: `1px solid ${hairType === opt.value ? '#C9A961' : '#1F1D1A'}`,
+                  background: hairType === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
+                  color: hairType === opt.value ? '#C9A961' : '#C5BFB8',
+                  fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer', borderRadius: '4px',
+                  fontFamily: 'inherit', transition: 'all 200ms',
+                }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <p style={{ fontSize: '0.75rem', color: '#4A4640', fontStyle: 'italic' }}>
+          e.g. {buildHairDescription(hairLength, hairType)}
+        </p>
       </div>
     </div>
   </div>
@@ -322,6 +386,8 @@ export default function CreateVision() {
   const [consent, setConsent]         = useState(false)
   const [gender, setGender]           = useState('male')
   const [age, setAge]                 = useState('30s')
+  const [hairLength, setHairLength]   = useState('short')
+  const [hairType, setHairType]       = useState('straight')
   const [dream, setDream]             = useState('')
   const [submitting, setSubmitting]   = useState(false)
   const [submitStage, setSubmitStage] = useState(0)
@@ -350,7 +416,7 @@ export default function CreateVision() {
       setSubmitStage(1)
       const { data: project, error: insertError } = await supabase
         .from('vision_projects')
-        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age } }])
+        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age, hair: buildHairDescription(hairLength, hairType) } }])
         .select().single()
       if (insertError) throw insertError
       // Fire-and-forget — review page polls until prompts + images are ready
@@ -405,7 +471,7 @@ export default function CreateVision() {
             {step === 0 && (
               <>
                 <SelfieUpload file={file} setFile={setFile} consent={consent} setConsent={setConsent} />
-                <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} />
+                <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} hairLength={hairLength} setHairLength={setHairLength} hairType={hairType} setHairType={setHairType} />
               </>
             )}
             {step === 1 && <DreamForm dream={dream} setDream={setDream} />}

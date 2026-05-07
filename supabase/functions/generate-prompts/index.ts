@@ -70,14 +70,14 @@ serve(async (req: Request) => {
     const geminiUrl         = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
     const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`
 
-    // Kullanıcının seçtiği cinsiyet ve yaş — selfie analizi kaldırıldı (token maliyeti)
-    const gender: string = (project.story_inputs as any)?.gender ?? 'male'
-    const age: string    = (project.story_inputs as any)?.age ?? 'mid-30s'
-    const subjectDescription = `${gender}, ${age}`
-    console.log('Subject description:', subjectDescription)
+    // Kullanıcının seçtiği cinsiyet, yaş ve saç
+    const gender: string          = (project.story_inputs as any)?.gender ?? 'male'
+    const age: string             = (project.story_inputs as any)?.age ?? 'mid-30s'
+    const hairDescription: string = (project.story_inputs as any)?.hair ?? 'short straight hair'
+    console.log('Subject:', gender, age, hairDescription)
 
     // ── Sahne prompt'ları ─────────────────────────────────────────────────────
-    const contents = buildGeminiContents(storyText, sceneCount, gender, age)
+    const contents = buildGeminiContents(storyText, sceneCount, gender, age, hairDescription)
 
     console.log('Step 2: Calling Gemini for scene prompts...')
     const geminiBody = JSON.stringify({
@@ -159,7 +159,7 @@ serve(async (req: Request) => {
     const rows = slots.map((slot, idx) => ({
       vision_project_id: project_id,
       media_type:        'Image',
-      prompt_text:       slot.image_prompt + CINEMATIC_SUFFIX,
+      prompt_text:       slot.image_prompt,
       video_prompt:      slot.video_prompt,
       affirmation:       slot.affirmation ?? null,
       affirmation_enabled: true,
@@ -304,28 +304,26 @@ Example output: short dark brown hair, light olive skin` },
 }
 
 // ── Sahne prompt'ları için Gemini içeriği ────────────────────────────────────
-function buildGeminiContents(storyText: string, sceneCount: number, gender: string, age: string) {
-  return [{ parts: [{ text: buildGeminiPrompt(storyText, sceneCount, gender, age) }] }]
+function buildGeminiContents(storyText: string, sceneCount: number, gender: string, age: string, hairDescription: string) {
+  return [{ parts: [{ text: buildGeminiPrompt(storyText, sceneCount, gender, age, hairDescription) }] }]
 }
 
-function buildGeminiPrompt(storyText: string, sceneCount: number, gender: string, age: string): string {
+function buildGeminiPrompt(storyText: string, sceneCount: number, gender: string, age: string, hairDescription: string): string {
   const genderWord = gender === 'female' ? 'woman' : 'man'
-  const genderPronoun = gender === 'female' ? 'her' : 'his'
 
-  return `You are the creative director of a luxury lifestyle film studio. Write ${sceneCount} image prompts for a hyper-cinematic personal vision film — a 30-second trailer of someone's most aspirational life. Think Lamborghini commercial meets National Geographic. Every frame must feel expensive and alive.
+  return `You are the creative director of a personal documentary film studio. Write ${sceneCount} image prompts for a deeply personal vision film — a 30-second trailer of someone's most meaningful life. Think Terrence Malick's cinematography meets a personal documentary. Every frame must feel intimate, textured, and emotionally true — not glossy or artificial.
 
 ════════════════════════════════════════
-THE SUBJECT — CRITICAL
+THE SUBJECT
 ════════════════════════════════════════
 The subject is a ${genderWord}. Every prompt MUST use the word "${genderWord}" explicitly.
 Life stage context (affects setting choices only, never describe age): ${age}
+Hair: ${hairDescription}. Every prompt MUST include this hair description when describing the subject.
 Body: lean, fit, athletic. Never describe body type in prompts.
 Face will be composited via face-swap in post-production.
 
-FACE VISIBILITY RULE — NON-NEGOTIABLE:
-The ${genderWord}'s face MUST be visible and forward-facing (or at a slight angle) in EVERY scene.
-This is required for the face-swap to work. NO back-to-camera, NO silhouettes, NO turned-away shots.
-The ${genderWord} is always facing toward or slightly away from camera — face visible, expression readable.
+FACE RULE — state once, follow always:
+The ${genderWord}'s face MUST be visible and forward-facing (or slight angle) in every scene. Medium shot minimum (waist-up). No back-to-camera, no silhouettes. This is required for face-swap to function.
 
 ════════════════════════════════════════
 THEIR DREAM LIFE
@@ -333,114 +331,96 @@ THEIR DREAM LIFE
 ${storyText}
 
 ════════════════════════════════════════
-PROMPT STRUCTURE — follow every time
+PROMPT STRUCTURE
 ════════════════════════════════════════
-[ENVIRONMENT] specific textures, not generic: "rain-slicked cobblestone alley with neon reflections" not "a street"
-[LIGHT] exact quality: golden hour sidelight / blue hour glow / candlelight warmth / harsh noon shadow
-[CAMERA] medium shot waist-up / low angle looking up at subject / slight over-shoulder with face still visible / wide shot with subject in foreground
-[SUBJECT] "a ${genderWord} standing/sitting/leaning [specific action], face [toward camera / turned slightly]"
-[MOOD] one word: sovereign / electric / tender / untamed / luminous / magnetic
+Write each image prompt as a SINGLE FLOWING VISUAL PARAGRAPH — not bracketed sections. Weave together environment, light, camera angle, subject, texture, and mood into one cohesive description as if you're painting the frame in words.
+
+Every prompt must include ALL of these elements woven naturally:
+- A specific, textured environment (not generic: "rain-slicked cobblestone alley with neon reflections" not "a street")
+- Exact light quality (golden hour sidelight / blue hour glow / candlelight warmth / overcast diffused light)
+- Camera framing (medium shot waist-up / low angle looking up / slight over-shoulder with face visible)
+- The subject with action and face direction: "a ${genderWord} with ${hairDescription}, standing at the bow of a wooden sailboat, face turned slightly toward camera"
+- Material and texture of clothing and surfaces (linen shirt with visible weave / weathered leather jacket / wet stone underfoot / rough-hewn wooden table)
+- One mood word at the end: sovereign / electric / tender / untamed / luminous / magnetic / grounded / expansive
 
 ════════════════════════════════════════
-SPECIFIC OBJECTS — CRITICAL RULE
+WARDROBE LOGIC
 ════════════════════════════════════════
-If the person's dream life mentions a SPECIFIC brand, model, or named object — you MUST include the exact name in the image prompt. This is non-negotiable.
+Choose clothing based on scene context. Always describe fabric texture:
+- Nature / outdoor: natural fibers — linen, cotton, canvas, worn denim, wool. Visible texture: creased, sun-faded, soft.
+- Urban / evening: layered, rich texture — leather, cashmere, silk, dark denim. Visible texture: grain, sheen, weight.
+- Home / intimate: soft, relaxed — oversized knit, henley, bare feet on warm wood. Visible texture: cable-knit, ribbed, draped.
+- Water / coast: functional-beautiful — waxed cotton, rolled sleeves, nautical knit. Visible texture: salt-stiffened, wind-pressed.
 
-Examples:
-- "BMW R 1200 GS" → write "BMW R 1200 GS adventure motorcycle" — never just "motorcycle"
-- "Porsche 911" → write "Porsche 911 Carrera" — never just "sports car"
-- "VW Beetle" → write "Volkswagen Beetle" — never just "car"
-- "Sunseeker yacht" → write "Sunseeker yacht" — never just "boat"
-- "a villa in Bodrum" → write "white stone Bodrum villa with Aegean sea view"
-- "a log cabin" → write "hand-hewn log cabin with stone fireplace"
+════════════════════════════════════════
+PEOPLE IN THE SCENE
+════════════════════════════════════════
+The subject should NOT always be alone. If their dream life mentions family, friends, community, love, or togetherness:
+- Other people MAY appear but ONLY as background presence with no visible face: out-of-focus figures, backs to camera, partially cropped at frame edge, children's hands reaching into frame, a shoulder leaning against the subject, silhouetted figures around a fire.
+- ONLY the main subject's face is visible and forward-facing.
+- This creates warmth and connection without breaking face-swap.
 
-The more specific you are about the object, the better the AI renders it.
-Generic substitutions destroy the user's vision — they want THEIR specific dream, not a generic version.
+If their dream life is solitary or introspective, solo scenes are fine.
 
 ════════════════════════════════════════
 SCENE VARIETY
 ════════════════════════════════════════
-PRIORITY: Each scene must come directly from the person's dream life above. If they mentioned the sea, show the sea. If they mentioned family, show an intimate home. If they mentioned forests, show nature. Do NOT invent things they didn't ask for.
+PRIORITY: Each scene must come directly from the person's dream life. If they mentioned the sea, show the sea. If they mentioned family, show an intimate home moment. Do NOT invent luxury clichés they didn't ask for.
 
-VARIETY rules (apply after serving their story):
+After serving their story:
 - No two scenes in the same location type
 - Mix: at least one outdoor, one indoor, one with water/nature if their story allows
 - Mix lighting: at least one golden hour, one night/low-light scene
-- Do NOT default to private jets, sports cars, or yachts unless their story specifically mentions them — these are clichés that may not fit their life
+
+DO NOT default to penthouses, private jets, sports cars, yachts, gala events, or rooftop pools unless their story specifically mentions them.
 
 ════════════════════════════════════════
-FACE VISIBILITY — ABSOLUTE REQUIREMENT
+PHYSICAL REALISM
 ════════════════════════════════════════
-Every single prompt MUST include this exact phrase structure: "a ${genderWord} [action], face clearly visible, looking [toward camera / slightly away / into distance]"
-The face must occupy at least 15% of the frame. Medium shot minimum (waist up).
-If the face is not clearly visible, face-swap technology CANNOT work and the image is wasted.
-
-════════════════════════════════════════
-PHYSICAL REALISM — MANDATORY
-════════════════════════════════════════
-Every scene must be physically possible and make visual sense:
-- If on a boat: subject stands on deck, not inside hull with nautical objects floating around
-- If in nature: subject stands on ground or rock, not floating
-- Objects and environment must be spatially coherent — no objects clipping through bodies
-- Camera framing must show the subject in their actual environment, not disjointed elements
-
-════════════════════════════════════════
-PEOPLE IN BACKGROUND — CONDITIONAL RULE
-════════════════════════════════════════
-Read the person's dream life carefully. If their story mentions family, children, a partner, friends, a team, colleagues, "we", "our", or any relationship — you MUST include other people in the background of at least 2 scenes.
-
-HOW to do this correctly:
-- Background people must be BLURRED (shallow depth of field / bokeh) — they are atmosphere, not subjects
-- The main ${genderWord} stays sharp and face-forward in the foreground
-- Write it explicitly in the image_prompt: "blurred figures in background, bokeh"
-- This preserves face-swap while representing the relational life they described
-
-Example: "a ${genderWord} standing at the head of a table, face forward with quiet confidence, blurred colleagues in background, warm interior light, bokeh"
-
-If their story is solo / individual (no family, no team, no relationships mentioned) — keep all scenes solo. Do NOT add background people arbitrarily.
+Every scene must be physically possible:
+- Subject stands on solid ground, deck, floor — not floating
+- Objects and environment are spatially coherent
+- Camera framing shows the subject naturally placed in their environment
 
 ════════════════════════════════════════
 FORBIDDEN
 ════════════════════════════════════════
-- desk / office / conference / boardroom / cubicle / meeting
+- desk / office / conference / boardroom / cubicle
 - furniture blocking the subject's torso
-- back-to-camera / silhouette / face not visible ← this breaks face-swap
-- walking or running (subject must be stationary — standing, sitting, leaning)
-- close-up face portrait (keep waist-up minimum)
-- describing only the environment without the subject in the video prompt
+- back-to-camera / silhouette / face not visible
+- walking or running (subject is stationary: standing, sitting, leaning)
+- close-up face portrait (waist-up minimum)
+- environment-only descriptions without the subject
 - teenage or child figure — the subject is an adult ${genderWord}
-- sharp / in-focus background people (except blurred bokeh figures as described above)
-- wrong gender: must be a ${genderWord}, never a ${gender === 'female' ? 'man' : 'woman'} or child
-- physically impossible compositions: objects inside other objects, misplaced props
+- wrong gender: must be a ${genderWord}
+- physically impossible compositions
+- generic "luxury" imagery not rooted in their actual dream life
 
 ════════════════════════════════════════
-VIDEO PROMPT
+VIDEO PROMPT (max 350 characters)
 ════════════════════════════════════════
-Write what MOVES and what is FELT in this 5-second clip. This drives Kling AI to animate the scene with real motion and emotion.
+Write what MOVES and what is FELT in this 5-second clip. The subject MUST be named and acting.
 
 Include ALL of these:
-1. What physically moves: clothing rippling in wind / waves rolling in / leaves trembling / light shifting across skin / smoke curling / hair lifting
-2. Subject's emotional state visible in body: shoulders drop with relief / chest opens / breath visible / slight smile forming
-3. Atmosphere: warm golden haze thickens / mist rolls across water / city lights blur in rain
-4. One emotion word at the end: triumphant / tender / electric / sovereign / expansive / still
+1. Physical motion: clothing rippling / waves rolling / leaves trembling / light shifting across skin / hair lifting / fire flickering
+2. Subject's visible emotion: shoulders drop with relief / chest opens / breath visible / slight smile forming / eyes close gently
+3. Atmosphere shift: warm golden haze thickens / mist rolls across water / shadows lengthen / firelight flickers across nearby faces
+4. One emotion word at the end: triumphant / tender / electric / sovereign / expansive / still / grounded
 
-Good: "Shirt fabric moves in coastal wind, waves crash below frame, golden light warms across his chest, shoulders open with quiet pride — sovereign"
+If other people are in the scene, describe their motion too (child's hand squeezing the subject's hand / out-of-focus figures laughing behind).
+
+Good: "Linen shirt fabric shifts in warm coastal wind as the man rests his hand on a weathered wooden railing, golden light warming across his face, behind him out-of-focus figures gather around a table, waves roll gently below, his eyes soften with a quiet exhale — grounded"
 Bad: "slow push-in" / "cinematic pan" / "camera drifts left" / "gentle movement"
 
-Max 200 characters. The subject (the man/woman) MUST be present and named as acting in the video prompt — never describe only environment without the subject.
-
 ════════════════════════════════════════
-AFFIRMATION
+AFFIRMATION (max 60 characters)
 ════════════════════════════════════════
-For each scene, write one short affirmation that captures the emotional truth of that moment.
-- First person, present tense ("I am", "I have", "I feel", "I lead")
-- Max 60 characters
-- Specific to THIS scene, not generic
-- Powerful but not cliché — avoid "I am enough", "I am blessed", "I am worthy"
-- Match the scene's mood: sovereign, tender, electric, expansive, still
+One short first-person, present-tense affirmation per scene.
+Specific to THIS scene's emotional truth. Not generic.
 
 Good: "I move through the world with quiet authority."
 Good: "My home is a sanctuary I built from nothing."
+Good: "The people I love are right here beside me."
 Bad: "I am enough." / "I am grateful." / "I am blessed."
 
 ════════════════════════════════════════
