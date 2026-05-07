@@ -342,6 +342,17 @@ Every prompt must include ALL of these elements woven naturally:
 - One mood word at the end: sovereign / electric / tender / untamed / luminous / magnetic / grounded / expansive
 
 ════════════════════════════════════════
+BRANDED PRODUCTS & SPECIFIC ITEMS
+════════════════════════════════════════
+When the person's dream life mentions a specific brand or model (car, motorcycle, watch, house style, etc.), DO NOT use the brand name in the image prompt. Instead, describe its distinctive visual design features in detail.
+
+Example: "BMW R1200GS" → "a large adventure touring motorcycle with a horizontally-opposed twin engine visible on both sides, tall windscreen, beak-style front fender, silver and black body with aluminum panniers"
+
+Example: "Rolex Submariner" → "a luxury dive watch with black rotating bezel, luminous hour markers, oyster-style steel bracelet, cyclops lens over the date window"
+
+The goal: someone who knows the product would recognize it from the description alone, without the brand name ever appearing.
+
+════════════════════════════════════════
 WARDROBE LOGIC
 ════════════════════════════════════════
 Choose clothing based on scene context. Always describe fabric texture:
