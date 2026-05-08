@@ -219,7 +219,7 @@ export default function Home() {
             onMouseEnter={e => { e.currentTarget.style.color = '#F4F1EA'; e.currentTarget.style.borderColor = '#4A4640' }}
             onMouseLeave={e => { e.currentTarget.style.color = '#C5BFB8'; e.currentTarget.style.borderColor = '#1F1D1A' }}
           >
-            Begin — $12
+            Begin
           </button>
         </nav>
 
@@ -248,7 +248,7 @@ export default function Home() {
               <em style={{ fontStyle: 'italic', color: '#E2C97A' }}>you&apos;re becoming.</em>
             </h1>
             <p style={{ fontSize: 'clamp(1rem,2.2vw,1.15rem)', fontWeight: 300, color: '#E8E3DA', lineHeight: 1.75, maxWidth: '460px', margin: '0 auto 48px', textShadow: '0 1px 12px rgba(0,0,0,0.85)' }}>
-              Write your story. Then live it.
+              Write your story, unlock your new life.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <button onClick={() => router.push('/login')} style={{
@@ -273,7 +273,7 @@ export default function Home() {
           <div ref={r1} style={{ maxWidth: '560px', margin: '0 auto', padding: '100px 32px', textAlign: 'center' }}>
             <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E2C97A', marginBottom: '20px' }}>Why it works</span>
             <p style={{ fontSize: 'clamp(1rem,2vw,1.1rem)', fontWeight: 300, color: '#DDD8CF', lineHeight: 1.9 }}>
-              The stories we tell ourselves become the lives we live. When you write your story — name the rooms, the light, the feeling — the mind begins to move toward it. Ancient practice. Made personal.
+              The stories we tell ourselves become the lives we live. When you write your story — name the rooms, the light, the feeling — the mind begins to move toward it. Ancient practice, made personal.
             </p>
           </div>
         </section>
@@ -288,7 +288,7 @@ export default function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '52px', maxWidth: '560px', margin: '0 auto' }}>
               {[
                 { n: '01', title: 'Upload your selfie', desc: "A clear, front-facing photo. No filters, no studio — just you as you are today." },
-                { n: '02', title: 'Write your story', desc: 'Write where you are. Write where you want to be. Your words become the scenes. The more specific, the more yours.' },
+                { n: '02', title: 'Write your story', desc: 'Write where you are. Write where you want to be. Your words become the scenes. The more specific, the more personal.' },
                 { n: '03', title: 'Approve your scenes', desc: 'Review 6 AI-generated images — your face, your vision. Choose the ones that feel right.' },
                 { n: '04', title: 'Receive your vision', desc: 'Unlock your film — 6 animated scenes, your face. Choose 30 or 60 seconds. The life you are stepping into — waiting in your inbox.' },
               ].map(step => (

@@ -10,6 +10,7 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content="YourVision.video — Manifest your future self in cinematic AI video." />
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-YXR7G37GJ2" />
         <script dangerouslySetInnerHTML={{ __html: `

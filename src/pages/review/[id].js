@@ -509,9 +509,22 @@ export default function ReviewVision() {
     return (
       <>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ minHeight: '100vh', background: '#0A0908', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-          <Spinner />
-          <p style={{ color: '#C5BFB8', fontSize: '0.88rem', fontWeight: 300, letterSpacing: '0.04em' }}>Preparing your scenes…</p>
+        <div style={{ minHeight: '100vh', background: '#0A0908', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '40px 24px', textAlign: 'center' }}>
+          <Spinner size={28} />
+          <div>
+            <p style={{ color: '#F4F1EA', fontSize: '1rem', fontWeight: 300, letterSpacing: '0.04em', marginBottom: '10px' }}>Your scenes are being created…</p>
+            <p style={{ color: '#C5BFB8', fontSize: '0.82rem', fontWeight: 300, lineHeight: 1.7, maxWidth: '320px' }}>
+              This usually takes 2–3 minutes. You can safely close this page and come back — your scenes will be waiting in your dashboard.
+            </p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{ marginTop: '8px', background: 'none', border: '1px solid #1F1D1A', color: '#C5BFB8', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '10px 24px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 200ms, border-color 200ms' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#F4F1EA'; e.currentTarget.style.borderColor = '#4A4640' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#C5BFB8'; e.currentTarget.style.borderColor = '#1F1D1A' }}
+          >
+            Go to Dashboard
+          </button>
         </div>
       </>
     )
