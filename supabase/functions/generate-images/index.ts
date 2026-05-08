@@ -24,6 +24,9 @@ const CORS = {
 const PIAPI_BASE  = 'https://api.piapi.ai/api/v1/task'
 const PIAPI_FETCH = (id: string) => `https://api.piapi.ai/api/v1/task/${id}`
 
+// Negative prompt — DB'deki eski değeri yoksay, buradan oku
+const NEGATIVE_PROMPT = 'stock photo, amateur photography, flat lighting, overexposed, underexposed, blurry, low quality, grainy, washed out colors, boring composition, generic, cliché, distorted face, extra limbs, watermark, text overlay, cartoon, illustration, drawing'
+
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
@@ -185,7 +188,7 @@ async function runFluxPhase(
   const submitted: Array<{ gen: typeof generations[0]; taskId: string | null; error: string | null }> = []
   for (const gen of generations) {
     try {
-      const taskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt)
+      const taskId = await submitFlux(piApiKey, gen.prompt_text, NEGATIVE_PROMPT)
       console.log(`Slot ${gen.order_num} submitted: ${taskId}`)
       submitted.push({ gen, taskId, error: null })
     } catch (err) {
