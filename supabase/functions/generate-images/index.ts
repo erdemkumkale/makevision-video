@@ -168,18 +168,20 @@ async function runFluxPhase(
   project_id: string,
   generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
 ): Promise<FluxSlot[]> {
-  // Hepsini aynı anda submit et
-  console.log(`Flux: submitting all ${generations.length} tasks simultaneously`)
-  const submitted = await Promise.all(generations.map(async (gen) => {
+  // Sırayla submit et — her biri arasında 1s bekle (rate limit hatalarını önler)
+  console.log(`Flux: submitting ${generations.length} tasks sequentially with 1s delay`)
+  const submitted: Array<{ gen: typeof generations[0]; taskId: string | null; error: string | null }> = []
+  for (const gen of generations) {
     try {
       const taskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt)
       console.log(`Slot ${gen.order_num} submitted: ${taskId}`)
-      return { gen, taskId, error: null }
+      submitted.push({ gen, taskId, error: null })
     } catch (err) {
       console.error(`Slot ${gen.order_num} submit failed:`, String(err))
-      return { gen, taskId: null, error: String(err) }
+      submitted.push({ gen, taskId: null, error: String(err) })
     }
-  }))
+    await sleep(1000)
+  }
 
   // Hepsini paralel poll et — PiAPI queue'su işledikçe tamamlanır
   console.log('Flux: polling all tasks in parallel')
@@ -259,16 +261,15 @@ async function runFaceswapPhase(
       } catch (e) {
         lastErr = String(e)
         console.warn(`Slot ${slot.order_num} faceswap attempt ${attempt + 1}/3 failed:`, lastErr)
-        // Error 10003 = invalid request (e.g. wrong gender in image) — retrying won't help
+        // Error 10003 = invalid request (e.g. gender mismatch) — retrying won't help
         if (lastErr.includes('10003')) {
-          console.warn(`Slot ${slot.order_num}: error 10003 — skipping faceswap, using Flux image directly`)
-          return { slot, finalUrl: slot.flux_url!, error: null }
+          console.warn(`Slot ${slot.order_num}: error 10003 — marking as failed so user can redo`)
+          return { slot, finalUrl: null, error: 'Faceswap error 10003: face/image mismatch. Please redo this scene.' }
         }
       }
     }
-    console.error(`Slot ${slot.order_num} faceswap all 3 attempts failed — falling back to Flux image`)
-    // Fallback: use Flux image so the user sees something rather than an empty slot
-    return { slot, finalUrl: slot.flux_url!, error: null }
+    console.error(`Slot ${slot.order_num} faceswap all 3 attempts failed — marking as failed`)
+    return { slot, finalUrl: null, error: lastErr || 'Faceswap failed after 3 attempts' }
   }))
 
   // DB güncelle
