@@ -30,7 +30,8 @@ const ImageCard = ({
   const active   = versions.find((v) => v.id === selectedId) ?? versions[0]
   const original = versions.find((v) => !v.is_redo) ?? versions[0]
   const hasRedo  = versions.some((v) => v.is_redo)
-  const canRedo  = !hasRedo && original && original.revision_count < 1
+  const isErrorSlot = active?.media_url === 'error'
+  const canRedo  = !hasRedo && original && (original.revision_count < 1 || isErrorSlot)
   const busy     = localRedoing || redoing
 
   const handleRedo = async () => {
@@ -49,12 +50,23 @@ const ImageCard = ({
     }}>
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '3/4', background: '#0A0908', overflow: 'hidden' }}>
-        {active?.media_url ? (
+        {active?.media_url && active.media_url !== 'error' ? (
           <img
             src={active.media_url}
             alt={`Vision ${(active.order_num ?? 0) + 1}`}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
+        ) : active?.media_url === 'error' ? (
+          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 16 }}>
+            <span style={{ fontSize: '1.4rem' }}>⚠</span>
+            <p style={{ fontSize: '0.78rem', color: '#C5BFB8', textAlign: 'center', lineHeight: 1.5 }}>Generation failed</p>
+            <button
+              onClick={() => { setShowFeedback(true) }}
+              style={{ fontSize: '0.72rem', color: '#C9A961', border: '1px solid #C9A961', background: 'transparent', borderRadius: '4px', padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em' }}
+            >
+              Retry
+            </button>
+          </div>
         ) : (
           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Spinner />

@@ -83,6 +83,18 @@ serve(async (req: Request) => {
 
       console.log(`Flux phase: ${generations.length} slots`)
       const result = await runFluxPhase(supabase, piApiKey, project_id, generations)
+
+      // Flux başarısız olan slotları DB'ye hata olarak yaz — review sayfası retry gösterebilsin
+      const failedSlots = result.filter(s => !s.flux_url)
+      if (failedSlots.length > 0) {
+        console.warn(`${failedSlots.length} flux slots failed — writing error to DB`)
+        await Promise.all(failedSlots.map(s =>
+          supabase.from('media_generations')
+            .update({ error: s.error ?? 'Image generation failed', media_url: 'error' })
+            .eq('id', s.id)
+        ))
+      }
+
       return json({ success: true, flux_slots: result })
     }
 
