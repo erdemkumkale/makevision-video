@@ -345,7 +345,7 @@ export default function ReviewVision() {
       return next
     })
 
-    const allNowReady = normalized.filter(g => !g.is_redo).every(g => g.media_url)
+    const allNowReady = normalized.filter(g => !g.is_redo).every(g => g.media_url && g.media_url !== 'error')
     if (allNowReady) {
       setGenError(null)
     } else {
@@ -375,9 +375,7 @@ export default function ReviewVision() {
 
     if (originals.every(g => !g.media_url)) {
       generationStartedRef.current = true
-      api.generateFlux(projectId)
-        .then(({ flux_slots }) => api.generateFaceswap(projectId, flux_slots))
-        .then(() => loadData())
+      api.startGeneration(projectId)
         .catch(err => {
           console.error('Auto-generation failed:', err)
           setGenError('Image generation failed. Click "Retry" to try again.')
@@ -412,9 +410,7 @@ export default function ReviewVision() {
   const handleRetry = async () => {
     setRetrying(true); setGenError(null)
     try {
-      const { flux_slots } = await api.generateFlux(projectId)
-      await api.generateFaceswap(projectId, flux_slots)
-      await loadData()
+      await api.startGeneration(projectId)
     } catch (err) {
       setGenError(err.message ?? 'Image generation failed. Please try again.')
     } finally { setRetrying(false) }
