@@ -418,19 +418,24 @@ export default function ReviewVision() {
   }, [generations, loading, projectId, loadData])
 
   useEffect(() => {
-    const originals = generations.filter((g) => !g.is_redo)
-    if (!originals.some((g) => !g.media_url) || loading) return
+    const hasPending = generations.some((g) => !g.media_url)
+    if (!hasPending || loading) return
     let pollCount = 0
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (++pollCount >= 60) {
         clearInterval(interval)
         setGenError('Image generation timed out. Click "Retry" to regenerate missing ones.')
         return
       }
+      // Poll redo tasks if any redo is pending
+      const hasRedoPending = generations.some((g) => g.is_redo && !g.media_url)
+      if (hasRedoPending && projectId) {
+        api.pollRedoTasks(projectId).catch(() => {})
+      }
       loadData()
     }, 6000)
     return () => clearInterval(interval)
-  }, [generations, loading, loadData, genError])
+  }, [generations, loading, loadData, genError, projectId])
 
   function buildSlotMap(list) {
     const map = new Map()

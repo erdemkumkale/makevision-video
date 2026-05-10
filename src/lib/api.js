@@ -58,6 +58,10 @@ export const api = {
   pollKlingTasks: (projectId) =>
     invokeFunction('poll-kling-tasks', { project_id: projectId }),
 
+  // Review sayfası tarafından her 8s çağrılır — redo task'larını kontrol eder
+  pollRedoTasks: (projectId) =>
+    invokeFunction('poll-redo-tasks', { project_id: projectId }),
+
   // Async full pipeline — returns { job_id } immediately, pipeline runs in background.
   // Frontend polls video_jobs table by job_id or vision_project_id.
   generateFullVideo: (projectId, userId, selfieUrl, prompts, audioPrompt) =>
