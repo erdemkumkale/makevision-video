@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
+import { api } from '../../lib/api'
 
 const STAGES = [
   'Generating your visuals...',
@@ -31,7 +32,15 @@ export default function Processing() {
     if (!projectId || !user) return
 
     const poll = async () => {
-      const { data, error } = await supabase
+      // 1. Kling task'larını kontrol et (Kling tamamlandı mı?)
+      try {
+        await api.pollKlingTasks(projectId)
+      } catch (e) {
+        console.warn('pollKlingTasks error (non-fatal):', e)
+      }
+
+      // 2. video_jobs tablosunu kontrol et (Shotstack tamamlandı mı?)
+      const { data: job } = await supabase
         .from('video_jobs')
         .select('id, status, video_url, error')
         .eq('vision_project_id', projectId)
@@ -39,28 +48,40 @@ export default function Processing() {
         .limit(1)
         .maybeSingle()
 
-      if (error) { console.log('Poll error:', error.message); return }
-      if (!data)  { console.log('Waiting for job row...'); return }
+      if (job) {
+        setJobStatus(job.status)
 
-      setJobStatus(data.status)
+        if (job.status === 'completed' && job.video_url) {
+          clearInterval(pollRef.current)
+          router.push(`/result/${projectId}?video=${encodeURIComponent(job.video_url)}`)
+          return
+        }
 
-      if (data.status === 'completed' && data.video_url) {
-        clearInterval(pollRef.current)
-        await supabase
-          .from('vision_projects')
-          .update({ status: 'Completed' })
-          .eq('id', projectId)
-        router.push(`/result/${projectId}?video=${encodeURIComponent(data.video_url)}`)
+        if (job.status === 'failed') {
+          clearInterval(pollRef.current)
+          setErrorMsg(job.error ?? 'Pipeline failed. Please try again.')
+          return
+        }
       }
 
-      if (data.status === 'failed') {
+      // 3. Proje status'unu da kontrol et (fallback)
+      const { data: proj } = await supabase
+        .from('vision_projects')
+        .select('status, final_video_url')
+        .eq('id', projectId)
+        .single()
+
+      if (proj?.status === 'Completed' && proj?.final_video_url) {
         clearInterval(pollRef.current)
-        setErrorMsg(data.error ?? 'Pipeline failed. Please try again.')
+        router.push(`/result/${projectId}?video=${encodeURIComponent(proj.final_video_url)}`)
+      } else if (proj?.status === 'Failed') {
+        clearInterval(pollRef.current)
+        setErrorMsg('Video generation failed. Please try again.')
       }
     }
 
     poll()
-    pollRef.current = setInterval(poll, 6000)
+    pollRef.current = setInterval(poll, 30000)
     return () => clearInterval(pollRef.current)
   }, [projectId, user, router])
 

@@ -54,6 +54,10 @@ export const api = {
   generateVideo: (projectId, selectedIds, plan = 'starter') =>
     invokeFunction('generate-video', { project_id: projectId, selected_ids: selectedIds, plan }),
 
+  // Processing sayfası tarafından her 30s çağrılır — Kling task'larını kontrol eder
+  pollKlingTasks: (projectId) =>
+    invokeFunction('poll-kling-tasks', { project_id: projectId }),
+
   // Async full pipeline — returns { job_id } immediately, pipeline runs in background.
   // Frontend polls video_jobs table by job_id or vision_project_id.
   generateFullVideo: (projectId, userId, selfieUrl, prompts, audioPrompt) =>
