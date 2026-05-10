@@ -39,10 +39,12 @@ const ProjectCard = ({ project, onClick }) => {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 
-  const firstImage = (project.thumbnail ?? [])
-    .filter(t => t.media_url && !t.is_redo)
-    .sort((a, b) => a.order_num - b.order_num)[0]
-  const thumbUrl = firstImage?.media_url ?? null
+  const thumbList = (project.thumbnail ?? []).filter(t => t.media_url && t.media_url !== 'error')
+  // Prefer is_selected version at order_num 0, fallback to first non-redo
+  const selectedFirst = thumbList.find(t => t.is_selected && t.order_num === 0)
+    ?? thumbList.filter(t => !t.is_redo).sort((a, b) => a.order_num - b.order_num)[0]
+    ?? thumbList.sort((a, b) => a.order_num - b.order_num)[0]
+  const thumbUrl = selectedFirst?.media_url ?? null
   const videoUrl = project.final_video_url ?? null
   const hasThumb = !!thumbUrl
 
@@ -168,7 +170,7 @@ export default function Dashboard() {
     if (!user) return
     const { data, error } = await supabase
       .from('vision_projects')
-      .select('*, final_video_url, thumbnail:media_generations(media_url, order_num, is_redo)')
+      .select('*, final_video_url, thumbnail:media_generations(media_url, order_num, is_redo, is_selected)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     if (!error) {

@@ -26,6 +26,7 @@ const ImageCard = ({
   const [localRedoing, setLocalRedoing] = useState(false)
   const [editingAff, setEditingAff]     = useState(false)
   const [customAff, setCustomAff]       = useState('')
+  const [showPrompt, setShowPrompt]     = useState(false)
 
   const active   = versions.find((v) => v.id === selectedId) ?? versions[0]
   const original = versions.find((v) => !v.is_redo) ?? versions[0]
@@ -174,6 +175,39 @@ const ImageCard = ({
           <p style={{ fontSize: '0.88rem', color: '#2A2520', textAlign: 'center', letterSpacing: '0.06em' }}>Redo used</p>
         ) : null}
 
+        {/* Prompt viewer */}
+        {active?.media_url && active.media_url !== 'error' && (
+          <div style={{ borderTop: '1px solid #1F1D1A', paddingTop: '10px' }}>
+            <button
+              onClick={() => setShowPrompt(p => !p)}
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '0.82rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+                color: showPrompt ? '#C9A961' : '#4A4640', transition: 'color 200ms',
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = '#C5BFB8'}
+              onMouseLeave={e => e.currentTarget.style.color = showPrompt ? '#C9A961' : '#4A4640'}
+            >
+              <span>{showPrompt ? '▾' : '▸'}</span> Prompt
+            </button>
+            {showPrompt && (
+              <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <p style={{ fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#4A4640', marginBottom: '5px' }}>Image</p>
+                  <p style={{ fontSize: '0.8rem', color: '#8A847E', lineHeight: 1.6, margin: 0, userSelect: 'text' }}>{active.prompt_text ?? '—'}</p>
+                </div>
+                {active.video_prompt && (
+                  <div>
+                    <p style={{ fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#4A4640', marginBottom: '5px' }}>Video</p>
+                    <p style={{ fontSize: '0.8rem', color: '#8A847E', lineHeight: 1.6, margin: 0, userSelect: 'text' }}>{active.video_prompt}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Affirmation */}
         {active?.media_url && (
           <div style={{ borderTop: '1px solid #1F1D1A', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -310,7 +344,7 @@ export default function ReviewVision() {
         .single(),
       supabase
         .from('media_generations')
-        .select('id, prompt_text, media_url, is_selected, revision_count, order_num, is_redo, created_at, affirmation, affirmation_enabled')
+        .select('id, prompt_text, video_prompt, media_url, is_selected, revision_count, order_num, is_redo, created_at, affirmation, affirmation_enabled')
         .eq('vision_project_id', projectId)
         .order('order_num', { ascending: true })
         .order('created_at', { ascending: true }),
@@ -349,7 +383,7 @@ export default function ReviewVision() {
     if (allNowReady) {
       setGenError(null)
     } else {
-      const STALE_MS = 12 * 60 * 1000
+      const STALE_MS = 5 * 60 * 1000
       const staleStuck = normalized.some(
         (g) => !g.is_redo && !g.media_url && (Date.now() - new Date(g.created_at).getTime()) > STALE_MS
       )
@@ -446,6 +480,8 @@ export default function ReviewVision() {
             .eq('id', id)
         })
       )
+      // Deselect ALL generations for this project first, then select only chosen versions
+      await supabase.from('media_generations').update({ is_selected: false }).eq('vision_project_id', projectId)
       await supabase.from('media_generations').update({ is_selected: true }).in('id', selectedIds)
       // Save plan into story_inputs and update status
       const newStoryInputs = { ...(project?.story_inputs ?? {}), plan: selectedPlan }
@@ -470,6 +506,8 @@ export default function ReviewVision() {
       const selectedIds = Object.values(selectedVersions)
       if (selectedIds.length !== totalSlots)
         throw new Error(`Expected ${totalSlots} selections but got ${selectedIds.length}.`)
+      // Deselect ALL generations for this project first, then select only chosen versions
+      await supabase.from('media_generations').update({ is_selected: false }).eq('vision_project_id', projectId)
       await supabase.from('media_generations').update({ is_selected: true }).in('id', selectedIds)
       await api.generateVideo(projectId, selectedIds, selectedPlan)
       router.push(`/processing/${projectId}`)
