@@ -32,7 +32,8 @@ const ImageCard = ({
   const original = versions.find((v) => !v.is_redo) ?? versions[0]
   const hasRedo  = versions.some((v) => v.is_redo)
   const isErrorSlot = active?.media_url === 'error'
-  const canRedo  = !hasRedo && original && (original.revision_count < 1 || isErrorSlot)
+  const redoIsError = hasRedo && versions.find(v => v.is_redo)?.media_url === 'error'
+  const canRedo  = original && ((!hasRedo && original.revision_count < 1) || isErrorSlot || redoIsError)
   const busy     = localRedoing || redoing
 
   const handleRedo = async () => {
