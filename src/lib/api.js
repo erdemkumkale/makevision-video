@@ -34,6 +34,9 @@ async function invokeFunction(name, body) {
 }
 
 export const api = {
+  generateCharacterRef: (projectId, feedback) =>
+    invokeFunction('generate-character-ref', { project_id: projectId, ...(feedback ? { feedback } : {}) }),
+
   generatePrompts: (projectId) =>
     invokeFunction('generate-prompts', { project_id: projectId }),
 

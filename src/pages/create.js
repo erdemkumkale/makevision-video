@@ -73,6 +73,11 @@ const SKIN_TONE_OPTIONS = [
   { value: 'dark',   label: 'Dark'   },
 ]
 
+const HEIGHT_UNIT_OPTIONS = [
+  { value: 'cm', label: 'cm' },
+  { value: 'ft', label: 'ft/in' },
+]
+
 function buildHairDescription(length, type) {
   if (length === 'very short') return 'very short hair'
   return `${length} ${type} hair`
@@ -212,7 +217,7 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
 
 // ─── Gender, Age & Hair Picker ───────────────────────────────────────────────
 
-const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLength, hairType, setHairType, skinTone, setSkinTone }) => (
+const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLength, hairType, setHairType, skinTone, setSkinTone, heightCm, setHeightCm, heightFt, setHeightFt, heightIn, setHeightIn, heightUnit, setHeightUnit }) => (
   <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
     <div>
       <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Appear in video</p>
@@ -310,6 +315,63 @@ const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLeng
             {opt.label}
           </button>
         ))}
+      </div>
+    </div>
+
+    {/* Height */}
+    <div style={{ borderTop: '1px solid #1F1D1A', paddingTop: '20px' }}>
+      <p style={{ fontSize: '0.88rem', color: '#F4F1EA', fontWeight: 300, lineHeight: 1.6, marginBottom: '16px' }}>
+        Your height — so the character proportions feel right:
+      </p>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        {HEIGHT_UNIT_OPTIONS.map(opt => (
+          <button key={opt.value} onClick={() => setHeightUnit(opt.value)} style={{
+            padding: '9px 16px', border: `1px solid ${heightUnit === opt.value ? '#C9A961' : '#1F1D1A'}`,
+            background: heightUnit === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
+            color: heightUnit === opt.value ? '#C9A961' : '#C5BFB8',
+            fontSize: '0.82rem', cursor: 'pointer', borderRadius: '4px',
+            fontFamily: 'inherit', transition: 'all 200ms',
+          }}>
+            {opt.label}
+          </button>
+        ))}
+        {heightUnit === 'cm' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              type="number" min="140" max="220" value={heightCm}
+              onChange={e => setHeightCm(e.target.value)}
+              style={{
+                width: '72px', padding: '9px 10px', background: '#0F0E0C',
+                border: '1px solid #1F1D1A', color: '#F4F1EA', fontSize: '0.82rem',
+                borderRadius: '4px', fontFamily: 'inherit', textAlign: 'center',
+              }}
+            />
+            <span style={{ color: '#4A4640', fontSize: '0.82rem' }}>cm</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              type="number" min="4" max="7" value={heightFt}
+              onChange={e => setHeightFt(e.target.value)}
+              style={{
+                width: '52px', padding: '9px 10px', background: '#0F0E0C',
+                border: '1px solid #1F1D1A', color: '#F4F1EA', fontSize: '0.82rem',
+                borderRadius: '4px', fontFamily: 'inherit', textAlign: 'center',
+              }}
+            />
+            <span style={{ color: '#4A4640', fontSize: '0.82rem' }}>ft</span>
+            <input
+              type="number" min="0" max="11" value={heightIn}
+              onChange={e => setHeightIn(e.target.value)}
+              style={{
+                width: '52px', padding: '9px 10px', background: '#0F0E0C',
+                border: '1px solid #1F1D1A', color: '#F4F1EA', fontSize: '0.82rem',
+                borderRadius: '4px', fontFamily: 'inherit', textAlign: 'center',
+              }}
+            />
+            <span style={{ color: '#4A4640', fontSize: '0.82rem' }}>in</span>
+          </div>
+        )}
       </div>
     </div>
   </div>
@@ -419,6 +481,10 @@ export default function CreateVision() {
   const [hairLength, setHairLength]   = useState('short')
   const [hairType, setHairType]       = useState('straight')
   const [skinTone, setSkinTone]       = useState('medium')
+  const [heightUnit, setHeightUnit]   = useState('cm')
+  const [heightCm, setHeightCm]       = useState('170')
+  const [heightFt, setHeightFt]       = useState('5')
+  const [heightIn, setHeightIn]       = useState('7')
   const [dream, setDream]             = useState('')
   const [submitting, setSubmitting]   = useState(false)
   const [submitStage, setSubmitStage] = useState(0)
@@ -445,16 +511,15 @@ export default function CreateVision() {
         selfieUrl = urlData.publicUrl
       }
       setSubmitStage(1)
+      const heightValue = heightUnit === 'cm'
+        ? Number(heightCm)
+        : Number(heightFt) + Number(heightIn) / 12
       const { data: project, error: insertError } = await supabase
         .from('vision_projects')
-        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age, hair: buildHairDescription(hairLength, hairType), skin_tone: skinTone } }])
+        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age, hair: buildHairDescription(hairLength, hairType), skin_tone: skinTone, height: heightValue, height_unit: heightUnit } }])
         .select().single()
       if (insertError) throw insertError
-      // Fire-and-forget — review page polls until prompts + images are ready
-      api.generatePrompts(project.id).catch(err =>
-        console.error('generatePrompts background error:', err)
-      )
-      router.push(`/review/${project.id}`)
+      router.push(`/character-ref/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)
       setError(err.message ?? 'Something went wrong. Please try again.')
@@ -502,7 +567,7 @@ export default function CreateVision() {
             {step === 0 && (
               <>
                 <SelfieUpload file={file} setFile={setFile} consent={consent} setConsent={setConsent} />
-                <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} hairLength={hairLength} setHairLength={setHairLength} hairType={hairType} setHairType={setHairType} skinTone={skinTone} setSkinTone={setSkinTone} />
+                <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} hairLength={hairLength} setHairLength={setHairLength} hairType={hairType} setHairType={setHairType} skinTone={skinTone} setSkinTone={setSkinTone} heightCm={heightCm} setHeightCm={setHeightCm} heightFt={heightFt} setHeightFt={setHeightFt} heightIn={heightIn} setHeightIn={setHeightIn} heightUnit={heightUnit} setHeightUnit={setHeightUnit} />
               </>
             )}
             {step === 1 && <DreamForm dream={dream} setDream={setDream} />}
