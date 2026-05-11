@@ -39,8 +39,9 @@ function resizeImageFile(file, maxPx = 1536) {
 const TOTAL_STEPS = 3
 
 const GENDER_OPTIONS = [
-  { value: 'male',   label: 'Male'   },
-  { value: 'female', label: 'Female' },
+  { value: 'male',        label: 'As a man'            },
+  { value: 'female',      label: 'As a woman'          },
+  { value: 'androgynous', label: 'Androgynous / Neutral' },
 ]
 
 const AGE_OPTIONS = [
@@ -61,6 +62,15 @@ const HAIR_TYPE_OPTIONS = [
   { value: 'straight', label: 'Straight' },
   { value: 'wavy',     label: 'Wavy'     },
   { value: 'curly',    label: 'Curly'    },
+]
+
+const SKIN_TONE_OPTIONS = [
+  { value: 'fair',   label: 'Fair'   },
+  { value: 'light',  label: 'Light'  },
+  { value: 'medium', label: 'Medium' },
+  { value: 'olive',  label: 'Olive'  },
+  { value: 'brown',  label: 'Brown'  },
+  { value: 'dark',   label: 'Dark'   },
 ]
 
 function buildHairDescription(length, type) {
@@ -202,10 +212,10 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
 
 // ─── Gender, Age & Hair Picker ───────────────────────────────────────────────
 
-const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLength, hairType, setHairType }) => (
+const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLength, hairType, setHairType, skinTone, setSkinTone }) => (
   <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
     <div>
-      <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>I am a</p>
+      <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Appear in video</p>
       <div style={{ display: 'flex', gap: '8px' }}>
         {GENDER_OPTIONS.map(opt => (
           <button key={opt.value} onClick={() => setGender(opt.value)} style={{
@@ -280,6 +290,26 @@ const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLeng
         <p style={{ fontSize: '0.75rem', color: '#4A4640', fontStyle: 'italic' }}>
           e.g. {buildHairDescription(hairLength, hairType)}
         </p>
+      </div>
+    </div>
+
+    {/* Skin tone */}
+    <div style={{ borderTop: '1px solid #1F1D1A', paddingTop: '20px' }}>
+      <p style={{ fontSize: '0.88rem', color: '#F4F1EA', fontWeight: 300, lineHeight: 1.6, marginBottom: '16px' }}>
+        Your skin tone — so the characters match your complexion:
+      </p>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {SKIN_TONE_OPTIONS.map(opt => (
+          <button key={opt.value} onClick={() => setSkinTone(opt.value)} style={{
+            padding: '9px 14px', border: `1px solid ${skinTone === opt.value ? '#C9A961' : '#1F1D1A'}`,
+            background: skinTone === opt.value ? 'rgba(201,169,97,0.08)' : 'transparent',
+            color: skinTone === opt.value ? '#C9A961' : '#C5BFB8',
+            fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer', borderRadius: '4px',
+            fontFamily: 'inherit', transition: 'all 200ms', whiteSpace: 'nowrap',
+          }}>
+            {opt.label}
+          </button>
+        ))}
       </div>
     </div>
   </div>
@@ -388,6 +418,7 @@ export default function CreateVision() {
   const [age, setAge]                 = useState('30s')
   const [hairLength, setHairLength]   = useState('short')
   const [hairType, setHairType]       = useState('straight')
+  const [skinTone, setSkinTone]       = useState('medium')
   const [dream, setDream]             = useState('')
   const [submitting, setSubmitting]   = useState(false)
   const [submitStage, setSubmitStage] = useState(0)
@@ -416,7 +447,7 @@ export default function CreateVision() {
       setSubmitStage(1)
       const { data: project, error: insertError } = await supabase
         .from('vision_projects')
-        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age, hair: buildHairDescription(hairLength, hairType) } }])
+        .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age, hair: buildHairDescription(hairLength, hairType), skin_tone: skinTone } }])
         .select().single()
       if (insertError) throw insertError
       // Fire-and-forget — review page polls until prompts + images are ready
@@ -471,7 +502,7 @@ export default function CreateVision() {
             {step === 0 && (
               <>
                 <SelfieUpload file={file} setFile={setFile} consent={consent} setConsent={setConsent} />
-                <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} hairLength={hairLength} setHairLength={setHairLength} hairType={hairType} setHairType={setHairType} />
+                <SubjectPicker gender={gender} setGender={setGender} age={age} setAge={setAge} hairLength={hairLength} setHairLength={setHairLength} hairType={hairType} setHairType={setHairType} skinTone={skinTone} setSkinTone={setSkinTone} />
               </>
             )}
             {step === 1 && <DreamForm dream={dream} setDream={setDream} />}

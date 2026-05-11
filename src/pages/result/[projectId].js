@@ -16,11 +16,17 @@ export default function Result() {
   const [images, setImages]     = useState([])
   const [copied, setCopied]     = useState(false)
 
-  const loadImages = (pid) => {
-    const imgs = [0,1,2,3,4,5].map(i =>
-      `${STORAGE}/projects/${pid}/images/${i}.jpg`
-    )
-    setImages(imgs)
+  const loadImages = async (pid) => {
+    const { data } = await supabase
+      .from('media_generations')
+      .select('order_num')
+      .eq('vision_project_id', pid)
+      .eq('is_selected', true)
+      .eq('is_redo', false)
+      .order('order_num', { ascending: true })
+    if (data?.length) {
+      setImages(data.map(r => `${STORAGE}/projects/${pid}/images/${r.order_num}.jpg`))
+    }
   }
 
   useEffect(() => {
@@ -29,7 +35,7 @@ export default function Result() {
     const load = async () => {
       if (video) {
         setVideoUrl(decodeURIComponent(video))
-        loadImages(projectId)
+        await loadImages(projectId)
         setLoading(false)
         return
       }
@@ -45,7 +51,7 @@ export default function Result() {
 
       if (data.final_video_url) {
         setVideoUrl(data.final_video_url)
-        loadImages(projectId)
+        await loadImages(projectId)
         setLoading(false)
       } else if (data.status === 'Completed') {
         const { data: job } = await supabase
@@ -58,7 +64,7 @@ export default function Result() {
           .maybeSingle()
         if (job?.video_url) {
           setVideoUrl(job.video_url)
-          loadImages(projectId)
+          await loadImages(projectId)
           setLoading(false)
         } else {
           router.replace('/dashboard')
