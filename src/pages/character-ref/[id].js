@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { useAuth } from '../../contexts/AuthContext'
 import { api } from '../../lib/api'
+import { supabase } from '../../supabaseClient'
 
 export default function CharacterRef() {
   const router        = useRouter()
@@ -76,15 +77,17 @@ export default function CharacterRef() {
   const handleContinue = async () => {
     setContinuing(true)
     try {
-      // Seçilen karakter ref URL zaten story_inputs'a kaydedildi (son generate çağrısında)
-      // Eğer v1 seçildiyse ama v2 üretildiyse, v1'i tekrar kaydetmemiz gerekiyor
-      // En basiti: continue'da generateCharacterRef v1 URL'ini tekrar kaydet (feedback olmadan, sadece overwrite)
-      // Aslında şu an son üretilen daima story_inputs'a kaydediliyor.
-      // V1 seçilip V2 de üretilmişse, v1'i tekrar save etmemiz lazım.
-      if (v2Url && version === 1) {
-        await api.generateCharacterRef(id) // v1'i yeniden üret değil, ama şu an URL'yi kaydetmek için ek endpoint yok
-        // Aslında bunu Supabase client ile direkt yapabiliriz ama şimdilik son üretilen URL kullanılacak
-        // TODO: add a save-character-ref endpoint or use supabase client directly
+      // V1 seçilip V2 üretilmişse, story_inputs'taki character_ref_url V2 olarak kaldı — V1'e geri al
+      if (v2Url && version === 1 && v1Url) {
+        const { data: proj } = await supabase
+          .from('vision_projects')
+          .select('story_inputs')
+          .eq('id', id)
+          .single()
+        const si = proj?.story_inputs ?? {}
+        await supabase.from('vision_projects')
+          .update({ story_inputs: { ...si, character_ref_url: v1Url } })
+          .eq('id', id)
       }
       // generate-prompts'u başlat (fire-and-forget)
       api.generatePrompts(id).catch(err => console.error('generatePrompts error:', err))
