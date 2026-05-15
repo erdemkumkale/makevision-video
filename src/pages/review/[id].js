@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import Link from 'next/link'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
 import { api } from '../../lib/api'
@@ -588,12 +589,23 @@ export default function ReviewVision() {
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,200;0,300;1,200;1,300&display=swap" rel="stylesheet" />
       </Head>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fade{from{opacity:0}to{opacity:1}} @media(max-width:640px){.scene-grid{grid-template-columns:1fr!important}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fade{from{opacity:0}to{opacity:1}}
+        @media(max-width:640px){
+          .scene-grid{grid-template-columns:1fr 1fr!important}
+          .review-nav{padding:0 16px!important}
+          .review-main{padding:24px 16px!important}
+        }
+        @media(max-width:400px){
+          .scene-grid{grid-template-columns:1fr!important}
+        }
+      `}</style>
 
       <div style={{ minHeight: '100vh', background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans', system-ui, sans-serif" }}>
 
         {/* Nav */}
-        <nav style={{
+        <nav className="review-nav" style={{
           borderBottom: '1px solid #1F1D1A', padding: '0 40px', height: '64px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           background: 'rgba(10,9,8,0.92)', backdropFilter: 'blur(12px)',
@@ -608,7 +620,7 @@ export default function ReviewVision() {
           <span style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
         </nav>
 
-        <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '56px 40px 80px' }}>
+        <main className="review-main" style={{ maxWidth: '1280px', margin: '0 auto', padding: '56px 40px 80px' }}>
 
           {/* Heading */}
           <div style={{ marginBottom: '48px' }}>
@@ -798,6 +810,11 @@ export default function ReviewVision() {
             </div>
           </div>
         </main>
+        <footer style={{ borderTop: '1px solid #1F1D1A', padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', fontFamily: "'General Sans', system-ui, sans-serif" }}>
+          <Link href="/terms" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Terms</Link>
+          <Link href="/privacy" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Privacy</Link>
+          <a href="mailto:hello@yourvision.video" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Contact</a>
+        </footer>
       </div>
     </>
   )

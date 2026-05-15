@@ -2,6 +2,7 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import Link from 'next/link'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
@@ -626,8 +627,8 @@ export default function CreateVision() {
       </div>
 
       <footer style={{ borderTop: '1px solid #1F1D1A', padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', fontFamily: 'inherit' }}>
-        <a href="/terms" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Terms</a>
-        <a href="/privacy" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Privacy</a>
+        <Link href="/terms" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Terms</Link>
+        <Link href="/privacy" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Privacy</Link>
         <a href="mailto:hello@yourvision.video" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Contact</a>
       </footer>
     </>
