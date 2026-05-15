@@ -238,7 +238,7 @@ export default function Dashboard() {
         <header style={{
           position: 'sticky', top: 0, zIndex: 10,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 40px', height: '64px',
+          padding: '0 20px', height: '64px',
           background: 'rgba(10,9,8,0.92)', backdropFilter: 'blur(12px)',
           borderBottom: '1px solid #1F1D1A',
         }}>
@@ -265,7 +265,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '64px 40px' }}>
+        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 20px' }}>
           {/* Greeting */}
           <div style={{ marginBottom: '48px' }}>
             <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
@@ -300,7 +300,7 @@ export default function Dashboard() {
 
           {/* Grid */}
           {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {[...Array(4)].map((_, i) => (
                 <div key={i} style={{ background: '#0F0E0C', border: '1px solid #1F1D1A', borderRadius: '4px', padding: '12px' }}>
                   <div style={{ aspectRatio: '9/16', width: '100%', marginBottom: '10px', background: '#0A0908', borderRadius: '2px' }} />
@@ -310,7 +310,7 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {projects.length === 0
                 ? <EmptyState onCreate={() => router.push('/create')} />
                 : projects.map(p => (
@@ -321,7 +321,7 @@ export default function Dashboard() {
           )}
         </main>
 
-        <footer style={{ borderTop: '1px solid #1F1D1A', padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <footer style={{ borderTop: '1px solid #1F1D1A', padding: '24px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <span style={{ fontSize: '0.78rem', color: '#C5BFB8' }}>© {new Date().getFullYear()} YourVision</span>
           <div style={{ display: 'flex', gap: '20px' }}>
             <Link href="/terms" style={{ fontSize: '0.78rem', color: '#C5BFB8', textDecoration: 'none' }}>Terms</Link>
