@@ -197,7 +197,7 @@ export default function Home() {
       {/* Global dark overlay over the fixed video */}
       <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1, background: 'rgba(10,9,8,0.62)' }} />
 
-      <div style={{ position: 'relative', zIndex: 2, background: 'transparent', color: '#F4F1EA', fontFamily: "'General Sans','Inter',-apple-system,sans-serif", fontWeight: 300 }}>
+      <div style={{ position: 'relative', zIndex: 2, background: 'transparent', color: '#F4F1EA', fontFamily: "'General Sans','Inter',-apple-system,sans-serif", fontWeight: 300, overflowX: 'hidden' }}>
 
         {/* Nav */}
         <nav style={{

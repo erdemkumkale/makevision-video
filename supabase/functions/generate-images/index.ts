@@ -61,7 +61,7 @@ serve(async (req: Request) => {
 
     const { data: project, error: projectError } = await supabase
       .from('vision_projects')
-      .select('id, user_id, selfie_url')
+      .select('id, user_id, selfie_url, story_inputs')
       .eq('id', project_id)
       .eq('user_id', user.id)
       .single()
@@ -70,6 +70,38 @@ serve(async (req: Request) => {
 
     const piApiKey = Deno.env.get('PIAPI_API_KEY')
     if (!piApiKey) return json({ error: 'PIAPI_API_KEY not set' }, 500)
+
+    // ── Rate limiting: 1 free project per user ────────────────────────────────
+    // Only enforce on flux phase (start of image generation)
+    if (phase === 'flux') {
+      const { data: otherProjects } = await supabase
+        .from('vision_projects')
+        .select('id')
+        .eq('user_id', user.id)
+        .neq('id', project_id)
+
+      if (otherProjects && otherProjects.length > 0) {
+        const otherIds = otherProjects.map((p: any) => p.id)
+        const { count: existingGenCount } = await supabase
+          .from('media_generations')
+          .select('id', { count: 'exact', head: true })
+          .in('vision_project_id', otherIds)
+
+        if (existingGenCount && existingGenCount > 0) {
+          // User already used a free project — require a successful payment
+          const { count: paidCount } = await supabase
+            .from('payments')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('status', 'Success')
+
+          if (!paidCount || paidCount === 0) {
+            console.warn(`Rate limit: user ${user.id} tried second free project`)
+            return json({ error: 'Payment required to generate images for additional projects.' }, 402)
+          }
+        }
+      }
+    }
 
     // ── Phase 1: Flux ─────────────────────────────────────────────────────────
     if (phase === 'flux') {
@@ -84,8 +116,9 @@ serve(async (req: Request) => {
         return json({ error: 'No pending generations found' }, 400)
       }
 
-      console.log(`Flux phase: ${generations.length} slots`)
-      const result = await runFluxPhase(supabase, piApiKey, project_id, generations)
+      const characterRefUrl = (project as any).story_inputs?.character_ref_url ?? null
+      console.log(`Flux phase: ${generations.length} slots, character ref: ${characterRefUrl ? 'yes' : 'no'}`)
+      const result = await runFluxPhase(supabase, piApiKey, project_id, generations, characterRefUrl)
 
       // Flux başarısız olan slotları DB'ye hata olarak yaz — review sayfası retry gösterebilsin
       const failedSlots = result.filter(s => !s.flux_url)
@@ -128,8 +161,6 @@ serve(async (req: Request) => {
 
     // ── Phase "all": fire-and-forget — returns immediately, runs in background ──
     if (phase === 'all') {
-      if (!project.selfie_url) return json({ error: 'No selfie_url on project' }, 400)
-
       const pipeline = async () => {
         try {
           const { data: generations } = await supabase
@@ -141,17 +172,40 @@ serve(async (req: Request) => {
 
           if (!generations?.length) { console.error('No generations found'); return }
 
-          console.log(`Background pipeline: ${generations.length} slots`)
-          const fluxSlots = await runFluxPhase(supabase, piApiKey, project_id, generations)
+          const characterRefUrl = (project as any).story_inputs?.character_ref_url ?? null
+          console.log(`Background pipeline: ${generations.length} slots, character ref: ${characterRefUrl ? 'yes' : 'no'}`)
+          const fluxSlots = await runFluxPhase(supabase, piApiKey, project_id, generations, characterRefUrl)
 
-          const selfieStoragePath = project.selfie_url.split('/vision-assets/')[1]?.split('?')[0]
-          let selfieUrl = project.selfie_url
-          if (selfieStoragePath) {
-            const { data: signed } = await supabase.storage.from('vision-assets').createSignedUrl(selfieStoragePath, 3600)
-            if (signed?.signedUrl) selfieUrl = signed.signedUrl
+          // Failed flux slotlarını hemen 'error' olarak işaretle — review sayfası retry gösterebilsin
+          const failedFlux = fluxSlots.filter(s => !s.flux_url)
+          if (failedFlux.length > 0) {
+            console.warn(`Background: ${failedFlux.length} flux slots failed — writing error to DB`)
+            await Promise.all(failedFlux.map(s =>
+              supabase.from('media_generations')
+                .update({ media_url: 'error', error: s.error ?? 'Image generation failed' })
+                .eq('id', s.id)
+            ))
           }
 
-          await runFaceswapPhase(supabase, piApiKey, project_id, selfieUrl, fluxSlots)
+          // Faceswap swap source: character_ref_url varsa onu kullan (zaten senin yüzün var içinde)
+          // yoksa selfie'yi kullan (eski akış)
+          let swapSourceUrl: string | null = characterRefUrl
+          if (!swapSourceUrl) {
+            if (!project.selfie_url) {
+              console.error('No character_ref_url and no selfie_url — cannot proceed')
+              return
+            }
+            const selfieStoragePath = project.selfie_url.split('/vision-assets/')[1]?.split('?')[0]
+            swapSourceUrl = project.selfie_url
+            if (selfieStoragePath) {
+              const { data: signed } = await supabase.storage.from('vision-assets').createSignedUrl(selfieStoragePath, 3600)
+              if (signed?.signedUrl) swapSourceUrl = signed.signedUrl
+            }
+          }
+
+          console.log(`Faceswap source: ${characterRefUrl ? 'character_ref' : 'selfie'}`)
+          await runFaceswapPhase(supabase, piApiKey, project_id, swapSourceUrl, fluxSlots)
+
           console.log(`Background pipeline complete for project ${project_id}`)
         } catch (err) {
           console.error('Background pipeline error:', err)
@@ -181,14 +235,15 @@ async function runFluxPhase(
   supabase: any,
   piApiKey: string,
   project_id: string,
-  generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>
+  generations: Array<{ id: string; prompt_text: string; negative_prompt: string; order_num: number }>,
+  characterRefUrl?: string | null
 ): Promise<FluxSlot[]> {
   // Sırayla submit et — her biri arasında 1s bekle (rate limit hatalarını önler)
   console.log(`Flux: submitting ${generations.length} tasks sequentially with 1s delay`)
   const submitted: Array<{ gen: typeof generations[0]; taskId: string | null; error: string | null }> = []
   for (const gen of generations) {
     try {
-      const taskId = await submitFlux(piApiKey, gen.prompt_text, NEGATIVE_PROMPT)
+      const taskId = await submitFlux(piApiKey, gen.prompt_text, NEGATIVE_PROMPT, characterRefUrl)
       console.log(`Slot ${gen.order_num} submitted: ${taskId}`)
       submitted.push({ gen, taskId, error: null })
     } catch (err) {
@@ -206,7 +261,7 @@ async function runFluxPhase(
     const tryFlux = async (tid: string, maxAttempts: number): Promise<string> => {
       const piApiUrl = await pollTask(piApiKey, tid, 'image_url', maxAttempts, 5000)
       const storagePath = `projects/${project_id}/flux/${gen.order_num}.jpg`
-      const flux_url = await uploadToStorageSigned(supabase, piApiUrl, storagePath)
+      const flux_url = await uploadToStorage(supabase, piApiUrl, storagePath)
       return flux_url
     }
 
@@ -219,7 +274,7 @@ async function runFluxPhase(
       console.warn(`Slot ${gen.order_num} flux failed, retrying once:`, String(err))
       await sleep(3000)
       try {
-        const retryTaskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt)
+        const retryTaskId = await submitFlux(piApiKey, gen.prompt_text, gen.negative_prompt, characterRefUrl)
         console.log(`Slot ${gen.order_num} flux retry submitted: ${retryTaskId}`)
         const flux_url = await tryFlux(retryTaskId, 12) // 12×5s = 60s
         console.log(`Slot ${gen.order_num} flux retry done`)
@@ -291,7 +346,7 @@ async function runFaceswapPhase(
   await Promise.all(polled.map(async ({ slot, finalUrl, error }) => {
     if (!finalUrl) {
       await supabase.from('media_generations')
-        .update({ error: error ?? 'Faceswap failed' })
+        .update({ media_url: 'error', error: error ?? 'Faceswap failed' })
         .eq('id', slot.id)
       return
     }
@@ -311,7 +366,7 @@ async function runFaceswapPhase(
   const failedSlots = flux_slots.filter(s => !s.flux_url)
   await Promise.all(failedSlots.map(s =>
     supabase.from('media_generations')
-      .update({ error: s.error ?? 'Flux generation failed' })
+      .update({ media_url: 'error', error: s.error ?? 'Flux generation failed' })
       .eq('id', s.id)
   ))
 
@@ -324,15 +379,22 @@ async function runFaceswapPhase(
 
 // ─── Submit helpers ───────────────────────────────────────────────────────────
 
-async function submitFlux(apiKey: string, prompt: string, negativePrompt: string): Promise<string> {
+async function submitFlux(apiKey: string, prompt: string, negativePrompt: string, characterRefUrl?: string | null): Promise<string> {
+  const input: Record<string, unknown> = {
+    prompt,
+    negative_prompt: negativePrompt,
+    width: 768,
+    height: 1024,
+    guidance_scale: characterRefUrl ? 3.5 : 5.5,
+  }
+  if (characterRefUrl) {
+    input.image   = characterRefUrl
+    input.denoise = 0.85 // karakteri koru, sahneyi adapte et
+  }
   const res = await fetch(PIAPI_BASE, {
     method: 'POST',
     headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'Qubico/flux1-dev',
-      task_type: 'txt2img',
-      input: { prompt, negative_prompt: negativePrompt, width: 768, height: 1024, guidance_scale: 5.5, num_inference_steps: 30 },
-    }),
+    body: JSON.stringify({ model: 'Qubico/flux1-dev', task_type: 'txt2img', input }),
   })
   if (!res.ok) throw new Error(`Flux submit failed (${res.status}): ${await res.text()}`)
   const data = await res.json()
@@ -361,10 +423,28 @@ async function submitFaceswap(apiKey: string, targetUrl: string, swapUrl: string
 // ─── Poller ───────────────────────────────────────────────────────────────────
 
 async function pollTask(apiKey: string, taskId: string, outputKey: string, maxAttempts: number, intervalMs: number): Promise<string> {
+  let consecutive404 = 0
+  const MAX_404 = 10
+  const BACKOFF_404 = [5000, 10000, 20000] // exponential cap at 20s
+
   for (let i = 0; i < maxAttempts; i++) {
     await sleep(intervalMs)
     const res = await fetch(PIAPI_FETCH(taskId), { headers: { 'X-API-Key': apiKey } })
+
+    if (res.status === 404) {
+      consecutive404++
+      if (consecutive404 >= MAX_404) {
+        throw new Error(`Task ${taskId} not found (404) after ${MAX_404} retries — task does not exist`)
+      }
+      const backoff = BACKOFF_404[Math.min(consecutive404 - 1, BACKOFF_404.length - 1)]
+      console.warn(`Poll ${taskId} attempt ${i + 1}: 404 (${consecutive404}/${MAX_404}), backing off ${backoff}ms`)
+      await sleep(backoff)
+      continue
+    }
+
+    consecutive404 = 0 // reset on any non-404 response
     if (!res.ok) { console.warn(`Poll ${taskId} attempt ${i + 1}: HTTP ${res.status}`); continue }
+
     const data = await res.json()
     const status: string = data?.data?.status ?? ''
     console.log(`Poll ${taskId} attempt ${i + 1}: ${status}`)

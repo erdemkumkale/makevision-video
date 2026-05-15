@@ -221,7 +221,7 @@ const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLeng
   <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
     <div>
       <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Appear in video</p>
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         {GENDER_OPTIONS.map(opt => (
           <button key={opt.value} onClick={() => setGender(opt.value)} style={{
             flex: 1, padding: '10px', border: `1px solid ${gender === opt.value ? '#C9A961' : '#1F1D1A'}`,
@@ -237,7 +237,7 @@ const SubjectPicker = ({ gender, setGender, age, setAge, hairLength, setHairLeng
     </div>
     <div>
       <p style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>Age range</p>
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         {AGE_OPTIONS.map(opt => (
           <button key={opt.value} onClick={() => setAge(opt.value)} style={{
             flex: 1, padding: '10px', border: `1px solid ${age === opt.value ? '#C9A961' : '#1F1D1A'}`,
@@ -537,7 +537,7 @@ export default function CreateVision() {
         <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500&display=swap" rel="stylesheet" />
       </Head>
 
-      <div style={{ minHeight: '100vh', background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans','Inter',-apple-system,sans-serif", fontWeight: 300, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: '#0A0908', color: '#F4F1EA', fontFamily: "'General Sans','Inter',-apple-system,sans-serif", fontWeight: 300, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
 
         {/* Nav */}
         <header style={{
@@ -624,6 +624,12 @@ export default function CreateVision() {
 
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
+
+      <footer style={{ borderTop: '1px solid #1F1D1A', padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', fontFamily: 'inherit' }}>
+        <a href="/terms" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Terms</a>
+        <a href="/privacy" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Privacy</a>
+        <a href="mailto:hello@yourvision.video" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Contact</a>
+      </footer>
     </>
   )
 }
