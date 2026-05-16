@@ -331,6 +331,7 @@ export default function ReviewVision() {
   const generationStartedRef            = React.useRef(false)
   const [selectedVersions, setSelectedVersions] = useState({})
   const [affirmations, setAffirmations]         = useState({})
+  const [lightboxUrl, setLightboxUrl]           = useState(null)
 
   // ── Load data ───────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -625,25 +626,13 @@ export default function ReviewVision() {
                 Character Reference
               </p>
               {project?.story_inputs?.character_ref_url ? (
-                <div style={{ position: 'relative', width: '90px' }}>
+                <div style={{ width: '90px' }}>
                   <img
                     src={project.story_inputs.character_ref_url}
                     alt="Character reference"
-                    style={{ width: '90px', aspectRatio: '3/4', objectFit: 'cover', borderRadius: '4px', border: '1px solid #1F1D1A', display: 'block' }}
+                    onClick={() => setLightboxUrl(project.story_inputs.character_ref_url)}
+                    style={{ width: '90px', aspectRatio: '3/4', objectFit: 'cover', borderRadius: '4px', border: '1px solid #1F1D1A', display: 'block', cursor: 'zoom-in' }}
                   />
-                  <button
-                    onClick={() => router.push(`/character-ref/${projectId}`)}
-                    title="Regenerate character"
-                    style={{
-                      position: 'absolute', bottom: 4, right: 4,
-                      background: 'rgba(10,9,8,0.85)', border: '1px solid #1F1D1A',
-                      color: '#C5BFB8', fontSize: '0.65rem', borderRadius: '3px',
-                      padding: '3px 6px', cursor: 'pointer', fontFamily: 'inherit',
-                      letterSpacing: '0.06em',
-                    }}
-                  >
-                    ↺
-                  </button>
                 </div>
               ) : (
                 <button
@@ -830,6 +819,25 @@ export default function ReviewVision() {
           <a href="mailto:hello@yourvision.video" style={{ fontSize: '0.75rem', color: '#4A4640', textDecoration: 'none', letterSpacing: '0.06em' }}>Contact</a>
         </footer>
       </div>
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={lightboxUrl}
+            alt="Character reference"
+            style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain', borderRadius: '6px', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}
+          />
+        </div>
+      )}
     </>
   )
 }
