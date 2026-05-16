@@ -381,7 +381,7 @@ export default function Home() {
         <footer style={{ borderTop: '1px solid #1F1D1A', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', background: 'rgba(10,9,8,0.92)' }}>
           <span style={{ fontFamily: "'Fraunces',serif", fontSize: '15px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-            {[{ label: 'Terms', href: '/terms', isLink: true }, { label: 'Privacy', href: '/privacy', isLink: true }, { label: 'Contact', href: 'mailto:hello@yourvision.video', isLink: false }].map(item =>
+            {[{ label: 'How It Works', href: '/how-it-works', isLink: true }, { label: 'Vision Board Guide', href: '/vision-board-guide', isLink: true }, { label: 'Terms', href: '/terms', isLink: true }, { label: 'Privacy', href: '/privacy', isLink: true }, { label: 'Contact', href: 'mailto:hello@yourvision.video', isLink: false }].map(item =>
               item.isLink
                 ? <Link key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</Link>
                 : <a key={item.label} href={item.href} style={{ fontSize: '0.75rem', color: '#C5BFB8', letterSpacing: '0.08em', textDecoration: 'none' }}>{item.label}</a>
