@@ -622,17 +622,62 @@ export default function ReviewVision() {
 
         <main className="review-main" style={{ maxWidth: '1280px', margin: '0 auto', padding: '56px 40px 80px' }}>
 
-          {/* Heading */}
-          <div style={{ marginBottom: '48px' }}>
-            <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '16px' }}>
-              Your Vision
-            </span>
-            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.03em', marginBottom: '10px' }}>
-              Your vision, <em style={{ fontStyle: 'italic', color: '#C9A961' }}>revealed.</em>
-            </h1>
-            <p style={{ color: '#C5BFB8', fontSize: '0.9rem', fontWeight: 300, lineHeight: 1.7 }}>
-              Review each scene. Redo any one — then pick V1 or V2 before approving.
-            </p>
+          {/* Heading + Character ref */}
+          <div style={{ marginBottom: '48px', display: 'flex', gap: '40px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '240px' }}>
+              <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A961', marginBottom: '16px' }}>
+                Your Vision
+              </span>
+              <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.03em', marginBottom: '10px' }}>
+                Your vision, <em style={{ fontStyle: 'italic', color: '#C9A961' }}>revealed.</em>
+              </h1>
+              <p style={{ color: '#C5BFB8', fontSize: '0.9rem', fontWeight: 300, lineHeight: 1.7 }}>
+                Review each scene. Redo any one — then pick V1 or V2 before approving.
+              </p>
+            </div>
+
+            {/* Character reference */}
+            <div style={{ flexShrink: 0 }}>
+              <p style={{ fontSize: '0.68rem', fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#4A4640', marginBottom: '8px' }}>
+                Character Reference
+              </p>
+              {project?.story_inputs?.character_ref_url ? (
+                <div style={{ position: 'relative', width: '90px' }}>
+                  <img
+                    src={project.story_inputs.character_ref_url}
+                    alt="Character reference"
+                    style={{ width: '90px', aspectRatio: '3/4', objectFit: 'cover', borderRadius: '4px', border: '1px solid #1F1D1A', display: 'block' }}
+                  />
+                  <button
+                    onClick={() => router.push(`/character-ref/${projectId}`)}
+                    title="Regenerate character"
+                    style={{
+                      position: 'absolute', bottom: 4, right: 4,
+                      background: 'rgba(10,9,8,0.85)', border: '1px solid #1F1D1A',
+                      color: '#C5BFB8', fontSize: '0.65rem', borderRadius: '3px',
+                      padding: '3px 6px', cursor: 'pointer', fontFamily: 'inherit',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    ↺
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => router.push(`/character-ref/${projectId}`)}
+                  style={{
+                    width: '90px', aspectRatio: '3/4', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    border: '1px dashed #1F1D1A', borderRadius: '4px', background: '#0F0E0C',
+                    color: '#C9A961', fontSize: '0.7rem', letterSpacing: '0.08em',
+                    cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', padding: '8px',
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem' }}>✦</span>
+                  Generate
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Generating banner */}
