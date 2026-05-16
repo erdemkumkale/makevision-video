@@ -183,13 +183,15 @@ export default function CharacterRef() {
               <textarea
                 value={feedback}
                 onChange={e => setFeedback(e.target.value)}
+                disabled={redoing}
                 placeholder="e.g. Make the hair darker, more athletic build, broader shoulders…"
                 rows={3}
                 style={{
                   width: '100%', background: '#0F0E0C', border: '1px solid #1F1D1A',
-                  color: '#F4F1EA', fontSize: '0.88rem', lineHeight: 1.7,
+                  color: redoing ? '#4A4640' : '#F4F1EA', fontSize: '0.88rem', lineHeight: 1.7,
                   padding: '12px 14px', borderRadius: '4px', resize: 'none',
                   fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                  opacity: redoing ? 0.5 : 1,
                 }}
               />
               <button

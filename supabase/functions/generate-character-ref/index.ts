@@ -26,18 +26,17 @@ serve(async (req: Request) => {
     if (!authHeader) return json({ error: 'Unauthorized' }, 401)
 
     const supabaseUrl    = Deno.env.get('SUPABASE_URL')!
-    const anonKey        = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const piApiKey       = Deno.env.get('PIAPI_API_KEY')!
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth:   { persistSession: false },
-    })
-    const { data: { user }, error: authError } = await userClient.auth.getUser()
-    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
-
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      console.error('Auth error:', authError?.message)
+      return json({ error: 'Unauthorized' }, 401)
+    }
 
     const body       = await req.json()
     const project_id = body?.project_id as string
@@ -63,12 +62,15 @@ serve(async (req: Request) => {
 
     const genderWord = gender === 'female' ? 'woman' : gender === 'androgynous' ? 'person with androgynous features' : 'man'
     const heightDesc = height ? `, ${height}` : ''
+    // "30s" → "in their 30s"
+    const ageDesc = age.match(/^\d+s$/) ? `in their ${age}` : age
 
-    // Referans prompt: nötr, tam vücut veya bel üstü, yüze dönük
-    const basePrompt = `Studio portrait of a ${genderWord} with ${hair}, ${skinTone} skin tone${heightDesc}, standing in a relaxed neutral pose, facing camera directly, slight natural expression, plain light grey studio background, soft diffused studio lighting, editorial photography, full body shot showing physique clearly, sharp focus, high quality`
+    // Referans prompt: nötr, tam vücut, yüze dönük
+    // Age ve fitness açıkça belirtiliyor — Flux'un kendi yorumuna bırakma
+    const basePrompt = `Studio portrait of a ${genderWord} ${ageDesc}, ${hair}, ${skinTone} skin tone${heightDesc}, average everyday fitness level (not muscular, not athletic, normal realistic body), standing in a relaxed neutral pose, facing camera directly, slight natural expression, plain light grey studio background, soft diffused studio lighting, editorial photography, full body shot, sharp focus, high quality, realistic`
 
     const prompt = feedback
-      ? `${basePrompt}. Additional notes: ${feedback}`
+      ? `${basePrompt}. Minor adjustments requested (keep age accurate, do not exaggerate): ${feedback}`
       : basePrompt
 
     const negativePrompt = 'blurry, low quality, distorted, extra limbs, watermark, text, background clutter, dramatic pose, action scene, outfit props'
@@ -88,6 +90,7 @@ serve(async (req: Request) => {
           width:  768,
           height: 1024,
           guidance_scale: 3.5,
+          seed: Math.floor(Math.random() * 2147483647),
         },
       }),
     })
@@ -213,13 +216,15 @@ serve(async (req: Request) => {
       console.warn('No selfie_url, skipping faceswap')
     }
 
-    // story_inputs'a kaydet
+    // story_inputs'a clean URL kaydet (generate-images bu URL'i kullanacak)
     await supabase.from('vision_projects')
       .update({ story_inputs: { ...si, character_ref_url: finalUrl } })
       .eq('id', project_id)
 
+    // Frontend'e cache-busted URL dön (browser aynı URL'i cache'lemesin)
+    const cacheBustedUrl = `${finalUrl}?t=${Date.now()}`
     console.log(`Character ref saved: ${finalUrl}`)
-    return json({ image_url: finalUrl })
+    return json({ image_url: cacheBustedUrl })
 
   } catch (err) {
     console.error('Unhandled error:', err)
