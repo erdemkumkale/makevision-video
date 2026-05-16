@@ -138,10 +138,10 @@ const FAQ_SCHEMA = {
     },
     {
       '@type': 'Question',
-      name: 'Is YourVision.video legit?',
+      name: 'What happens to my photo after I upload it?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes. YourVision is a real product that generates AI vision board videos using state-of-the-art image and video generation technology. You upload your photo, describe your dream life, and receive a finished video — typically within minutes.',
+        text: 'Your photo is used solely to generate your personalized video. It is not stored beyond the processing period, not shared with third parties, and not used to train any AI model. You own the output video.',
       },
     },
     {
@@ -167,8 +167,8 @@ export default function VisionBoardGuide() {
   return (
     <>
       <Head>
-        <title>AI Vision Board Guide 2025 | YourVision</title>
-        <meta name="description" content="The complete guide to creating an AI vision board video in 2025. Tools, psychology, and how to put your own face in your manifestation video." />
+        <title>AI Vision Board Guide 2026 | YourVision</title>
+        <meta name="description" content="The complete guide to creating an AI vision board video in 2026. Tools, psychology, and how to put your own face in your manifestation video." />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_SCHEMA) }}
@@ -194,7 +194,7 @@ export default function VisionBoardGuide() {
 
         {/* ── HERO ── */}
         <section style={{ padding: 'clamp(80px,12vw,140px) 20px clamp(64px,10vw,110px)', textAlign: 'center', maxWidth: '760px', margin: '0 auto' }}>
-          <Label>Vision Board Guide 2025</Label>
+          <Label>Vision Board Guide 2026</Label>
           <h1 style={{
             fontFamily: "'Fraunces', serif",
             fontSize: 'clamp(2rem,6vw,4rem)',
@@ -202,7 +202,7 @@ export default function VisionBoardGuide() {
             marginBottom: '28px', color: '#FFFFFF',
           }}>
             The Complete Guide to<br />
-            <em style={{ fontStyle: 'italic', color: GOLD_LIGHT }}>AI Vision Boards</em> in 2025
+            <em style={{ fontStyle: 'italic', color: GOLD_LIGHT }}>AI Vision Boards</em> in 2026
           </h1>
           <p style={{ fontSize: 'clamp(0.95rem,2vw,1.1rem)', fontWeight: 300, color: '#E8E3DA', lineHeight: 1.8, maxWidth: '580px', margin: '0 auto' }}>
             How to create a personalized vision board video that actually works — including tools, psychology, and a fully automated option that puts your face in every scene.

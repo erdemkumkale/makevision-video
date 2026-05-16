@@ -292,10 +292,10 @@ export default function HowItWorks() {
                 </thead>
                 <tbody>
                   {[
-                    ['Your face in the video', '✗', '✓'],
-                    ['Fully delivered — no editing', '✗', '✓'],
-                    ['Cinematic quality', 'Sometimes', 'Always'],
-                    ['Built for manifestation practice', 'Partial', '✓'],
+                    ['Your face in every scene', '✗', '✓'],
+                    ['End-to-end — nothing to edit', '✗', '✓'],
+                    ['Purpose-built for daily practice', '✗', '✓'],
+                    ['Works in under 5 minutes', '✗', '✓'],
                   ].map(([feature, others, ours], i) => (
                     <tr key={feature} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                       <td style={{ padding: '16px', color: TEXT_DIM, borderBottom: `1px solid rgba(255,255,255,0.04)` }}>{feature}</td>
@@ -322,10 +322,13 @@ export default function HowItWorks() {
               Why Seeing Your Face Changes Everything
             </h2>
             <p style={{ fontSize: '1rem', color: TEXT_DIM, lineHeight: 1.9, marginBottom: '20px' }}>
-              Manifestation practitioners know the power of emotional connection. When you see a stranger in a dream-life scene, your brain registers it as fiction. When you see <em style={{ color: TEXT, fontStyle: 'italic' }}>yourself</em> — your actual face — in that scene, your nervous system responds differently. This is future-self visualization, made visceral.
+              When you look at a vision board full of strangers living your dream life, your brain is polite about it — mildly inspired, then quickly indifferent. It knows it&apos;s not you.
             </p>
-            <p style={{ fontSize: '0.85rem', color: '#6B6560', fontStyle: 'italic', lineHeight: 1.7 }}>
-              Rooted in the work of Dr. Joe Dispenza and future-self psychology research.
+            <p style={{ fontSize: '1rem', color: TEXT_DIM, lineHeight: 1.9, marginBottom: '20px' }}>
+              When you see <em style={{ color: TEXT, fontStyle: 'italic' }}>your own face</em> in those scenes — moving, present, already there — the brain&apos;s response is categorically different. Identity research and future-self psychology (including the work of Dr. Joe Dispenza) consistently show that this kind of first-person visualization accelerates the gap between imagined and lived experience.
+            </p>
+            <p style={{ fontSize: '1rem', color: TEXT_DIM, lineHeight: 1.9 }}>
+              That&apos;s not a marketing claim. It&apos;s why athletes visualize in the first person. It&apos;s why the image matters. And it&apos;s why we built YourVision the way we did.
             </p>
           </div>
         </section>
