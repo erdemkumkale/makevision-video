@@ -59,15 +59,18 @@ serve(async (req: Request) => {
     const skinTone  = si.skin_tone ?? 'medium'
     const age       = si.age       ?? '30s'
     const height    = si.height    ? buildHeightDescription(si.height, si.height_unit ?? 'cm') : ''
+    const story     = (si.custom_story ?? '') as string
 
     const genderWord = gender === 'female' ? 'woman' : gender === 'androgynous' ? 'person with androgynous features' : 'man'
     const heightDesc = height ? `, ${height}` : ''
     // "30s" → "in their 30s"
     const ageDesc = age.match(/^\d+s$/) ? `in their ${age}` : age
 
+    // Story metninden kıyafet ipucu çıkar
+    const clothingStyle = inferClothingFromStory(story, gender)
+
     // Referans prompt: nötr, tam vücut, yüze dönük
-    // Age ve fitness açıkça belirtiliyor — Flux'un kendi yorumuna bırakma
-    const basePrompt = `Studio portrait of a ${genderWord} ${ageDesc}, ${hair}, ${skinTone} skin tone${heightDesc}, average everyday fitness level (not muscular, not athletic, normal realistic body), standing in a relaxed neutral pose, facing camera directly, slight natural expression, plain light grey studio background, soft diffused studio lighting, editorial photography, full body shot, sharp focus, high quality, realistic`
+    const basePrompt = `Studio portrait of a ${genderWord} ${ageDesc}, ${hair}, ${skinTone} skin tone${heightDesc}, wearing ${clothingStyle}, average everyday fitness level (not muscular, not athletic, normal realistic body), standing in a relaxed neutral pose, facing camera directly, slight natural expression, plain light grey studio background, soft diffused studio lighting, editorial photography, full body shot, sharp focus, high quality, realistic`
 
     const prompt = feedback
       ? `${basePrompt}. Minor adjustments requested (keep age accurate, do not exaggerate): ${feedback}`
@@ -231,6 +234,39 @@ serve(async (req: Request) => {
     return json({ error: 'Internal server error' }, 500)
   }
 })
+
+function inferClothingFromStory(story: string, gender: string): string {
+  const s = story.toLowerCase()
+  const isFemale = gender === 'female'
+
+  // Business / corporate / executive
+  if (/\b(ceo|executive|board|corporate|office|business|suit|tie|professional|entrepreneur|startup|investor|meeting|conference)\b/.test(s)) {
+    return isFemale ? 'a smart business suit' : 'a well-fitted suit and dress shirt'
+  }
+  // Luxury / wealth / formal
+  if (/\b(luxury|yacht|villa|mansion|gala|red carpet|formal|elegant|designer|fashion|runway)\b/.test(s)) {
+    return isFemale ? 'an elegant dress' : 'a tailored suit'
+  }
+  // Creative / artist / bohemian
+  if (/\b(artist|paint|creative|studio|gallery|music|musician|writer|author|poet|bohemian)\b/.test(s)) {
+    return isFemale ? 'stylish casual creative wear' : 'smart casual clothes, relaxed style'
+  }
+  // Fitness / sport / active
+  if (/\b(athlete|sport|gym|fitness|marathon|yoga|outdoor|adventure|hiking|climbing)\b/.test(s)) {
+    return 'smart casual athletic wear'
+  }
+  // Travel / explorer
+  if (/\b(travel|explore|journey|world|passport|adventure|backpack)\b/.test(s)) {
+    return 'smart casual travel clothes'
+  }
+  // Academic / intellectual
+  if (/\b(professor|teacher|academic|research|university|doctor|phd|science)\b/.test(s)) {
+    return isFemale ? 'smart casual clothes' : 'casual shirt and trousers'
+  }
+
+  // Default: clean casual
+  return isFemale ? 'simple casual clothes, plain top and trousers' : 'simple casual clothes, plain shirt and trousers'
+}
 
 function buildHeightDescription(value: number, unit: string): string {
   if (unit === 'cm') {
