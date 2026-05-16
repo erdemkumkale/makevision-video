@@ -92,6 +92,12 @@ export default function HowItWorks() {
       <Head>
         <title>How It Works | YourVision</title>
         <meta name="description" content="Upload your photo, describe your dream life, and receive a cinematic AI vision board video with your face in every scene." />
+        <meta property="og:title" content="How It Works | YourVision" />
+        <meta property="og:description" content="Upload your photo, describe your dream life, and receive a cinematic AI vision board video with your face in every scene." />
+        <meta property="og:image" content="https://yourvision.video/og-image.jpg" />
+        <meta property="og:url" content="https://yourvision.video/how-it-works" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200..700;1,9..144,200..700&display=swap" rel="stylesheet" />

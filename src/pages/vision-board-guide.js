@@ -169,6 +169,12 @@ export default function VisionBoardGuide() {
       <Head>
         <title>AI Vision Board Guide 2026 | YourVision</title>
         <meta name="description" content="The complete guide to creating an AI vision board video in 2026. Tools, psychology, and how to put your own face in your manifestation video." />
+        <meta property="og:title" content="AI Vision Board Guide 2026 | YourVision" />
+        <meta property="og:description" content="The complete guide to creating an AI vision board video in 2026. Tools, psychology, and how to put your own face in your manifestation video." />
+        <meta property="og:image" content="https://yourvision.video/og-image.jpg" />
+        <meta property="og:url" content="https://yourvision.video/vision-board-guide" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary_large_image" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_SCHEMA) }}

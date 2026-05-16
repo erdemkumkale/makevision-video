@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /create
+Disallow: /review/
+Disallow: /character-ref/
+Disallow: /processing/
+Disallow: /result/
+Disallow: /checkout/
+Disallow: /login
+
+Sitemap: https://yourvision.video/sitemap.xml
