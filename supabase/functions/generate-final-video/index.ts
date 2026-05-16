@@ -372,6 +372,18 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
     const email = userData.user.email
     const resultUrl = `https://yourvision.video/result/${projectId}`
 
+    // Projenin plan bilgisini çek (essential → 30s, premium → 60s)
+    const { data: projectData } = await supabase
+      .from('vision_projects')
+      .select('story_inputs')
+      .eq('id', projectId)
+      .single()
+    const plan: string = projectData?.story_inputs?.plan ?? 'essential'
+    const isPremium = plan === 'premium'
+    const videoDuration = isPremium ? '60-second' : '30-second'
+    const sceneDuration = isPremium ? '10' : '5'
+    const packageLabel  = isPremium ? 'PREMIUM VISION' : 'ESSENTIAL VISION'
+
     // Enabled affirmations — up to 6, ordered
     const affirmations = Object.values(affirmationMap).filter(Boolean) as string[]
 
@@ -396,7 +408,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
       body: JSON.stringify({
         from: 'YourVision <hello@yourvision.video>',
         to: [email],
-        subject: 'Your film is ready',
+        subject: `Your ${videoDuration} vision film is ready`,
         html: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -414,14 +426,14 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
         <tr><td style="background:#0F0E0C;border:1px solid #2A2520;border-radius:4px;padding:48px 40px">
 
           <!-- Label — hardcoded uppercase to avoid Turkish i→İ from text-transform -->
-          <p style="margin:0 0 28px;font-size:11px;font-weight:500;letter-spacing:0.18em;color:#C9A961">YOUR VISION VIDEO</p>
+          <p style="margin:0 0 28px;font-size:11px;font-weight:500;letter-spacing:0.18em;color:#C9A961">${packageLabel}</p>
 
           <h1 style="margin:0 0 20px;font-size:28px;font-weight:300;color:#F4F1EA;line-height:1.25;letter-spacing:0.02em">
             The life you named<br>is waiting to be seen.
           </h1>
 
           <p style="margin:0 0 36px;font-size:15px;line-height:1.8;color:#C5BFB8;font-weight:300">
-            Your 60-second vision video is ready — six cinematic scenes,
+            Your ${videoDuration} vision film is ready — six cinematic scenes,
             your face, the life you are moving toward.
           </p>
 
@@ -442,7 +454,7 @@ async function sendReadyEmail(supabase: any, userId: string, projectId: string, 
               <span style="color:#C9A961;margin-right:10px">✦</span>6 cinematic scenes — your face, your story
             </td></tr>
             <tr><td style="padding:6px 0;font-size:13px;color:#C5BFB8;font-weight:300">
-              <span style="color:#C9A961;margin-right:10px">✦</span>30/60 seconds with ambient soundtrack
+              <span style="color:#C9A961;margin-right:10px">✦</span>${videoDuration} · ${sceneDuration}-second scenes · ambient soundtrack
             </td></tr>
             <tr><td style="padding:6px 0;font-size:13px;color:#C5BFB8;font-weight:300">
               <span style="color:#C9A961;margin-right:10px">✦</span>Download in vertical format — yours to keep
