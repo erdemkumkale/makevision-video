@@ -20,7 +20,7 @@ const Spinner = ({ size = 20, color = '#C9A961' }) => (
 // ─── Image card ───────────────────────────────────────────────────────────────
 const ImageCard = ({
   versions, selectedId, onSelectVersion, onRedo, redoing,
-  affirmation, onAffirmationChange, onAffirmationToggle,
+  affirmation, onAffirmationChange, onAffirmationToggle, onOpenLightbox,
 }) => {
   const [showFeedback, setShowFeedback] = useState(false)
   const [feedback, setFeedback]         = useState('')
@@ -57,7 +57,8 @@ const ImageCard = ({
           <img
             src={active.media_url}
             alt={`Vision ${(active.order_num ?? 0) + 1}`}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            onClick={() => onOpenLightbox?.(active.media_url)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in' }}
           />
         ) : active?.media_url === 'error' ? (
           <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 16 }}>
@@ -713,6 +714,7 @@ export default function ReviewVision() {
                     const id = selectedVersions[orderNum] ?? versions[0]?.id
                     setAffirmations((prev) => ({ ...prev, [id]: { ...prev[id], enabled } }))
                   }}
+                  onOpenLightbox={setLightboxUrl}
                 />
               ) : (
                 <div key={`sk-${orderNum}`} style={{
@@ -831,10 +833,20 @@ export default function ReviewVision() {
             cursor: 'zoom-out',
           }}
         >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxUrl(null) }}
+            style={{
+              position: 'fixed', top: '20px', right: '24px',
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
+              fontSize: '1.8rem', fontWeight: 200, cursor: 'pointer', lineHeight: 1,
+              padding: '4px 8px',
+            }}
+          >×</button>
           <img
             src={lightboxUrl}
-            alt="Character reference"
-            style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain', borderRadius: '6px', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}
+            alt="Vision scene"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain', borderRadius: '6px', boxShadow: '0 32px 80px rgba(0,0,0,0.6)', cursor: 'default' }}
           />
         </div>
       )}
