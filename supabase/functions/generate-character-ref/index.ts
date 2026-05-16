@@ -63,8 +63,9 @@ serve(async (req: Request) => {
 
     const genderWord = gender === 'female' ? 'woman' : gender === 'androgynous' ? 'person with androgynous features' : 'man'
     const heightDesc = height ? `, ${height}` : ''
-    // "30s" → "in their 30s"
-    const ageDesc = age.match(/^\d+s$/) ? `in their ${age}` : age
+    // "30s" → "35 years old" (Flux yaşı daha iyi yorumluyor)
+    const ageMap: Record<string, string> = { '20s': '25 years old', '30s': '35 years old', '40s': '43 years old', '50s': '53 years old' }
+    const ageDesc = ageMap[age] ?? age
 
     // Story metninden kıyafet ipucu çıkar
     const clothingStyle = inferClothingFromStory(story, gender)
@@ -76,7 +77,7 @@ serve(async (req: Request) => {
       ? `${basePrompt}. Minor adjustments requested (keep age accurate, do not exaggerate): ${feedback}`
       : basePrompt
 
-    const negativePrompt = 'blurry, low quality, distorted, extra limbs, watermark, text, background clutter, dramatic pose, action scene, outfit props'
+    const negativePrompt = 'blurry, low quality, distorted, extra limbs, watermark, text, background clutter, dramatic pose, action scene, outfit props, elderly, old, wrinkled, aged, senior citizen, too young, teenager, muscular, athletic, bodybuilder'
 
     console.log(`Generating character ref for project ${project_id}`)
 

@@ -470,23 +470,31 @@ const ReviewStep = ({ file, dream, submitting, submitStage }) => {
 
 // ─── Main Wizard ──────────────────────────────────────────────────────────────
 
+const DRAFT_KEY = 'mv_create_draft'
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? '{}') } catch { return {} }
+}
+
 export default function CreateVision() {
   const { user } = useAuth()
   const router   = useRouter()
 
+  const draft = typeof window !== 'undefined' ? loadDraft() : {}
+
   const [step, setStep]               = useState(0)
   const [file, setFile]               = useState(null)
   const [consent, setConsent]         = useState(false)
-  const [gender, setGender]           = useState('male')
-  const [age, setAge]                 = useState('30s')
-  const [hairLength, setHairLength]   = useState('short')
-  const [hairType, setHairType]       = useState('straight')
-  const [skinTone, setSkinTone]       = useState('medium')
-  const [heightUnit, setHeightUnit]   = useState('cm')
-  const [heightCm, setHeightCm]       = useState('170')
-  const [heightFt, setHeightFt]       = useState('5')
-  const [heightIn, setHeightIn]       = useState('7')
-  const [dream, setDream]             = useState('')
+  const [gender, setGender]           = useState(draft.gender ?? 'male')
+  const [age, setAge]                 = useState(draft.age ?? '30s')
+  const [hairLength, setHairLength]   = useState(draft.hairLength ?? 'short')
+  const [hairType, setHairType]       = useState(draft.hairType ?? 'straight')
+  const [skinTone, setSkinTone]       = useState(draft.skinTone ?? 'medium')
+  const [heightUnit, setHeightUnit]   = useState(draft.heightUnit ?? 'cm')
+  const [heightCm, setHeightCm]       = useState(draft.heightCm ?? '170')
+  const [heightFt, setHeightFt]       = useState(draft.heightFt ?? '5')
+  const [heightIn, setHeightIn]       = useState(draft.heightIn ?? '7')
+  const [dream, setDream]             = useState(draft.dream ?? '')
   const [submitting, setSubmitting]   = useState(false)
   const [submitStage, setSubmitStage] = useState(0)
   const [error, setError]             = useState(null)
@@ -500,6 +508,8 @@ export default function CreateVision() {
   const handleSubmit = async () => {
     if (!user) return
     setSubmitting(true); setSubmitStage(0); setError(null)
+    // Draft'ı kaydet — character-ref'ten geri dönüldüğünde form dolu olsun
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ gender, age, hairLength, hairType, skinTone, heightUnit, heightCm, heightFt, heightIn, dream })) } catch {}
     try {
       let selfieUrl = null
       if (file) {
@@ -520,6 +530,7 @@ export default function CreateVision() {
         .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age, hair: buildHairDescription(hairLength, hairType), skin_tone: skinTone, height: heightValue, height_unit: heightUnit } }])
         .select().single()
       if (insertError) throw insertError
+      try { localStorage.removeItem(DRAFT_KEY) } catch {}
       router.push(`/character-ref/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)

@@ -120,8 +120,15 @@ export default function CharacterRef() {
         padding: '48px 24px 64px',
       }}>
         {/* Nav */}
-        <div style={{ width: '100%', maxWidth: '480px', marginBottom: '48px' }}>
+        <div style={{ width: '100%', maxWidth: '480px', marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            onClick={() => router.push('/create')}
+            style={{ background: 'none', border: 'none', color: '#C5BFB8', fontSize: '0.8rem', letterSpacing: '0.06em', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
+          >
+            ← Back
+          </button>
           <span style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 300, letterSpacing: '0.06em' }}>YourVision</span>
+          <span style={{ width: 40 }} />
         </div>
 
         <div style={{ width: '100%', maxWidth: '480px', animation: 'fade 0.6s ease' }}>
