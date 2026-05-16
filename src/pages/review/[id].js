@@ -323,7 +323,6 @@ export default function ReviewVision() {
   const [project, setProject]           = useState(null)
   const [loading, setLoading]           = useState(true)
   const [approving, setApproving]       = useState(false)
-  const [devBypassing, setDevBypassing] = useState(false)
   const [redoingId, setRedoingId]       = useState(null)
   const [error, setError]               = useState(null)
   const [genError, setGenError]         = useState(null)
@@ -507,22 +506,6 @@ export default function ReviewVision() {
     }
   }
 
-  const handleDevBypass = async () => {
-    setDevBypassing(true); setError(null)
-    try {
-      const selectedIds = Object.values(selectedVersions)
-      if (selectedIds.length !== totalSlots)
-        throw new Error(`Expected ${totalSlots} selections but got ${selectedIds.length}.`)
-      // Deselect ALL generations for this project first, then select only chosen versions
-      await supabase.from('media_generations').update({ is_selected: false }).eq('vision_project_id', projectId)
-      await supabase.from('media_generations').update({ is_selected: true }).in('id', selectedIds)
-      await api.generateVideo(projectId, selectedIds, selectedPlan)
-      router.push(`/processing/${projectId}`)
-    } catch (err) {
-      setError(err.message ?? 'Video generation failed.')
-      setDevBypassing(false)
-    }
-  }
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -815,32 +798,18 @@ export default function ReviewVision() {
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-              {/* DEV bypass */}
-              <button
-                onClick={handleDevBypass}
-                disabled={!allReady || devBypassing || approving || !!redoingId}
-                style={{
-                  padding: '10px 20px', border: '1px solid rgba(201,169,97,0.3)',
-                  color: '#C9A961', background: 'rgba(201,169,97,0.05)',
-                  fontSize: '0.75rem', borderRadius: '4px', cursor: 'pointer',
-                  fontFamily: 'inherit', opacity: (!allReady || devBypassing || approving || !!redoingId) ? 0.4 : 1,
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                }}
-              >
-                {devBypassing ? <><Spinner size={14} />Generating...</> : '🛠 [DEV] Skip Payment'}
-              </button>
 
               {/* Approve */}
               <button
                 onClick={handleApprove}
-                disabled={!allReady || approving || devBypassing || !!redoingId}
+                disabled={!allReady || approving || !!redoingId}
                 style={{
                   padding: '12px 36px', border: '1px solid #C9A961',
                   color: '#C9A961', background: 'transparent',
                   fontSize: '0.85rem', fontWeight: 400, letterSpacing: '0.14em',
                   textTransform: 'uppercase', borderRadius: '4px', cursor: 'pointer',
                   fontFamily: 'inherit',
-                  opacity: (!allReady || approving || devBypassing || !!redoingId) ? 0.4 : 1,
+                  opacity: (!allReady || approving || !!redoingId) ? 0.4 : 1,
                   display: 'inline-flex', alignItems: 'center', gap: '10px',
                   transition: 'color 300ms, border-color 300ms',
                 }}
