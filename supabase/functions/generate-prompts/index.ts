@@ -21,21 +21,15 @@ serve(async (req: Request) => {
     if (!authHeader) return json({ error: 'Unauthorized' }, 401)
 
     const supabaseUrl    = Deno.env.get('SUPABASE_URL')!
-    const anonKey        = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // Kullanıcı token'ını doğrula — anon key + kullanıcının Authorization header'ı
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth:   { persistSession: false },
-    })
-    const { data: { user }, error: authError } = await userClient.auth.getUser()
-    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
-
-    // DB işlemleri için service role client
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     })
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
     // ── Input ─────────────────────────────────────────────────────────────────
     const body = await req.json()
@@ -68,14 +62,19 @@ serve(async (req: Request) => {
     const geminiUrl         = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
     const geminiUrlFallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`
 
-    // Kullanıcının seçtiği cinsiyet, yaş ve saç
+    // Kullanıcının seçtiği cinsiyet, yaş, saç ve ten rengi
     const gender: string          = (project.story_inputs as any)?.gender ?? 'male'
     const age: string             = (project.story_inputs as any)?.age ?? 'mid-30s'
     const hairDescription: string = (project.story_inputs as any)?.hair ?? 'short straight hair'
-    console.log('Subject:', gender, age, hairDescription)
+    const skinTone: string        = (project.story_inputs as any)?.skin_tone ?? 'medium'
+    const heightRaw: number | undefined = (project.story_inputs as any)?.height
+    const heightUnit: string      = (project.story_inputs as any)?.height_unit ?? 'cm'
+    const fullDescription         = `${hairDescription}, ${skinTone} skin tone`
+    const heightDesc              = heightRaw ? buildHeightDescription(heightRaw, heightUnit) : ''
+    console.log('Subject:', gender, age, fullDescription, heightDesc)
 
     // ── Sahne prompt'ları ─────────────────────────────────────────────────────
-    const contents = buildGeminiContents(storyText, sceneCount, gender, age, hairDescription)
+    const contents = buildGeminiContents(storyText, sceneCount, gender, age, fullDescription, heightDesc)
 
     console.log('Step 2: Calling Gemini for scene prompts...')
     const geminiBody = JSON.stringify({
@@ -196,6 +195,20 @@ serve(async (req: Request) => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function buildHeightDescription(value: number, unit: string): string {
+  if (unit === 'cm') {
+    if (value < 160) return 'short stature (petite)'
+    if (value < 175) return 'average height'
+    if (value < 185) return 'tall'
+    return 'very tall'
+  }
+  const feet = Math.floor(value)
+  if (feet < 5 || (feet === 5 && value < 5.3)) return 'short stature (petite)'
+  if (value < 5.9) return 'average height'
+  if (value < 6.2) return 'tall'
+  return 'very tall'
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -302,12 +315,13 @@ Example output: short dark brown hair, light olive skin` },
 }
 
 // ── Sahne prompt'ları için Gemini içeriği ────────────────────────────────────
-function buildGeminiContents(storyText: string, sceneCount: number, gender: string, age: string, hairDescription: string) {
-  return [{ parts: [{ text: buildGeminiPrompt(storyText, sceneCount, gender, age, hairDescription) }] }]
+function buildGeminiContents(storyText: string, sceneCount: number, gender: string, age: string, hairDescription: string, heightDesc: string) {
+  return [{ parts: [{ text: buildGeminiPrompt(storyText, sceneCount, gender, age, hairDescription, heightDesc) }] }]
 }
 
-function buildGeminiPrompt(storyText: string, sceneCount: number, gender: string, age: string, hairDescription: string): string {
-  const genderWord = gender === 'female' ? 'woman' : 'man'
+function buildGeminiPrompt(storyText: string, sceneCount: number, gender: string, age: string, hairDescription: string, heightDesc: string): string {
+  const genderWord = gender === 'female' ? 'woman' : gender === 'androgynous' ? 'person with androgynous features' : 'man'
+  const heightNote = heightDesc ? `Height: ${heightDesc}. Reflect this subtly in how the subject is framed relative to environment and other objects.` : ''
 
   return `You are the creative director of a personal documentary film studio. Write ${sceneCount} image prompts for a deeply personal vision film — a 30-second trailer of someone's most meaningful life. Think Terrence Malick's cinematography meets a personal documentary. Every frame must feel intimate, textured, and emotionally true — not glossy or artificial.
 
@@ -317,7 +331,8 @@ THE SUBJECT
 The subject is a ${genderWord}. Every prompt MUST use the word "${genderWord}" explicitly.
 Life stage context (affects setting choices only, never describe age): ${age}
 Hair: ${hairDescription}. Every prompt MUST include this hair description when describing the subject.
-Body: lean, fit, athletic. Never describe body type in prompts.
+${heightNote}
+Body: average, normal build. Never describe body type in prompts.
 Face will be composited via face-swap in post-production.
 
 FACE RULE — state once, follow always:
@@ -422,6 +437,19 @@ If other people are in the scene, describe their motion too (child's hand squeez
 
 Good: "Linen shirt fabric shifts in warm coastal wind as the man rests his hand on a weathered wooden railing, golden light warming across his face, behind him out-of-focus figures gather around a table, waves roll gently below, his eyes soften with a quiet exhale — grounded"
 Bad: "slow push-in" / "cinematic pan" / "camera drifts left" / "gentle movement"
+
+════════════════════════════════════════
+EMOTIONAL TRUTH — what makes the viewer FEEL something
+════════════════════════════════════════
+Every video prompt must contain ONE of these emotional triggers. Choose what fits the scene:
+
+- A PRIVATE MOMENT the viewer recognizes from their own life: the first sip of morning coffee in silence, closing your eyes in warm sunlight, the exhale after a long day when you finally sit down
+
+- A CONNECTION MOMENT with another person (face not visible): a child's hand grabbing the subject's finger, someone off-screen making the subject laugh unexpectedly, a hand reaching into frame to touch the subject's shoulder
+
+- A THRESHOLD MOMENT — the subject is crossing from one emotional state to another, visible in their body: tension releasing from the jaw, eyes that were focused going soft, a held breath finally let go, a smile that builds slowly from nothing
+
+The video should make someone watching think: "I want to feel what that person is feeling right now."
 
 ════════════════════════════════════════
 AFFIRMATION (max 60 characters)
