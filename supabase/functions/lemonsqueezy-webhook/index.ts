@@ -87,6 +87,17 @@ serve(async (req: Request) => {
     return new Response('Internal Server Error', { status: 500 })
   }
 
+  // ── Extract order details for admin notification ──────────────────────────
+  const attrs = (payload?.data as Record<string, unknown>)
+    ?.attributes as Record<string, unknown> | undefined
+
+  const customerEmail = attrs?.user_email as string | undefined
+  const customerName  = attrs?.user_name  as string | undefined
+  const totalFormatted = attrs?.total_formatted as string | undefined
+  const orderNumber   = ((payload?.data as Record<string, unknown>)?.id as string) ?? '—'
+  const variantName   = (((attrs?.first_order_item as Record<string, unknown>)
+    ?.variant_name) as string | undefined) ?? '—'
+
   // ── Trigger generate-video (fire-and-forget) ──────────────────────────────
   const generateVideoUrl = `${supabaseUrl}/functions/v1/generate-video`
 
@@ -104,14 +115,101 @@ serve(async (req: Request) => {
     console.error('generate-video trigger failed:', err)
   })
 
+  // ── Admin sale notification (fire-and-forget) ─────────────────────────────
+  const adminNotif = sendAdminSaleEmail({
+    orderNumber, customerEmail, customerName, totalFormatted, variantName, projectId,
+  })
+
   // @ts-ignore
   if (typeof EdgeRuntime !== 'undefined') {
     // deno-lint-ignore no-explicit-any
-    ;(EdgeRuntime as any).waitUntil(bgJob)
+    ;(EdgeRuntime as any).waitUntil(Promise.all([bgJob, adminNotif]))
   }
 
   return new Response('OK', { status: 200 })
 })
+
+// ─── Admin sale notification ──────────────────────────────────────────────────
+
+async function sendAdminSaleEmail(opts: {
+  orderNumber: string
+  customerEmail?: string
+  customerName?: string
+  totalFormatted?: string
+  variantName?: string
+  projectId: string
+}) {
+  const resendKey = Deno.env.get('RESEND_API_KEY')
+  const adminEmail = Deno.env.get('ADMIN_EMAIL') ?? 'hello@yourvision.video'
+  if (!resendKey) return
+
+  const { orderNumber, customerEmail, customerName, totalFormatted, variantName, projectId } = opts
+  const now = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Istanbul', hour12: false })
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'YourVision Sales <hello@yourvision.video>',
+        to: [adminEmail],
+        subject: `💰 New sale — ${totalFormatted ?? '?'} · ${variantName}`,
+        html: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0A0908;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0908;padding:40px 16px">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
+
+        <tr><td style="padding-bottom:32px">
+          <span style="font-size:16px;font-weight:300;letter-spacing:0.06em;color:#F4F1EA">YourVision</span>
+          <span style="font-size:12px;color:#4A4640;margin-left:12px">Sales Notification</span>
+        </td></tr>
+
+        <tr><td style="background:#0F0E0C;border:1px solid #2A2520;border-radius:4px;padding:36px 32px">
+
+          <p style="margin:0 0 24px;font-size:11px;font-weight:500;letter-spacing:0.18em;color:#C9A961">NEW SALE</p>
+
+          <h1 style="margin:0 0 8px;font-size:32px;font-weight:300;color:#F4F1EA;line-height:1.1">
+            ${totalFormatted ?? '?'}
+          </h1>
+          <p style="margin:0 0 32px;font-size:14px;color:#C5BFB8;font-weight:300">${variantName}</p>
+
+          <table cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #1F1D1A;padding-top:24px">
+            ${[
+              ['Customer', customerName ?? '—'],
+              ['Email', customerEmail ?? '—'],
+              ['Order #', orderNumber],
+              ['Project', projectId],
+              ['Time', now],
+            ].map(([k, v]) => `
+            <tr>
+              <td style="padding:7px 0;font-size:12px;color:#6B6560;width:90px">${k}</td>
+              <td style="padding:7px 0;font-size:12px;color:#C5BFB8;font-weight:300">${v}</td>
+            </tr>`).join('')}
+          </table>
+
+        </td></tr>
+
+        <tr><td style="padding-top:24px">
+          <p style="margin:0;font-size:11px;color:#4A4640">
+            <a href="https://app.lemonsqueezy.com/orders" style="color:#6B6560;text-decoration:none">View in LemonSqueezy →</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+      }),
+    })
+    console.log(`Admin sale email sent to ${adminEmail}`)
+  } catch (err) {
+    console.warn('Admin sale email failed (non-fatal):', err)
+  }
+}
 
 // ─── HMAC-SHA256 signature verification ───────────────────────────────────────
 
