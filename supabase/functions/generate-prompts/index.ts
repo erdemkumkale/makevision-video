@@ -196,17 +196,16 @@ serve(async (req: Request) => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildHeightDescription(value: number, unit: string): string {
+  // Sadece gerçekten belirgin kısa/uzun boyları belirt, ortalama aralığı geniş tut
   if (unit === 'cm') {
-    if (value < 160) return 'short stature (petite)'
-    if (value < 175) return 'average height'
-    if (value < 185) return 'tall'
-    return 'very tall'
+    if (value < 152) return 'notably short stature'
+    if (value < 195) return '' // ortalama — hiçbir şey söyleme
+    return 'notably tall stature'
   }
-  const feet = Math.floor(value)
-  if (feet < 5 || (feet === 5 && value < 5.3)) return 'short stature (petite)'
-  if (value < 5.9) return 'average height'
-  if (value < 6.2) return 'tall'
-  return 'very tall'
+  // feet
+  if (value < 5.0) return 'notably short stature'
+  if (value < 6.4) return '' // ortalama
+  return 'notably tall stature'
 }
 
 function json(body: unknown, status = 200) {

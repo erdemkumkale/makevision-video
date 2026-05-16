@@ -271,17 +271,13 @@ function inferClothingFromStory(story: string, gender: string): string {
 
 function buildHeightDescription(value: number, unit: string): string {
   if (unit === 'cm') {
-    if (value < 160) return 'short stature'
-    if (value < 175) return 'average height'
-    if (value < 185) return 'tall'
-    return 'very tall'
+    if (value < 152) return 'notably short stature'
+    if (value < 195) return '' // ortalama — belirtme
+    return 'notably tall stature'
   }
-  // feet — value is e.g. 5.9 meaning 5'9"
-  const feet = Math.floor(value)
-  if (feet < 5 || (feet === 5 && value < 5.3)) return 'short stature'
-  if (value < 5.9) return 'average height'
-  if (value < 6.2) return 'tall'
-  return 'very tall'
+  if (value < 5.0) return 'notably short stature'
+  if (value < 6.4) return ''
+  return 'notably tall stature'
 }
 
 function json(body: unknown, status = 200) {
