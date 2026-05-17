@@ -151,12 +151,20 @@ export default function CharacterRef() {
             position: 'relative',
           }}>
             {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #1F1D1A', borderTopColor: '#C9A961', animation: 'spin 1.2s linear infinite' }} />
-                <p style={{ fontSize: '0.78rem', color: '#4A4640', letterSpacing: '0.08em' }}>Generating your character…</p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '32px' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #1F1D1A', borderTopColor: '#C9A961', animation: 'spin 1.2s linear infinite' }} />
+                <p style={{ fontSize: '0.82rem', color: '#C5BFB8', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.6 }}>Creating your character…<br /><span style={{ color: '#4A4640', fontSize: '0.75rem' }}>This takes about 20 seconds</span></p>
               </div>
             ) : imageUrl ? (
-              <img src={imageUrl} alt="Character reference" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <>
+                <img src={imageUrl} alt="Character reference" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: redoing ? 0.35 : 1, transition: 'opacity 300ms' }} />
+                {redoing && (
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(201,169,97,0.3)', borderTopColor: '#C9A961', animation: 'spin 1.2s linear infinite' }} />
+                    <p style={{ fontSize: '0.78rem', color: '#C9A961', letterSpacing: '0.08em' }}>Regenerating…</p>
+                  </div>
+                )}
+              </>
             ) : null}
           </div>
 
@@ -221,13 +229,15 @@ export default function CharacterRef() {
           {!loading && imageUrl && (
             <button
               onClick={handleContinue}
-              disabled={continuing}
+              disabled={continuing || redoing}
               style={{
                 width: '100%', padding: '14px',
-                border: '1px solid #C9A961', background: 'transparent',
-                color: continuing ? '#4A4640' : '#C9A961', fontSize: '0.85rem',
+                border: `1px solid ${(continuing || redoing) ? '#2A2520' : '#C9A961'}`,
+                background: 'transparent',
+                color: (continuing || redoing) ? '#4A4640' : '#C9A961', fontSize: '0.85rem',
                 letterSpacing: '0.14em', textTransform: 'uppercase',
-                cursor: continuing ? 'not-allowed' : 'pointer', borderRadius: '4px', fontFamily: 'inherit',
+                cursor: (continuing || redoing) ? 'not-allowed' : 'pointer', borderRadius: '4px', fontFamily: 'inherit',
+                transition: 'color 300ms, border-color 300ms',
               }}
             >
               {continuing ? 'Preparing your scenes…' : 'Looks good — Continue ✦'}

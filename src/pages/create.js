@@ -195,19 +195,19 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginTop: '20px', cursor: 'pointer' }}
           onClick={() => setConsent(v => !v)}>
           <div style={{
-            marginTop: '2px', flexShrink: 0, width: '18px', height: '18px',
-            border: `1px solid ${consent ? '#C9A961' : '#1F1D1A'}`,
-            borderRadius: '2px', background: consent ? 'rgba(201,169,97,0.15)' : 'transparent',
+            marginTop: '3px', flexShrink: 0, width: '20px', height: '20px',
+            border: `2px solid ${consent ? '#C9A961' : '#4A4640'}`,
+            borderRadius: '3px', background: consent ? 'rgba(201,169,97,0.15)' : 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'border-color 200ms, background 200ms',
           }}>
             {consent && (
-              <svg style={{ width: 10, height: 10, color: '#C9A961' }} fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
+              <svg style={{ width: 11, height: 11, color: '#C9A961' }} fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
               </svg>
             )}
           </div>
-          <p style={{ fontSize: '0.92rem', color: '#F4F1EA', lineHeight: 1.7, fontWeight: 300 }}>
+          <p style={{ fontSize: '0.88rem', color: '#C5BFB8', lineHeight: 1.7, fontWeight: 300 }}>
             I confirm this photo is of me and I have the right to use it. I understand that using another person&apos;s likeness without consent may be illegal, and I take full responsibility.
           </p>
         </label>

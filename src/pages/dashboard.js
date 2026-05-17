@@ -269,7 +269,7 @@ export default function Dashboard() {
           {/* Greeting */}
           <div style={{ marginBottom: '48px' }}>
             <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 300, lineHeight: 1.15, letterSpacing: '0.04em', marginBottom: '8px' }}>
-              Welcome back, <em style={{ fontStyle: 'italic', color: '#C9A961' }}>{firstName}.</em>
+              {projects.length === 0 ? 'Welcome, ' : 'Welcome back, '}<em style={{ fontStyle: 'italic', color: '#C9A961' }}>{firstName}.</em>
             </h1>
             <p style={{ fontSize: '0.88rem', color: '#C5BFB8', fontWeight: 300 }}>
               {projects.length > 0
