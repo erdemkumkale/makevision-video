@@ -207,7 +207,7 @@ const SelfieUpload = ({ file, setFile, consent, setConsent }) => {
               </svg>
             )}
           </div>
-          <p style={{ fontSize: '0.88rem', color: '#C5BFB8', lineHeight: 1.7, fontWeight: 300 }}>
+          <p style={{ fontSize: '0.88rem', color: '#F4F1EA', lineHeight: 1.7, fontWeight: 400 }}>
             I confirm this photo is of me and I have the right to use it. I understand that using another person&apos;s likeness without consent may be illegal, and I take full responsibility.
           </p>
         </label>
