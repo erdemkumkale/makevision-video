@@ -408,18 +408,35 @@ Every scene must be physically possible and spatially logical:
 - Camera framing shows the subject naturally placed IN their environment, not composited on top of it
 
 ════════════════════════════════════════
+THE DECISIVE MOMENT — critical for video
+════════════════════════════════════════
+This image will be animated into a 5-10 second video by an AI motion model (Kling). The image is the STARTING FRAME of that motion. Design every image for movement.
+
+RULE: Capture the subject mid-action, not at rest. Think Henri Cartier-Bresson's "decisive moment" — the peak of physical tension just before or during the action.
+
+Examples of what this means:
+- Swing → "the ${genderWord} at the back arc of the swing, body leaning back, legs extended forward, ropes taut, hair and clothing swept back by the motion, a wide open laugh"
+- Sailboat helm → "the ${genderWord} leaning into a turn, both hands gripping the mounted wheel, body weight shifted, spray visible at the bow, focused expression into the wind"
+- Dancing → "mid-spin, dress or shirt billowing outward, one arm extended, weight on the ball of one foot, face turning toward camera with pure joy"
+- Running on beach → "mid-stride, one foot off sand, arms pumping, hair lifted, spray behind each step" — face still visible, slight angle toward camera
+
+DO NOT write the subject as: seated calmly, standing still, gazing quietly. Unless the story is explicitly about stillness and contemplation, every subject must be caught in motion.
+
+The motion in the image MUST directly correspond to the action in the user's story. If they said "swinging", the image shows swinging. If they said "sailing", the image shows active sailing. Do not soften or replace their action with a passive version.
+
+════════════════════════════════════════
 FORBIDDEN
 ════════════════════════════════════════
 - desk / office / conference / boardroom / cubicle
 - furniture blocking the subject's torso
 - back-to-camera / silhouette / face not visible
-- walking or running (subject is stationary: standing, sitting, leaning)
 - close-up face portrait (waist-up minimum)
 - environment-only descriptions without the subject
 - teenage or child figure — the subject is an adult ${genderWord}
 - wrong gender: must be a ${genderWord}
 - physically impossible compositions
 - generic "luxury" imagery not rooted in their actual dream life
+- passive resting pose when the story describes an active action (sitting still on a swing is forbidden if the story says "swinging")
 
 ════════════════════════════════════════
 VIDEO PROMPT (max 350 characters)
