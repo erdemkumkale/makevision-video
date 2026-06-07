@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
 import { api } from '../../lib/api'
+import { track } from '../../lib/analytics'
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 const Spinner = ({ size = 20, color = '#C9A961' }) => (
@@ -460,6 +461,7 @@ export default function ReviewVision() {
 
   const handleRedo = async (generationId, feedback) => {
     setRedoingId(generationId); setError(null)
+    track('image_redo_clicked', { project_id: projectId, generation_id: generationId, feedback_length: feedback.length })
     try {
       const result = await api.redoImage(generationId, feedback)
       if (!result?.generation) throw new Error('Redo returned no generation data')
@@ -476,6 +478,7 @@ export default function ReviewVision() {
 
   const handleApprove = async () => {
     setApproving(true); setError(null)
+    track('review_approved', { project_id: projectId, plan: selectedPlan })
     try {
       const plan = PLANS[selectedPlan]
       const selectedIds = Object.values(selectedVersions)
@@ -501,6 +504,7 @@ export default function ReviewVision() {
       const checkoutUrl = new URL(plan.lsUrl)
       checkoutUrl.searchParams.set('checkout[custom][project_id]', projectId)
       checkoutUrl.searchParams.set('checkout[custom][user_id]', user.id)
+      track('checkout_redirected', { project_id: projectId, plan: selectedPlan })
       window.location.href = checkoutUrl.toString()
     } catch (err) {
       setError(err.message)

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../lib/api'
+import { track } from '../lib/analytics'
 
 // ─── Image resize utility ─────────────────────────────────────────────────────
 
@@ -508,6 +509,7 @@ export default function CreateVision() {
   const handleSubmit = async () => {
     if (!user) return
     setSubmitting(true); setSubmitStage(0); setError(null)
+    track('create_submit_clicked', { has_selfie: !!file, dream_length: dream.trim().length })
     // Draft'ı kaydet — character-ref'ten geri dönüldüğünde form dolu olsun
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ gender, age, hairLength, hairType, skinTone, heightUnit, heightCm, heightFt, heightIn, dream })) } catch {}
     try {
@@ -520,6 +522,7 @@ export default function CreateVision() {
         if (uploadError) throw uploadError
         const { data: urlData } = supabase.storage.from('vision-assets').getPublicUrl(path)
         selfieUrl = urlData.publicUrl
+        track('selfie_uploaded')
       }
       setSubmitStage(1)
       const heightValue = heightUnit === 'cm'
@@ -530,10 +533,12 @@ export default function CreateVision() {
         .insert([{ user_id: user.id, status: 'Draft', selfie_url: selfieUrl, story_inputs: { custom_story: dream.trim(), scene_count: 6, gender, age, hair: buildHairDescription(hairLength, hairType), skin_tone: skinTone, height: heightValue, height_unit: heightUnit } }])
         .select().single()
       if (insertError) throw insertError
+      track('project_created', { project_id: project.id, gender, age })
       try { localStorage.removeItem(DRAFT_KEY) } catch {}
       router.push(`/character-ref/${project.id}`)
     } catch (err) {
       console.error('Submission error:', err)
+      track('create_submit_failed', { error: err.message })
       setError(err.message ?? 'Something went wrong. Please try again.')
       setSubmitting(false)
     }
@@ -606,7 +611,7 @@ export default function CreateVision() {
 
               {step < TOTAL_STEPS - 1 ? (
                 <button
-                  onClick={() => setStep(s => s + 1)}
+                  onClick={() => { track('create_step_advanced', { from_step: step, to_step: step + 1 }); setStep(s => s + 1) }}
                   disabled={!canAdvance()}
                   style={{ ...goldButton, opacity: canAdvance() ? 1 : 0.35, cursor: canAdvance() ? 'pointer' : 'not-allowed' }}
                   onMouseEnter={e => { if (canAdvance()) { e.currentTarget.style.color = '#E0C285'; e.currentTarget.style.borderColor = '#E0C285' } }}

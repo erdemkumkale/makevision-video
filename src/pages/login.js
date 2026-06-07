@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useAuth } from '../contexts/AuthContext'
+import { track } from '../lib/analytics'
 
 export default function Login() {
   const { user, loading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth()
@@ -24,21 +25,29 @@ export default function Login() {
     setError(null)
     setNotice(null)
     setBusy(true)
+    track(mode === 'signin' ? 'signin_email_submitted' : 'signup_email_submitted')
     try {
       if (mode === 'signin') {
         await signInWithEmail(email, password)
       } else {
         const data = await signUpWithEmail(email, password)
         if (!data.session) {
+          track('signup_email_confirmation_required')
           setNotice('Check your email to confirm your account, then sign in.')
           setMode('signin')
         }
       }
     } catch (err) {
+      track('auth_failed', { mode, error: err.message })
       setError(err.message ?? 'Authentication failed.')
     } finally {
       setBusy(false)
     }
+  }
+
+  const handleGoogleSignIn = () => {
+    track('signin_google_clicked')
+    signInWithGoogle()
   }
 
   return (
@@ -208,7 +217,7 @@ export default function Login() {
             {/* OAuth buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
-                onClick={signInWithGoogle}
+                onClick={handleGoogleSignIn}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
                   padding: '12px 20px', border: '1px solid #1F1D1A', borderRadius: '4px',

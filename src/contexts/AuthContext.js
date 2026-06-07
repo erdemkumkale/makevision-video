@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { identifyUser, resetUser, track } from '../lib/analytics'
 
 const AuthContext = createContext(null)
 
@@ -44,6 +45,8 @@ export function AuthProvider({ children }) {
       const u = session?.user ?? null
       setUser(u)
       if (u) {
+        identifyUser(u.id, { email: u.email, provider: u.app_metadata?.provider })
+        if (_event === 'SIGNED_IN') track('user_signed_in', { provider: u.app_metadata?.provider ?? 'email' })
         loadProfile(u.id).finally(() => { if (mounted) setLoading(false) })
       } else {
         setProfile(null)
@@ -96,7 +99,9 @@ export function AuthProvider({ children }) {
   }
 
   const signOut = async () => {
+    track('user_signed_out')
     await supabase.auth.signOut()
+    resetUser()
     setUser(null)
     setProfile(null)
   }

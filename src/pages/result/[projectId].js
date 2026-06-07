@@ -4,6 +4,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
+import { track } from '../../lib/analytics'
 
 const STORAGE = 'https://ibcxaytaewufzluxnjbc.supabase.co/storage/v1/object/public/vision-assets'
 
@@ -81,6 +82,7 @@ export default function Result() {
   }, [projectId, video, user, router])
 
   const handleShare = async () => {
+    track('result_shared', { project_id: projectId })
     const shareUrl = `${window.location.origin}/result/${projectId}`
     if (navigator.share) {
       try {

@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Head from 'next/head'
 import { useAuth } from '../contexts/AuthContext'
+import { track } from '../lib/analytics'
 
 // 4 hero videos — served from /public/videos (permanent, no expiry)
 const VIDEOS = [
@@ -251,7 +252,7 @@ export default function Home() {
               Write your story, unlock your new life.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <button onClick={() => router.push('/login')} style={{
+              <button onClick={() => { track('landing_cta_clicked', { location: 'hero' }); router.push('/login') }} style={{
                 display: 'inline-block', padding: '14px 44px',
                 border: '1px solid #C9A961', background: 'transparent',
                 color: '#C9A961', fontSize: '0.85rem', fontWeight: 400,
@@ -326,7 +327,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => router.push('/login')} style={{
+                <button onClick={() => { track('landing_cta_clicked', { location: 'pricing_starter', tier: 'starter', price: 12 }); router.push('/login') }} style={{
                   width: '100%', padding: '13px 0', border: '1px solid #C9A961', background: 'transparent',
                   color: '#C9A961', fontSize: '0.82rem', fontWeight: 400, letterSpacing: '0.14em',
                   textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', fontFamily: 'inherit',
@@ -349,7 +350,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => router.push('/login')} style={{
+                <button onClick={() => { track('landing_cta_clicked', { location: 'pricing_premium', tier: 'premium', price: 20 }); router.push('/login') }} style={{
                   width: '100%', padding: '13px 0', border: '1px solid #C9A961', background: 'rgba(201,169,97,0.08)',
                   color: '#C9A961', fontSize: '0.82rem', fontWeight: 400, letterSpacing: '0.14em',
                   textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', fontFamily: 'inherit',
