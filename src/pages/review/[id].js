@@ -302,7 +302,7 @@ const PLANS = {
     duration: 5,
     seconds: 30,
     description: '6 scenes · 30-second film',
-    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/fe254877-7211-4f60-ab83-4f3f844afb17',
+    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/78d29832-ea0c-4c18-8f89-ae5fa0b791d2',
   },
   premium: {
     label: 'Premium',
@@ -310,7 +310,7 @@ const PLANS = {
     duration: 10,
     seconds: 60,
     description: '6 scenes · 60-second film',
-    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/6c401b6d-acfb-4a7e-893d-11338e7829dc',
+    lsUrl: 'https://yourvisionvideo.lemonsqueezy.com/checkout/buy/513894fc-c840-4d25-b5b6-b31f44123273',
   },
 }
 
